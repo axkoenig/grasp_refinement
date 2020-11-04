@@ -1,5 +1,5 @@
-# grasp_refinement
-Workspace for my Master Thesis on Teleoperated Grasp Refinement at Harvard Biorobotics Lab
+# Teleoperated Grasp Refinement
+Workspace for my master thesis on Teleoperated Grasp Refinement at the Harvard Biorobotics Lab
 
 ## Install Software 
 
