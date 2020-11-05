@@ -1,5 +1,6 @@
 # Teleoperated Grasp Refinement
-Workspace for my master thesis on Teleoperated Grasp Refinement at the Harvard Biorobotics Lab
+
+[![Build Status](https://travis-ci.com/axkoenig/grasp_refinement.svg?token=KeJradpJgXCJqZfQ8pwB&branch=main)](https://travis-ci.com/axkoenig/grasp_refinement)
 
 ## Install Software 
 
