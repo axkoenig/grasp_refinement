@@ -1,0 +1,26 @@
+<launch>
+
+  <!-- Load joint controller configurations from YAML file to parameter server -->
+  <rosparam file="$(find control)/config/lbr4_reflex_control.yaml" command="load"/>
+
+  <!-- load the controllers -->
+  <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
+    output="screen" ns="lbr4_reflex" 
+    args="joint_state_controller 
+    preshape_1_effort_controller 
+    preshape_2_effort_controller 
+    proximal_joint_1_effort_controller 
+    proximal_joint_2_effort_controller 
+    proximal_joint_3_effort_controller 
+    lbr4_j0_position_controller 
+    lbr4_j1_position_controller 
+    lbr4_j2_position_controller 
+    lbr4_j3_position_controller 
+    lbr4_j4_position_controller 
+    lbr4_j5_position_controller 
+    lbr4_j6_position_controller"/>
+  
+  <!-- launch custom reflex controller for open/close services-->
+  <node pkg="control" type="reflex_actuation.py" name="reflex_actuation" respawn="true"/>
+
+</launch>
