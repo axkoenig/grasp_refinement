@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="lbr4">
 
-  <xacro:arg name="end_effector" default="None"  doc="[biotac_hold, push_stick,cube]"/>
+  <xacro:arg name="end_effector" default="None"  doc="[push_stick,cube]"/>
   <xacro:arg name="gazebo"       default="false"  />
 
   <!-- ========================================================================================== -->
@@ -56,17 +56,6 @@
       <origin xyz="0 0 0.01" rpy="0 0 0" />
       <parent link="optoforce_push_stick_mount_link" />
       <child link="push_stick_link" />
-    </joint>
-  </xacro:if>
-  
-  <xacro:if value="${end_effector == 'biotac_mount'}">
-    <xacro:include filename="${urdf_path}/end_effectors/biotac_mount.urdf.xacro"/>
-    <xacro:biotac_mount/>
-    <joint name="optoforce_to_biotac_mount" type="fixed">
-	<origin xyz="0 0 0.05" rpy="0 0 0"/>
-	<parent link="optoforce_model_link"/>
-      
-      <child link="biotac_mount_link" />
     </joint>
   </xacro:if>
 

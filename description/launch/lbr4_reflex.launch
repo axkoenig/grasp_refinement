@@ -2,13 +2,12 @@
 <launch>
 
   <!-- robot arguments -->
-  <arg name="end_effector"   default="reflex"  doc="[allegro, reflex, push_stick]"          />
+  <arg name="end_effector"   default="reflex"  doc="[reflex, push_stick]"          />
   <arg name="ft_sensor"      default="true" doc="Use Optoforce FT Sensor if true."       />
   <arg name="jsp_gui"        default="true"  doc="Control joint angles with GUI if true." />
   <arg name="omni"           default="false" doc="Control robot pose with Omni if true."  />
   <arg name="table"          default="false" doc="Mount robot on table if true."          />
   <arg name="gazebo"         default="true" doc="Include Gazebo components if true."     />
-  <arg name="biotac"         default="true" doc="true if allegro has biotac attached"    />
   <arg name="robot_name"     default="lbr4"  doc="Robot name for namespacing"             />
   <arg name="actuate_reflex" default="true"  doc="Set ReFlex joints as revolute if true"  />
   
@@ -36,7 +35,6 @@
           gazebo:=$(arg gazebo)
           omni:=$(arg omni)
           robot_table:=$(arg table)
-          biotac:=$(arg biotac)
           robot_name:=$(arg robot_name)
           actuate_reflex:=$(arg actuate_reflex)
         --inorder"/>
@@ -49,9 +47,6 @@
   
   <node pkg="joint_state_publisher" type="joint_state_publisher" output="screen"
         name="joint_state_publisher">
-    <rosparam param="source_list" if="$(eval end_effector == 'allegro')">
-      ["/lbr4/joint_states","/allegro_hand_right/joint_states"]
-    </rosparam>
     <rosparam param="source_list" if="$(eval end_effector == 'reflex')">
       ["/lbr4/joint_states","/reflex/joint_states"]
     </rosparam>

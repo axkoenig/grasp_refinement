@@ -1,14 +1,13 @@
 <?xml version="1.0" ?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="lbr4">
 
-  <xacro:arg name="end_effector"      default="None"  /> <!-- [allegro, reflex, push_stick, rigid_obj] -->
+  <xacro:arg name="end_effector"      default="None"  /> <!-- [reflex, push_stick, rigid_obj] -->
   <xacro:arg name="ft_sensor"         default="true" />
   <xacro:arg name="robot_table"       default="false" />
   <xacro:arg name="object_high_table" default="false" />
   <xacro:arg name="object_low_table"  default="false" />
   <xacro:arg name="robot_name"        default="lbr4"  />
   <xacro:arg name="control"           default="false" />
-  <xacro:arg name="biotac"            default="true" />
   <xacro:arg name="actuate_reflex"    default="false" />
   <xacro:arg name="gazebo"            default="false"  />
   <xacro:arg name="rtt_gazebo"        default="false" /> <!-- Set true if simulating with Orocos -->
@@ -79,25 +78,6 @@
       <xacro:arg name="ft_sensor"  value="$(arg ft_sensor)"/>
       <xacro:arg name="robot_name" value="$(arg robot_name)"/>
     </xacro:include>
-  </xacro:if>
-  
-  <!-- Allegro hand -->
-  <xacro:if value="${end_effector == 'allegro'}">
-    <xacro:include filename="$(find description)/robots/allegro.robot.xacro">
-      <xacro:arg name="gazebo" value="$(arg gazebo)"/>
-      <xacro:arg name="control" value="$(arg control)"/>
-      <xacro:arg name="biotac" value="$(arg biotac)"/>
-    </xacro:include>
-    
-    <!-- Include the KUKA mount -->
-    <xacro:include filename="${urdf_path}/mounts/lbr4_mount.urdf.xacro"/>
-    <xacro:lbr4_mount parent="${ee_mount_frame}"/>
-    
-    <joint name="lbr4_allegro" type="fixed">
-      <parent link="lbr4_mount"/>
-      <child link="allegro_mount"/>
-      <origin xyz="-0.0 0 -0.0" rpy="0 1.57 0"/>
-    </joint>
   </xacro:if>
 
   <!-- ReFlex Hand -->
