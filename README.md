@@ -36,6 +36,8 @@ echo "source ~/catkin_ws/devel/setup.bash" >> ~/.bashrc
 
 ## Troubleshooting
 
-- Gazebo dies down with ```[gazebo-2] process has died```, then run ```killall gzserver``` before restarting Gazebo. See this [issue](https://answers.gazebosim.org//question/4153/gazebo-crashes-immediately-using-roslaunch-after-installing-gazebo-ros-packages/).
+- Problems with Gazebo dies down with ```[gazebo-2] process has died```, then run ```killall gzserver``` before restarting Gazebo. See this [issue](https://answers.gazebosim.org//question/4153/gazebo-crashes-immediately-using-roslaunch-after-installing-gazebo-ros-packages/).
 
-- Gazebo in waiting state --> rosrun gazebo_ros gazebo
+## Acknowledgements
+
+- The robot description package was based on the ```ll4ma_robots_description``` package by the [Utah Learning Lab for Manipulation Autonomy](https://bitbucket.org/robot-learning/ll4ma_robots_description/src/main/). The parts that were unnecessary for this project were removed. The Reflex robotic hand was also modified to allow for basic actuation of the distal flexure.
