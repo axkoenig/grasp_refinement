@@ -1,7 +1,3 @@
-# vs code config
-.vscode
-thesis.code-workspace
-
 devel/
 logs/
 build/
