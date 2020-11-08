@@ -34,6 +34,11 @@ source ~/catkin_ws/devel/setup.bash
 echo "source ~/catkin_ws/devel/setup.bash" >> ~/.bashrc
 ```
 
+6. If you plan to modify this repository, install ```clang-format``` to enforce the ROS C++ style guide.
+```bash
+sudo apt-get install clang-format
+``` 
+
 ## Troubleshooting
 
 - Problems with Gazebo dies down with ```[gazebo-2] process has died```, then run ```killall gzserver``` before restarting Gazebo. See this [issue](https://answers.gazebosim.org//question/4153/gazebo-crashes-immediately-using-roslaunch-after-installing-gazebo-ros-packages/).
