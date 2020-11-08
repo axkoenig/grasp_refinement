@@ -5,23 +5,23 @@ lbr4_reflex:
     publish_rate: 500
 
   # Position Controllers ---------------------------------------
-  preshape_1_effort_controller:
+  preshape_j1_effort_controller:
     type: effort_controllers/JointEffortController
     joint: preshape_1
     pid: {p: 1.0, i: 0.0, d: 0.0}
-  preshape_2_effort_controller:
+  preshape_j2_effort_controller:
     type: effort_controllers/JointEffortController
     joint: preshape_2
     pid: {p: 1.0, i: 0.0, d: 0.0}
-  proximal_joint_1_effort_controller:
+  proximal_j1_effort_controller:
     type: effort_controllers/JointEffortController
     joint: proximal_joint_1
     pid: {p: 1.0, i: 0.0, d: 0.0}
-  proximal_joint_2_effort_controller:
+  proximal_j2_effort_controller:
     type: effort_controllers/JointEffortController
     joint: proximal_joint_2
     pid: {p: 1.0, i: 0.0, d: 0.0}
-  proximal_joint_3_effort_controller:
+  proximal_j3_effort_controller:
     type: effort_controllers/JointEffortController
     joint: proximal_joint_3
     pid: {p: 1.0, i: 0.0, d: 0.0}
