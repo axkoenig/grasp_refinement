@@ -4,9 +4,9 @@
 
 ## Install Software 
 
-1. Install ROS noetic by following the [official instructions](https://wiki.ros.org/noetic/Installation/Ubuntu)
+1. Install ROS noetic by following the [official instructions](https://wiki.ros.org/noetic/Installation/Ubuntu).
 
-2. Setup new catkin workspace
+2. Setup new catkin workspace.
 
 ```bash
 mkdir ~/catkin_ws/src -p
@@ -14,29 +14,29 @@ cd ~/catkin_ws/src
 catkin_init_workspace
 ```
 
-3. Clone repository into ```src``` folder
+3. Clone repository into ```src``` folder.
 
 ```bash
 git clone https://github.com/axkoenig/grasp_refinement.git
 ```
 
-4. Build workspace
+4. Build workspace.
 
 ```bash
 cd ~/catkin_ws
 catkin_make
 ```
 
-5. Source this workspace and, if you like, add it to your ```.bashrc```
+5. Source this workspace and, if you like, add it to your ```.bashrc```.
 
 ```bash
 source ~/catkin_ws/devel/setup.bash
 echo "source ~/catkin_ws/devel/setup.bash" >> ~/.bashrc
 ```
 
-6. If you plan to modify this repository, install ```clang-format``` to enforce the ROS C++ style guide.
+6. Install ROS controllers for robot control.
 ```bash
-sudo apt-get install clang-format
+sudo apt-get install ros-noetic-ros-control ros-noetic-ros-controllers
 ``` 
 
 ## Troubleshooting
