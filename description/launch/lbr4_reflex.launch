@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <launch>
+  <!-- THIS FILE LAUNCHES A SIMULATION OF KUKA LBR 4 ROBOT (OPTIONALLY WITH AN END EFFECTOR) -->
 
   <!-- robot arguments -->
   <arg name="end_effector"   default="reflex"  doc="[reflex, push_stick]"          />
@@ -26,7 +27,7 @@
           <arg name="use_sim_time" value="true" />
   </include>
   <node name="lbr4_reflex_spawn" pkg="gazebo_ros" type="spawn_model" output="screen"
-        args="-urdf -param robot_description -model lbr4_reflex" />
+        args="-urdf -param robot_description -model robot" />
 
   <param name="robot_description" command="
         $(find xacro)/xacro '$(find description)/robots/lbr4.robot.xacro'

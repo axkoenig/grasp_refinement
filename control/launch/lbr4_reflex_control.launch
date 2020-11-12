@@ -1,11 +1,12 @@
 <launch>
 
   <!-- Load joint controller configurations from YAML file to parameter server -->
-  <rosparam file="$(find control)/config/lbr4_reflex_control.yaml" command="load"/>
+  <rosparam file="$(find control)/config/lbr4_control.yaml" command="load"/>
+  <rosparam file="$(find control)/config/reflex_control.yaml" command="load"/>
 
   <!-- load the controllers -->
   <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
-    output="screen" ns="lbr4_reflex" 
+    output="screen" ns="robot" 
     args="joint_state_controller 
     preshape_j1_effort_controller 
     preshape_j2_effort_controller 
