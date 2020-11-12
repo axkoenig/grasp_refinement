@@ -1,31 +1,8 @@
-lbr4_reflex:
+robot:
   # Publish all joint states -----------------------------------
   joint_state_controller:
     type: joint_state_controller/JointStateController
     publish_rate: 500
-
-  # Position Controllers ---------------------------------------
-  preshape_j1_effort_controller:
-    type: effort_controllers/JointEffortController
-    joint: preshape_1
-    pid: {p: 1.0, i: 0.0, d: 0.0}
-  preshape_j2_effort_controller:
-    type: effort_controllers/JointEffortController
-    joint: preshape_2
-    pid: {p: 1.0, i: 0.0, d: 0.0}
-  proximal_j1_effort_controller:
-    type: effort_controllers/JointEffortController
-    joint: proximal_joint_1
-    pid: {p: 1.0, i: 0.0, d: 0.0}
-  proximal_j2_effort_controller:
-    type: effort_controllers/JointEffortController
-    joint: proximal_joint_2
-    pid: {p: 1.0, i: 0.0, d: 0.0}
-  proximal_j3_effort_controller:
-    type: effort_controllers/JointEffortController
-    joint: proximal_joint_3
-    pid: {p: 1.0, i: 0.0, d: 0.0}
-
 
   # Position Controllers needs to be tuned ---------------------------------------
   lbr4_j0_position_controller:
