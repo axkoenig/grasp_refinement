@@ -90,6 +90,6 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "reflex_controller");
   ros::NodeHandle nh;
-  ReflexController nc = ReflexController(&nh);
+  ReflexController rc = ReflexController(&nh);
   ros::spin();
 }
