@@ -1,0 +1,20 @@
+<?xml version="1.0" ?>
+<sdf version="1.4">
+  <world name="default">
+
+    <include>
+      <uri>model://sun</uri>
+    </include>
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+
+    <!-- modify camera view point to zoom in on reflex -->
+    <gui>
+      <camera name="user_camera">
+        <pose>0.211413 -0.480231 0.339124 0 0.499643 1.940195</pose>
+      </camera>
+    </gui>
+    
+  </world>
+</sdf>

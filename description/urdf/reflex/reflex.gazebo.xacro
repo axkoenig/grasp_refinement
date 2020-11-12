@@ -1,6 +1,21 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
+  <!-- if only reflex is spawned we also need to fire up ROS control plugin. If the
+  reflex hand is spawned in conjunction with the lbr4 robot the ROS control plugin is 
+  already loaded. TODO: maybe find a nicer solution for this -->
+  <xacro:arg name="only_reflex" default="false"/>
+
+  <xacro:if value="$(arg only_reflex)">
+    <gazebo>
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+      <!-- This tag gets rid of an error that popped up in version 8.6 -->
+      <legacyModeNS>true</legacyModeNS>
+      <robotNamespace>robot</robotNamespace>
+    </plugin>
+  </gazebo>
+  </xacro:if>
+
   <!-- ============================== Transmissions ============================== -->
 
   <xacro:include filename="$(find description)/urdf/reflex/reflex.transmission.xacro"/>

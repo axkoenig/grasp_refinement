@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- gazebo arguments  -->
+    <arg name="debug" default="false" />
+    <arg name="gui" default="true" />
+    <arg name="pause" default="true" />
+    <arg name="world_name" default="$(find description)/worlds/reflex.world" />
+
+    <!-- include gazebo_ros launcher -->
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="world_name" value="$(arg world_name)" />
+        <arg name="debug" value="$(arg debug)" />
+        <arg name="gui" value="$(arg gui)" />
+        <arg name="paused" value="$(arg pause)" />
+        <arg name="use_sim_time" value="true" />
+    </include>
+
+    <node name="reflex_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param robot_description -model reflex" />
+
+    <param name="robot_description" command="
+        $(find xacro)/xacro '$(find description)/robots/reflex.robot.xacro'
+        only_reflex:=true"/>
+</launch>

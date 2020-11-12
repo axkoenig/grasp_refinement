@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="reflex">
+
+    <xacro:property name="urdf_path" value="$(find description)/urdf"/>
+    <xacro:include filename="${urdf_path}/reflex/reflex.urdf.xacro"/>
+    <xacro:include filename="${urdf_path}/reflex/reflex.gazebo.xacro"/>
+
+    <!-- TODO maybe add Optoforce back onto Reflex (wait what Rob says) -->
+</robot>
