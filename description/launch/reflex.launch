@@ -19,6 +19,17 @@
     <node name="reflex_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param robot_description -model reflex" />
 
     <param name="robot_description" command="
-        $(find xacro)/xacro '$(find description)/robots/reflex.robot.xacro'
-        only_reflex:=true"/>
+        $(find xacro)/xacro '$(find description)/robots/reflex.robot.xacro' only_reflex:=true"/>
+
+    <!-- robot state publisher uses joint values from joint_state_publisher to publish poses of links to /tf2 -->
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
+        <remap from="/joint_states" to="/reflex/joint_states"/>
+    </node>
+
+    <node pkg="joint_state_publisher" type="joint_state_publisher" output="screen" name="joint_state_publisher">
+        <param name="publish_default_velocities" value="true"/>
+        <param name="publish_default_efforts" value="true"/>
+        <param name="rate" value="100"/>
+        <remap from="/joint_states" to="/reflex/joint_states"/>
+    </node>
 </launch>
