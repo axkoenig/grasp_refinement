@@ -1,8 +1,9 @@
 #include <string>
 #include <cmath>
-#include "ros/ros.h"
-#include "std_msgs/Float64.h"
-#include "gazebo_msgs/ContactsState.h"
+#include <ros/ros.h>
+#include <std_msgs/Float64.h>
+#include <gazebo_msgs/ContactsState.h>
+#include <reflex_msgs/Hand.h>
 
 class ReflexSensor
 {
