@@ -63,7 +63,6 @@ public:
 
     ReflexFinger(int finger_idx)
     {
-        ros::NodeHandle nh;
         finger_idx = finger_idx;
 
         sensors[0].setTopic(ns + "/proximal_" + std::to_string(finger_idx) + "_sensor_1_bumper");
@@ -109,7 +108,6 @@ int main(int argc, char **argv)
                 msg.finger[i].contact[j] = hand.fingers[i].sensors[j].getContact();
             }
         }
-        ROS_INFO("HERE");
         pub.publish(msg);
         ros::spinOnce();
         rate.sleep();
