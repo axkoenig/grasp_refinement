@@ -6,6 +6,14 @@
 #include <map>
 #include <termios.h>
 
+std::string node_name = "keyboard_teleop";
+std::string source_frame = "world";
+std::string target_frame = "reflex";
+double trans_scaling = 0.01;
+double rot_scaling = 0.05;
+
+// BEGIN CODE FROM https://github.com/methylDragon/teleop_twist_keyboard_cpp/blob/master/src/teleop_twist_keyboard.cpp
+
 // map for keys (note this is for my german keyboard)
 std::map<char, std::vector<float>> bindings{
 
@@ -24,18 +32,18 @@ std::map<char, std::vector<float>> bindings{
     {'L', {0, 0, 0, 0, 0, -1}},
 };
 
-// For non-blocking keyboard inputs
+// for non-blocking keyboard inputs
 int getch(void)
 {
     int ch;
     struct termios oldt;
     struct termios newt;
 
-    // Store old settings, and copy to new settings
+    // store old settings, and copy to new settings
     tcgetattr(STDIN_FILENO, &oldt);
     newt = oldt;
 
-    // Make required changes and apply the settings
+    // make required changes and apply the settings
     newt.c_lflag &= ~(ICANON | ECHO);
     newt.c_iflag |= IGNBRK;
     newt.c_iflag &= ~(INLCR | ICRNL | IXON | IXOFF);
@@ -44,28 +52,31 @@ int getch(void)
     newt.c_cc[VTIME] = 0;
     tcsetattr(fileno(stdin), TCSANOW, &newt);
 
-    // Get the current character
+    // get the current character
     ch = getchar();
 
-    // Reapply old settings
+    // reapply old settings
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 
     return ch;
 }
 
+// END CODE FROM https://github.com/methylDragon/teleop_twist_keyboard_cpp/blob/master/src/teleop_twist_keyboard.cpp
+
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "keyboard_teleop");
+    ros::init(argc, argv, node_name);
     ros::NodeHandle nh;
-    ros::Rate loop_rate(100);
+    ros::Rate rate(100);
+    ROS_INFO("Launched %s node.", node_name.c_str());
 
     static tf2_ros::TransformBroadcaster br;
     geometry_msgs::TransformStamped ts;
     tf2::Quaternion q;
 
     ts.header.stamp = ros::Time::now();
-    ts.header.frame_id = "world";
-    ts.child_frame_id = "reflex";
+    ts.header.frame_id = source_frame;
+    ts.child_frame_id = target_frame;
     ts.transform.translation.x = 0.0;
     ts.transform.translation.y = 0.0;
     ts.transform.translation.z = 0.0;
@@ -73,12 +84,14 @@ int main(int argc, char **argv)
     ts.transform.rotation.y = 0.0;
     ts.transform.rotation.z = 0.0;
     ts.transform.rotation.w = 1.0;
+    br.sendTransform(ts);
 
     double roll = 0.0;
     double pitch = 0.0;
     double yaw = 0.0;
-    double scaling_factor = 0.01;
     char key(' ');
+
+    ROS_INFO("Listening to keyboard input...");
 
     while (ros::ok())
     {
@@ -86,13 +99,13 @@ int main(int argc, char **argv)
 
         if (bindings.count(key) == 1)
         {
-            ts.transform.translation.x += scaling_factor * bindings[key][0];
-            ts.transform.translation.y += scaling_factor * bindings[key][1];
-            ts.transform.translation.z += scaling_factor * bindings[key][2];
+            ts.transform.translation.x += trans_scaling * bindings[key][0];
+            ts.transform.translation.y += trans_scaling * bindings[key][1];
+            ts.transform.translation.z += trans_scaling * bindings[key][2];
 
-            roll += scaling_factor * bindings[key][3];
-            pitch += scaling_factor * bindings[key][4];
-            yaw += scaling_factor * bindings[key][5];
+            roll += rot_scaling * bindings[key][3];
+            pitch += rot_scaling * bindings[key][4];
+            yaw += rot_scaling * bindings[key][5];
 
             // convert to quaternions
             q.setRPY(roll, pitch, yaw);
@@ -100,6 +113,7 @@ int main(int argc, char **argv)
             ts.transform.rotation.y = q.y();
             ts.transform.rotation.z = q.z();
             ts.transform.rotation.w = q.w();
+            ROS_INFO("Key pressed and transform updated.");
         }
 
         // terminate upon ctrl-C
@@ -108,9 +122,10 @@ int main(int argc, char **argv)
             break;
         }
 
+        ts.header.stamp = ros::Time::now();
         br.sendTransform(ts);
         ros::spinOnce();
-        loop_rate.sleep();
+        rate.sleep();
     }
 
     return 0;
