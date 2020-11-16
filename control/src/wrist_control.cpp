@@ -14,6 +14,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, node_name);
     ros::NodeHandle nh;
     ros::Publisher pub = nh.advertise<gazebo_msgs::ModelState>(topic_name, 1);
+    ROS_INFO("Launched %s node.", node_name.c_str());
 
     gazebo_msgs::ModelState msg;
     msg.reference_frame = source_frame;
