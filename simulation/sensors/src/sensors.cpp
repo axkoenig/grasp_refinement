@@ -5,22 +5,39 @@
 #include <gazebo_msgs/ContactsState.h>
 #include <reflex_msgs/Hand.h>
 
+std::string node_name = "sensor";
+std::string ns = "gazebo";
+std::string topic_name = "reflex/hand_state";
+
 class ReflexSensor
 {
 private:
+    ros::NodeHandle nh;
     ros::Subscriber sensor_sub;
-    double total_force = 0.0;
+    double pressure = 0.0;
+    bool contact = false;
 
 public:
-    ReflexSensor(ros::NodeHandle *nh, std::string topic)
+    double getPressure()
     {
-        sensor_sub = nh->subscribe(topic, 1, &ReflexSensor::callback, this);
+        return pressure;
+    }
+
+    bool getContact()
+    {
+        return contact;
+    }
+
+    void setTopic(std::string topic)
+    {
+        sensor_sub = nh.subscribe(topic, 1, &ReflexSensor::callback, this);
     }
 
     void callback(const gazebo_msgs::ContactsState &msg)
     {
         std::string sensor_name = msg.header.frame_id;
-        total_force = 0.0;
+        pressure = 0.0;
+        contact = false;
 
         if (!msg.states.empty())
         {
@@ -30,84 +47,71 @@ public:
             double fz = msg.states[0].total_wrench.force.z;
 
             // compute euclidean norm
-            total_force = sqrt(pow(fx, 2) + pow(fy, 2) + pow(fz, 2));
+            pressure = sqrt(pow(fx, 2) + pow(fy, 2) + pow(fz, 2));
+            contact = true;
         }
-        ROS_INFO("[%s]: [%lf]", sensor_name.c_str(), total_force);
     }
 };
 
-// class ReflexFinger
-// {
-// private:
-//     int finger_idx;
+class ReflexFinger
+{
+private:
+    int finger_idx;
 
-// public:
-//     ReflexFinger(ros::NodeHandle *nh, int finger_idx)
-//     {
-//         finger_idx = finger_idx;
-//         ReflexSensor proximal_sensor_1(nh, "gazebo/proximal_" + std::to_string(finger_idx) + "_sensor_1_bumper");
-//         ReflexSensor proximal_sensor_2(nh, "gazebo/proximal_" + std::to_string(finger_idx) + "_sensor_2_bumper");
-//         ReflexSensor proximal_sensor_3(nh, "gazebo/proximal_" + std::to_string(finger_idx) + "_sensor_3_bumper");
-//         ReflexSensor proximal_sensor_4(nh, "gazebo/proximal_" + std::to_string(finger_idx) + "_sensor_4_bumper");
-//         ReflexSensor proximal_sensor_5(nh, "gazebo/proximal_" + std::to_string(finger_idx) + "_sensor_5_bumper");
+public:
+    ReflexSensor sensors[9];
 
-//         ReflexSensor distal_sensor_1(nh, "gazebo/distal_" + std::to_string(finger_idx) + "_sensor_1_bumper");
-//         ReflexSensor distal_sensor_2(nh, "gazebo/distal_" + std::to_string(finger_idx) + "_sensor_2_bumper");
-//         ReflexSensor distal_sensor_3(nh, "gazebo/distal_" + std::to_string(finger_idx) + "_sensor_3_bumper");
-//         ReflexSensor distal_sensor_4(nh, "gazebo/distal_" + std::to_string(finger_idx) + "_sensor_4_bumper");
-//     }
-// };
+    ReflexFinger(int finger_idx)
+    {
+        ros::NodeHandle nh;
+        finger_idx = finger_idx;
 
-// class ReflexHand
-// {
-// public:
-//     ReflexHand(ros::NodeHandle *nh)
-//     {   
-//         ReflexFinger(nh, 1);
-//         ReflexFinger(nh, 2);
-//         ReflexFinger(nh, 3);
-//     }
-// };
+        sensors[0].setTopic(ns + "/proximal_" + std::to_string(finger_idx) + "_sensor_1_bumper");
+        sensors[1].setTopic(ns + "/proximal_" + std::to_string(finger_idx) + "_sensor_2_bumper");
+        sensors[2].setTopic(ns + "/proximal_" + std::to_string(finger_idx) + "_sensor_3_bumper");
+        sensors[3].setTopic(ns + "/proximal_" + std::to_string(finger_idx) + "_sensor_4_bumper");
+        sensors[4].setTopic(ns + "/proximal_" + std::to_string(finger_idx) + "_sensor_5_bumper");
+        sensors[5].setTopic(ns + "/distal_" + std::to_string(finger_idx) + "_sensor_1_bumper");
+        sensors[6].setTopic(ns + "/distal_" + std::to_string(finger_idx) + "_sensor_2_bumper");
+        sensors[7].setTopic(ns + "/distal_" + std::to_string(finger_idx) + "_sensor_3_bumper");
+        sensors[8].setTopic(ns + "/distal_" + std::to_string(finger_idx) + "_sensor_4_bumper");
+    }
+};
+
+class ReflexHand
+{
+public:
+    ReflexFinger fingers[3] = {ReflexFinger(0), ReflexFinger(1), ReflexFinger(2)};
+};
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "sensor");
+    ros::init(argc, argv, node_name);
     ros::NodeHandle nh;
+    ros::Publisher pub = nh.advertise<reflex_msgs::Hand>(topic_name, 1);
+    ROS_INFO("Launched %s node.", node_name.c_str());
 
-    // TODO get classes ReflexHand and ReflexFinger to work
+    ReflexHand hand;
+    reflex_msgs::Hand msg;
+    ros::Rate rate(50);
 
-    // finger 1 
-    ReflexSensor proximal_1_sensor_1 = ReflexSensor(&nh, "gazebo/proximal_1_sensor_1_bumper");
-    ReflexSensor proximal_1_sensor_2 = ReflexSensor(&nh, "gazebo/proximal_1_sensor_2_bumper");
-    ReflexSensor proximal_1_sensor_3 = ReflexSensor(&nh, "gazebo/proximal_1_sensor_3_bumper");
-    ReflexSensor proximal_1_sensor_4 = ReflexSensor(&nh, "gazebo/proximal_1_sensor_4_bumper");
-    ReflexSensor proximal_1_sensor_5 = ReflexSensor(&nh, "gazebo/proximal_1_sensor_5_bumper");
-    ReflexSensor distal_1_sensor_1 = ReflexSensor(&nh, "gazebo/distal_1_sensor_1_bumper");
-    ReflexSensor distal_1_sensor_2 = ReflexSensor(&nh, "gazebo/distal_1_sensor_2_bumper");
-    ReflexSensor distal_1_sensor_3 = ReflexSensor(&nh, "gazebo/distal_1_sensor_3_bumper");
-    ReflexSensor distal_1_sensor_4 = ReflexSensor(&nh, "gazebo/distal_1_sensor_4_bumper");
-
-    // finger 2
-    ReflexSensor proximal_2_sensor_1 = ReflexSensor(&nh, "gazebo/proximal_2_sensor_1_bumper");
-    ReflexSensor proximal_2_sensor_2 = ReflexSensor(&nh, "gazebo/proximal_2_sensor_2_bumper");
-    ReflexSensor proximal_2_sensor_3 = ReflexSensor(&nh, "gazebo/proximal_2_sensor_3_bumper");
-    ReflexSensor proximal_2_sensor_4 = ReflexSensor(&nh, "gazebo/proximal_2_sensor_4_bumper");
-    ReflexSensor proximal_2_sensor_5 = ReflexSensor(&nh, "gazebo/proximal_2_sensor_5_bumper");
-    ReflexSensor distal_2_sensor_1 = ReflexSensor(&nh, "gazebo/distal_2_sensor_1_bumper");
-    ReflexSensor distal_2_sensor_2 = ReflexSensor(&nh, "gazebo/distal_2_sensor_2_bumper");
-    ReflexSensor distal_2_sensor_3 = ReflexSensor(&nh, "gazebo/distal_2_sensor_3_bumper");
-    ReflexSensor distal_2_sensor_4 = ReflexSensor(&nh, "gazebo/distal_2_sensor_4_bumper");
-    
-    // finger 3
-    ReflexSensor proximal_3_sensor_1 = ReflexSensor(&nh, "gazebo/proximal_3_sensor_1_bumper");
-    ReflexSensor proximal_3_sensor_2 = ReflexSensor(&nh, "gazebo/proximal_3_sensor_2_bumper");
-    ReflexSensor proximal_3_sensor_3 = ReflexSensor(&nh, "gazebo/proximal_3_sensor_3_bumper");
-    ReflexSensor proximal_3_sensor_4 = ReflexSensor(&nh, "gazebo/proximal_3_sensor_4_bumper");
-    ReflexSensor proximal_3_sensor_5 = ReflexSensor(&nh, "gazebo/proximal_3_sensor_5_bumper");
-    ReflexSensor distal_3_sensor_1 = ReflexSensor(&nh, "gazebo/distal_3_sensor_1_bumper");
-    ReflexSensor distal_3_sensor_2 = ReflexSensor(&nh, "gazebo/distal_3_sensor_2_bumper");
-    ReflexSensor distal_3_sensor_3 = ReflexSensor(&nh, "gazebo/distal_3_sensor_3_bumper");
-    ReflexSensor distal_3_sensor_4 = ReflexSensor(&nh, "gazebo/distal_3_sensor_4_bumper");
-
-    ros::spin();
+    ROS_INFO("Starting to listen to Gazebo sensor values.");
+    ROS_INFO("Publishing to %s ...", topic_name.c_str());
+    while (ros::ok())
+    {
+        // iterate over fingers
+        for (int i = 0; i < 3; i++)
+        {
+            // iterate over sensors
+            for (int j = 0; j < 9; j++)
+            {
+                msg.finger[i].pressure[j] = hand.fingers[i].sensors[j].getPressure();
+                msg.finger[i].contact[j] = hand.fingers[i].sensors[j].getContact();
+            }
+        }
+        ROS_INFO("HERE");
+        pub.publish(msg);
+        ros::spinOnce();
+        rate.sleep();
+    }
 }
