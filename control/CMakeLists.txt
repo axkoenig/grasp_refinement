@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   std_srvs
+  geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -138,7 +139,7 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/control_node.cpp)
 add_executable(control_node src/reflex_control_node.cpp)
-add_executable(teleop_node src/keyboard_teleop_node.cpp)
+add_executable(wrist_control_node src/wrist_control.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -154,7 +155,7 @@ add_executable(teleop_node src/keyboard_teleop_node.cpp)
 target_link_libraries(control_node
   ${catkin_LIBRARIES}
 )
-target_link_libraries(teleop_node
+target_link_libraries(wrist_control_node
   ${catkin_LIBRARIES}
 )
 
