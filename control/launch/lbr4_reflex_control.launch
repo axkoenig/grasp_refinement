@@ -6,7 +6,7 @@
 
   <!-- load the controllers -->
   <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
-    output="screen" ns="robot" 
+    output="screen" ns="gazebo" 
     args="joint_state_controller 
     preshape_j1_effort_controller 
     preshape_j2_effort_controller 

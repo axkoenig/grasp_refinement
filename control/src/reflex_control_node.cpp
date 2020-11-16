@@ -26,11 +26,11 @@ private:
 public:
   ReflexController(ros::NodeHandle *nh)
   {
-    preshape_1_cmd_pub = nh->advertise<Float64>("/robot/preshape_j1_effort_controller/command", 1);
-    preshape_2_cmd_pub = nh->advertise<Float64>("/robot/preshape_j2_effort_controller/command", 1);
-    proximal_1_cmd_pub = nh->advertise<Float64>("/robot/proximal_j1_effort_controller/command", 1);
-    proximal_2_cmd_pub = nh->advertise<Float64>("/robot/proximal_j2_effort_controller/command", 1);
-    proximal_3_cmd_pub = nh->advertise<Float64>("/robot/proximal_j3_effort_controller/command", 1);
+    preshape_1_cmd_pub = nh->advertise<Float64>("/gazebo/preshape_j1_effort_controller/command", 1);
+    preshape_2_cmd_pub = nh->advertise<Float64>("/gazebo/preshape_j2_effort_controller/command", 1);
+    proximal_1_cmd_pub = nh->advertise<Float64>("/gazebo/proximal_j1_effort_controller/command", 1);
+    proximal_2_cmd_pub = nh->advertise<Float64>("/gazebo/proximal_j2_effort_controller/command", 1);
+    proximal_3_cmd_pub = nh->advertise<Float64>("/gazebo/proximal_j3_effort_controller/command", 1);
 
     open_service = nh->advertiseService("/reflex/open_hand", &ReflexController::callback_open, this);
     close_service = nh->advertiseService("/reflex/close_hand", &ReflexController::callback_close, this);
