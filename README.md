@@ -14,10 +14,10 @@ cd ~/catkin_ws/src
 catkin_init_workspace
 ```
 
-3. Clone repository into ```src``` folder.
+3. Clone repository with its submodules into ```src``` folder.
 
 ```bash
-git clone https://github.com/axkoenig/grasp_refinement.git
+git clone --recursive https://github.com/axkoenig/grasp_refinement.git
 ```
 
 4. Build workspace.
