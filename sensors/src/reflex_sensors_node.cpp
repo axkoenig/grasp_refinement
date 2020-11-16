@@ -44,16 +44,16 @@ public:
 //     ReflexFinger(ros::NodeHandle *nh, int finger_idx)
 //     {
 //         finger_idx = finger_idx;
-//         ReflexSensor proximal_sensor_1(nh, "reflex/proximal_" + std::to_string(finger_idx) + "_sensor_1_bumper");
-//         ReflexSensor proximal_sensor_2(nh, "reflex/proximal_" + std::to_string(finger_idx) + "_sensor_2_bumper");
-//         ReflexSensor proximal_sensor_3(nh, "reflex/proximal_" + std::to_string(finger_idx) + "_sensor_3_bumper");
-//         ReflexSensor proximal_sensor_4(nh, "reflex/proximal_" + std::to_string(finger_idx) + "_sensor_4_bumper");
-//         ReflexSensor proximal_sensor_5(nh, "reflex/proximal_" + std::to_string(finger_idx) + "_sensor_5_bumper");
+//         ReflexSensor proximal_sensor_1(nh, "gazebo/proximal_" + std::to_string(finger_idx) + "_sensor_1_bumper");
+//         ReflexSensor proximal_sensor_2(nh, "gazebo/proximal_" + std::to_string(finger_idx) + "_sensor_2_bumper");
+//         ReflexSensor proximal_sensor_3(nh, "gazebo/proximal_" + std::to_string(finger_idx) + "_sensor_3_bumper");
+//         ReflexSensor proximal_sensor_4(nh, "gazebo/proximal_" + std::to_string(finger_idx) + "_sensor_4_bumper");
+//         ReflexSensor proximal_sensor_5(nh, "gazebo/proximal_" + std::to_string(finger_idx) + "_sensor_5_bumper");
 
-//         ReflexSensor distal_sensor_1(nh, "reflex/distal_" + std::to_string(finger_idx) + "_sensor_1_bumper");
-//         ReflexSensor distal_sensor_2(nh, "reflex/distal_" + std::to_string(finger_idx) + "_sensor_2_bumper");
-//         ReflexSensor distal_sensor_3(nh, "reflex/distal_" + std::to_string(finger_idx) + "_sensor_3_bumper");
-//         ReflexSensor distal_sensor_4(nh, "reflex/distal_" + std::to_string(finger_idx) + "_sensor_4_bumper");
+//         ReflexSensor distal_sensor_1(nh, "gazebo/distal_" + std::to_string(finger_idx) + "_sensor_1_bumper");
+//         ReflexSensor distal_sensor_2(nh, "gazebo/distal_" + std::to_string(finger_idx) + "_sensor_2_bumper");
+//         ReflexSensor distal_sensor_3(nh, "gazebo/distal_" + std::to_string(finger_idx) + "_sensor_3_bumper");
+//         ReflexSensor distal_sensor_4(nh, "gazebo/distal_" + std::to_string(finger_idx) + "_sensor_4_bumper");
 //     }
 // };
 
@@ -76,37 +76,37 @@ int main(int argc, char **argv)
     // TODO get classes ReflexHand and ReflexFinger to work
 
     // finger 1 
-    ReflexSensor proximal_1_sensor_1 = ReflexSensor(&nh, "reflex/proximal_1_sensor_1_bumper");
-    ReflexSensor proximal_1_sensor_2 = ReflexSensor(&nh, "reflex/proximal_1_sensor_2_bumper");
-    ReflexSensor proximal_1_sensor_3 = ReflexSensor(&nh, "reflex/proximal_1_sensor_3_bumper");
-    ReflexSensor proximal_1_sensor_4 = ReflexSensor(&nh, "reflex/proximal_1_sensor_4_bumper");
-    ReflexSensor proximal_1_sensor_5 = ReflexSensor(&nh, "reflex/proximal_1_sensor_5_bumper");
-    ReflexSensor distal_1_sensor_1 = ReflexSensor(&nh, "reflex/distal_1_sensor_1_bumper");
-    ReflexSensor distal_1_sensor_2 = ReflexSensor(&nh, "reflex/distal_1_sensor_2_bumper");
-    ReflexSensor distal_1_sensor_3 = ReflexSensor(&nh, "reflex/distal_1_sensor_3_bumper");
-    ReflexSensor distal_1_sensor_4 = ReflexSensor(&nh, "reflex/distal_1_sensor_4_bumper");
+    ReflexSensor proximal_1_sensor_1 = ReflexSensor(&nh, "gazebo/proximal_1_sensor_1_bumper");
+    ReflexSensor proximal_1_sensor_2 = ReflexSensor(&nh, "gazebo/proximal_1_sensor_2_bumper");
+    ReflexSensor proximal_1_sensor_3 = ReflexSensor(&nh, "gazebo/proximal_1_sensor_3_bumper");
+    ReflexSensor proximal_1_sensor_4 = ReflexSensor(&nh, "gazebo/proximal_1_sensor_4_bumper");
+    ReflexSensor proximal_1_sensor_5 = ReflexSensor(&nh, "gazebo/proximal_1_sensor_5_bumper");
+    ReflexSensor distal_1_sensor_1 = ReflexSensor(&nh, "gazebo/distal_1_sensor_1_bumper");
+    ReflexSensor distal_1_sensor_2 = ReflexSensor(&nh, "gazebo/distal_1_sensor_2_bumper");
+    ReflexSensor distal_1_sensor_3 = ReflexSensor(&nh, "gazebo/distal_1_sensor_3_bumper");
+    ReflexSensor distal_1_sensor_4 = ReflexSensor(&nh, "gazebo/distal_1_sensor_4_bumper");
 
     // finger 2
-    ReflexSensor proximal_2_sensor_1 = ReflexSensor(&nh, "reflex/proximal_2_sensor_1_bumper");
-    ReflexSensor proximal_2_sensor_2 = ReflexSensor(&nh, "reflex/proximal_2_sensor_2_bumper");
-    ReflexSensor proximal_2_sensor_3 = ReflexSensor(&nh, "reflex/proximal_2_sensor_3_bumper");
-    ReflexSensor proximal_2_sensor_4 = ReflexSensor(&nh, "reflex/proximal_2_sensor_4_bumper");
-    ReflexSensor proximal_2_sensor_5 = ReflexSensor(&nh, "reflex/proximal_2_sensor_5_bumper");
-    ReflexSensor distal_2_sensor_1 = ReflexSensor(&nh, "reflex/distal_2_sensor_1_bumper");
-    ReflexSensor distal_2_sensor_2 = ReflexSensor(&nh, "reflex/distal_2_sensor_2_bumper");
-    ReflexSensor distal_2_sensor_3 = ReflexSensor(&nh, "reflex/distal_2_sensor_3_bumper");
-    ReflexSensor distal_2_sensor_4 = ReflexSensor(&nh, "reflex/distal_2_sensor_4_bumper");
+    ReflexSensor proximal_2_sensor_1 = ReflexSensor(&nh, "gazebo/proximal_2_sensor_1_bumper");
+    ReflexSensor proximal_2_sensor_2 = ReflexSensor(&nh, "gazebo/proximal_2_sensor_2_bumper");
+    ReflexSensor proximal_2_sensor_3 = ReflexSensor(&nh, "gazebo/proximal_2_sensor_3_bumper");
+    ReflexSensor proximal_2_sensor_4 = ReflexSensor(&nh, "gazebo/proximal_2_sensor_4_bumper");
+    ReflexSensor proximal_2_sensor_5 = ReflexSensor(&nh, "gazebo/proximal_2_sensor_5_bumper");
+    ReflexSensor distal_2_sensor_1 = ReflexSensor(&nh, "gazebo/distal_2_sensor_1_bumper");
+    ReflexSensor distal_2_sensor_2 = ReflexSensor(&nh, "gazebo/distal_2_sensor_2_bumper");
+    ReflexSensor distal_2_sensor_3 = ReflexSensor(&nh, "gazebo/distal_2_sensor_3_bumper");
+    ReflexSensor distal_2_sensor_4 = ReflexSensor(&nh, "gazebo/distal_2_sensor_4_bumper");
     
     // finger 3
-    ReflexSensor proximal_3_sensor_1 = ReflexSensor(&nh, "reflex/proximal_3_sensor_1_bumper");
-    ReflexSensor proximal_3_sensor_2 = ReflexSensor(&nh, "reflex/proximal_3_sensor_2_bumper");
-    ReflexSensor proximal_3_sensor_3 = ReflexSensor(&nh, "reflex/proximal_3_sensor_3_bumper");
-    ReflexSensor proximal_3_sensor_4 = ReflexSensor(&nh, "reflex/proximal_3_sensor_4_bumper");
-    ReflexSensor proximal_3_sensor_5 = ReflexSensor(&nh, "reflex/proximal_3_sensor_5_bumper");
-    ReflexSensor distal_3_sensor_1 = ReflexSensor(&nh, "reflex/distal_3_sensor_1_bumper");
-    ReflexSensor distal_3_sensor_2 = ReflexSensor(&nh, "reflex/distal_3_sensor_2_bumper");
-    ReflexSensor distal_3_sensor_3 = ReflexSensor(&nh, "reflex/distal_3_sensor_3_bumper");
-    ReflexSensor distal_3_sensor_4 = ReflexSensor(&nh, "reflex/distal_3_sensor_4_bumper");
+    ReflexSensor proximal_3_sensor_1 = ReflexSensor(&nh, "gazebo/proximal_3_sensor_1_bumper");
+    ReflexSensor proximal_3_sensor_2 = ReflexSensor(&nh, "gazebo/proximal_3_sensor_2_bumper");
+    ReflexSensor proximal_3_sensor_3 = ReflexSensor(&nh, "gazebo/proximal_3_sensor_3_bumper");
+    ReflexSensor proximal_3_sensor_4 = ReflexSensor(&nh, "gazebo/proximal_3_sensor_4_bumper");
+    ReflexSensor proximal_3_sensor_5 = ReflexSensor(&nh, "gazebo/proximal_3_sensor_5_bumper");
+    ReflexSensor distal_3_sensor_1 = ReflexSensor(&nh, "gazebo/distal_3_sensor_1_bumper");
+    ReflexSensor distal_3_sensor_2 = ReflexSensor(&nh, "gazebo/distal_3_sensor_2_bumper");
+    ReflexSensor distal_3_sensor_3 = ReflexSensor(&nh, "gazebo/distal_3_sensor_3_bumper");
+    ReflexSensor distal_3_sensor_4 = ReflexSensor(&nh, "gazebo/distal_3_sensor_4_bumper");
 
     ros::spin();
 }

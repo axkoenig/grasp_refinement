@@ -71,7 +71,7 @@
   <xacro:macro name="reflex_sensor" params="location finger_id sensor_id">
 
     <xacro:property name="link_name" value="${location}_${finger_id}_sensor_${sensor_id}"/>
-    <xacro:property name="sensor_name" value="reflex/${link_name}"/>
+    <xacro:property name="sensor_name" value="gazebo/${link_name}"/>
 
     <gazebo reference="${link_name}">
       <selfCollide value="true" />
