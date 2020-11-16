@@ -46,3 +46,4 @@ sudo apt-get install ros-noetic-ros-control ros-noetic-ros-controllers
 ## Acknowledgements
 
 - The robot description package was originally based on the ```ll4ma_robots_description``` package by the [Utah Learning Lab for Manipulation Autonomy](https://bitbucket.org/robot-learning/ll4ma_robots_description/src/main/). The parts that were unnecessary for this project were removed. The Reflex robotic hand was also modified to allow for basic actuation of the distal flexure.
+- Developer of [teleop_twist_keyboard.cpp](https://github.com/methylDragon/teleop_twist_keyboard_cpp/blob/master/src/teleop_twist_keyboard.cpp) for making code of non-blocking keyboard input public. Used in my keyboard teleoperation node. 
