@@ -1,6 +1,10 @@
 <?xml version="1.0"?>
 <launch>
 
+    <!-- custom arguments -->
+    <arg name="run_sensors_node" default="false" />
+    <arg name="launch_finger_controllers" default="true" />
+
     <!-- gazebo arguments  -->
     <arg name="debug" default="false" />
     <arg name="gui" default="true" />
@@ -32,4 +36,16 @@
         <param name="rate" value="100"/>
         <remap from="/joint_states" to="/reflex/joint_states"/>
     </node>
+
+    <!-- Launch controllers -->
+    <group if="$(arg launch_finger_controllers)">
+        <include file="$(find controllers)/launch/reflex_control.launch" />
+    </group>
+
+    <!-- Sensors node -->
+    <group if="$(arg run_sensors_node)">
+        <node pkg="sensors" type="sensors_node" name="sensors_node" respawn="true"/>
+    </group>
+    
+
 </launch>
