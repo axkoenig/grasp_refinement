@@ -39,7 +39,7 @@ public:
         std::string sensor_name = msg.header.frame_id;
         pressure = 0.0;
         contact = false;
-        num_contacts = sizeof(msg.states);
+        num_contacts = msg.states.size();
 
         if (num_contacts > 0)
         {
