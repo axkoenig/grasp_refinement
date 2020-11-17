@@ -16,6 +16,7 @@ private:
     ros::Subscriber sensor_sub;
     double pressure = 0.0;
     bool contact = false;
+    int num_contacts = 0;
 
 public:
     double getPressure()
@@ -38,16 +39,20 @@ public:
         std::string sensor_name = msg.header.frame_id;
         pressure = 0.0;
         contact = false;
+        num_contacts = sizeof(msg.states);
 
-        if (!msg.states.empty())
+        if (num_contacts > 0)
         {
-            // retrieve force components of first contact
-            double fx = msg.states[0].total_wrench.force.x;
-            double fy = msg.states[0].total_wrench.force.y;
-            double fz = msg.states[0].total_wrench.force.z;
+            for (int i = 0; i < num_contacts; i++)
+            {
+                // retrieve force components of first contact
+                double fx = msg.states[i].total_wrench.force.x;
+                double fy = msg.states[i].total_wrench.force.y;
+                double fz = msg.states[i].total_wrench.force.z;
 
-            // compute euclidean norm
-            pressure = sqrt(pow(fx, 2) + pow(fy, 2) + pow(fz, 2));
+                // compute euclidean norm (note this is actually a force)
+                pressure += sqrt(pow(fx, 2) + pow(fy, 2) + pow(fz, 2));
+            }
             contact = true;
         }
     }
