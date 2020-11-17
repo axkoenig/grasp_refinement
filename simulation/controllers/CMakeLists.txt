@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(control_module)
+project(controllers)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -8,9 +8,13 @@ project(control_module)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  tf2
-  tf2_ros
+  controller_manager
+  joint_state_controller
+  robot_state_publisher
+  rospy
+  std_msgs
+  std_srvs
+  geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -70,7 +74,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
+#   std_msgs
 # )
 
 ################################################
@@ -104,8 +108,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES control_module
-#  CATKIN_DEPENDS roscpp tf2 tf2_ros
+#  LIBRARIES controllers
+#  CATKIN_DEPENDS controller_manager joint_state_controller robot_state_publisher rospy std_msgs std_srvs
 #  DEPENDS system_lib
 )
 
@@ -122,7 +126,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/control_module.cpp
+#   src/${PROJECT_NAME}/controllers.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -133,7 +137,9 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(keyboard_teleop_node src/keyboard_teleop.cpp)
+# add_executable(${PROJECT_NAME}_node src/finger_control_node.cpp)
+add_executable(finger_control_node src/finger_controller.cpp)
+add_executable(wrist_control_node src/wrist_controller.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -146,7 +152,10 @@ add_executable(keyboard_teleop_node src/keyboard_teleop.cpp)
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(keyboard_teleop_node
+target_link_libraries(finger_control_node
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(wrist_control_node
   ${catkin_LIBRARIES}
 )
 
@@ -197,7 +206,7 @@ target_link_libraries(keyboard_teleop_node
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_control_module.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_control.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

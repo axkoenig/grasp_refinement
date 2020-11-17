@@ -1,7 +1,7 @@
 <launch>
 
   <!-- Load joint controller configurations from YAML file to parameter server -->
-  <rosparam file="$(find control)/config/reflex_control.yaml" command="load"/>
+  <rosparam file="$(find controllers)/config/reflex_control.yaml" command="load"/>
 
   <!-- load the controllers -->
   <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
@@ -14,6 +14,6 @@
     proximal_j3_effort_controller"/>
   
   <!-- launch custom reflex controller for open/close services-->
-  <node pkg="control" type="control_node" name="reflex_actuation" respawn="true"/>
+  <node pkg="controllers" type="finger_control_node" name="reflex_actuation" respawn="true"/>
 
 </launch>

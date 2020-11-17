@@ -266,6 +266,7 @@
 
   <xacro:macro name="sensor_joint" params="location finger_id sensor_id">
     <joint name="${location}_${finger_id}_to_sensor_${sensor_id}" type="fixed">
+    <!-- TODO check why z_offset is different for distal and proximal  -->
       <xacro:if value="${location == 'proximal'}">
         <xacro:property name="x_offset" value="0.012"/>
         <xacro:property name="x_gap" value="0.008"/>
