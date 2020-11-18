@@ -1,3 +1,0 @@
-[submodule "drivers/reflex-ros-pkg"]
-	path = drivers/reflex-ros-pkg
-	url = https://github.com/RightHandRobotics/reflex-ros-pkg
