@@ -5,9 +5,22 @@
 #include <gazebo_msgs/ContactsState.h>
 #include <reflex_msgs/Hand.h>
 
+// remove
+#include <iostream>
+
 std::string node_name = "sensor";
 std::string ns = "gazebo";
 std::string topic_name = "reflex/hand_state";
+
+double calcDotProduct(double vec_1[], double vec_2[], int dim)
+{
+    double result = 0.0;
+    for (int i = 0; i < dim; i++)
+    {
+        result += vec_1[i] * vec_2[i];
+    }
+    return result;
+}
 
 class ReflexSensor
 {
@@ -18,10 +31,13 @@ private:
     bool contact = false;
     int num_contacts = 0;
 
+    // TODO: find real scaling factor (for now pressure magnitudes don't matter)
+    double scaling_factor = 1.0;
+
 public:
     double getPressure()
     {
-        return pressure;
+        return pressure * scaling_factor;
     }
 
     bool getContact()
@@ -43,17 +59,29 @@ public:
 
         if (num_contacts > 0)
         {
+            contact = true;
+            
             for (int i = 0; i < num_contacts; i++)
             {
-                // retrieve force components of first contact
-                double fx = msg.states[i].total_wrench.force.x;
-                double fy = msg.states[i].total_wrench.force.y;
-                double fz = msg.states[i].total_wrench.force.z;
+                // TODO: find out why we get multiple wrenches for the same contact
+                int num_wrenches = msg.states[i].wrenches.size();
 
-                // compute euclidean norm (note this is actually a force)
-                pressure += sqrt(pow(fx, 2) + pow(fy, 2) + pow(fz, 2));
+                for (int j = 0; j < num_wrenches; j++)
+                {
+                    // wrench force
+                    double f[] = {msg.states[i].wrenches[j].force.x,
+                                  msg.states[i].wrenches[j].force.y,
+                                  msg.states[i].wrenches[j].force.z};
+
+                    // contact normal
+                    double n[] = {msg.states[i].contact_normals[j].x,
+                                  msg.states[i].contact_normals[j].y,
+                                  msg.states[i].contact_normals[j].z};
+
+                    // add only wrench force in normal direction
+                    pressure += calcDotProduct(f, n, 3);
+                }
             }
-            contact = true;
         }
     }
 };
