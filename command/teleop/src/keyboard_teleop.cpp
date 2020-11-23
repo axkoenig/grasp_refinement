@@ -94,17 +94,8 @@ int main(int argc, char **argv)
     geometry_msgs::TransformStamped ts;
     tf2::Quaternion q;
 
-    ts.header.stamp = ros::Time::now();
     ts.header.frame_id = source_frame;
     ts.child_frame_id = target_frame;
-    ts.transform.translation.x = 0.0;
-    ts.transform.translation.y = 0.0;
-    ts.transform.translation.z = 0.0;
-    ts.transform.rotation.x = 0.0;
-    ts.transform.rotation.y = 0.0;
-    ts.transform.rotation.z = 0.0;
-    ts.transform.rotation.w = 1.0;
-    br.sendTransform(ts);
 
     double roll = 0.0;
     double pitch = 0.0;
@@ -116,7 +107,7 @@ int main(int argc, char **argv)
     while (ros::ok())
     {
         key = getch();
-        
+
         // WRIST CONTROL --------------------------------------------------------
         if (wrist_bindings.count(key) == 1)
         {
@@ -136,6 +127,17 @@ int main(int argc, char **argv)
             ts.transform.rotation.w = q.w();
             ROS_INFO("Wrist transform updated.");
         }
+        else if (key == 'm')
+        {
+            // reset wrist to world frame
+            ts.transform.translation.x = 0;
+            ts.transform.translation.y = 0;
+            ts.transform.translation.z = 0;
+            ts.transform.rotation.x = 0;
+            ts.transform.rotation.y = 0;
+            ts.transform.rotation.z = 0;
+            ts.transform.rotation.w = 1;
+        }
         ts.header.stamp = ros::Time::now();
         br.sendTransform(ts);
 
@@ -147,6 +149,7 @@ int main(int argc, char **argv)
                                   finger_scaling * finger_bindings[key][2],
                                   finger_scaling * finger_bindings[key][3]};
             rc.updatePosIncrement(increment);
+            ROS_INFO("Reflex finger positions updated.");
         }
         rc.sendCommands();
 
@@ -155,14 +158,14 @@ int main(int argc, char **argv)
         {
         case 'y':
         {
-            ROS_INFO("Sent Reflex close command.");
             rc.executePrimitive(rc.Primitive::Close);
+            ROS_INFO("Sent Reflex close command.");
             break;
         }
         case 'x':
         {
-            ROS_INFO("Sent Reflex open command.");
             rc.executePrimitive(rc.Primitive::Open);
+            ROS_INFO("Sent Reflex open command.");
             break;
         }
         }
