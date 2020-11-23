@@ -3,6 +3,8 @@
 
     <!-- custom arguments -->
     <arg name="run_sensors_node" default="true" />
+    <arg name="run_wrist_controller_node" default="true" />
+    <arg name="run_teleop_node" default="true" />
     <arg name="launch_finger_controllers" default="true" />
 
     <!-- gazebo arguments  -->
@@ -45,6 +47,16 @@
     <!-- Sensors node -->
     <group if="$(arg run_sensors_node)">
         <node pkg="sensors" type="sensors_node" name="sensors_node" respawn="true"/>
+    </group>
+
+    <!-- Wrist controller node -->
+    <group if="$(arg run_wrist_controller_node)">
+        <node pkg="controllers" type="wrist_control_node" name="wrist_control_node" respawn="true"/>
+    </group>
+
+    <!-- Keyboard teleoperation node -->
+    <group if="$(arg run_teleop_node)">
+        <node pkg="teleop" type="teleop_node" name="teleop_node" respawn="false"/>
     </group>
     
 
