@@ -2,6 +2,8 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <geometry_msgs/TransformStamped.h>
+#include <tf2/LinearMath/Transform.h>
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 
 #include <iostream>
 #include <map>
@@ -92,14 +94,22 @@ int main(int argc, char **argv)
 
     static tf2_ros::TransformBroadcaster br;
     geometry_msgs::TransformStamped ts;
-    tf2::Quaternion q;
 
+    // init transform for wrist calculations
+    tf2::Transform transform(tf2::Quaternion{0, 0, 0, 1}, tf2::Vector3{0, 0, 0});
+
+    // populate and send first wrist transform
     ts.header.frame_id = source_frame;
     ts.child_frame_id = target_frame;
-
-    double roll = 0.0;
-    double pitch = 0.0;
-    double yaw = 0.0;
+    ts.transform.translation.x = 0;
+    ts.transform.translation.y = 0;
+    ts.transform.translation.z = 0;
+    ts.transform.rotation.x = 0;
+    ts.transform.rotation.y = 0;
+    ts.transform.rotation.z = 0;
+    ts.transform.rotation.w = 1;
+    ts.header.stamp = ros::Time::now();
+    br.sendTransform(ts);
     char key(' ');
 
     ROS_INFO("Listening to keyboard input...");
@@ -111,34 +121,29 @@ int main(int argc, char **argv)
         // WRIST CONTROL --------------------------------------------------------
         if (wrist_bindings.count(key) == 1)
         {
-            ts.transform.translation.x += trans_scaling * wrist_bindings[key][0];
-            ts.transform.translation.y += trans_scaling * wrist_bindings[key][1];
-            ts.transform.translation.z += trans_scaling * wrist_bindings[key][2];
+            // incremental translation
+            tf2::Vector3 t(wrist_bindings[key][0], wrist_bindings[key][1], wrist_bindings[key][2]);
+            tf2::Transform transl_incr(tf2::Quaternion{0, 0, 0, 1}, t * trans_scaling);
 
-            roll += rot_scaling * wrist_bindings[key][3];
-            pitch += rot_scaling * wrist_bindings[key][4];
-            yaw += rot_scaling * wrist_bindings[key][5];
+            // incremental rotation
+            tf2::Quaternion q;
+            q.setRPY(wrist_bindings[key][3] * rot_scaling, wrist_bindings[key][4] * rot_scaling, wrist_bindings[key][5] * rot_scaling);
+            tf2::Transform rot_incr(q, tf2::Vector3{0, 0, 0});
 
-            // convert to quaternions
-            q.setRPY(roll, pitch, yaw);
-            ts.transform.rotation.x = q.x();
-            ts.transform.rotation.y = q.y();
-            ts.transform.rotation.z = q.z();
-            ts.transform.rotation.w = q.w();
+            // translate to origin, rotate incrementally, translate back incrementally
+            tf2::Transform transl_origin(tf2::Quaternion{0, 0, 0, 1}, transform.getOrigin());
+            transform = transform * transl_origin.inverse() * rot_incr * transl_origin * transl_incr;
+
             ROS_INFO("Wrist transform updated.");
         }
         else if (key == 'm')
         {
             // reset wrist to world frame
-            ts.transform.translation.x = 0;
-            ts.transform.translation.y = 0;
-            ts.transform.translation.z = 0;
-            ts.transform.rotation.x = 0;
-            ts.transform.rotation.y = 0;
-            ts.transform.rotation.z = 0;
-            ts.transform.rotation.w = 1;
+            transform.setIdentity();
+            ROS_INFO("Wrist transform reset.");
         }
         ts.header.stamp = ros::Time::now();
+        ts.transform = tf2::toMsg(transform);
         br.sendTransform(ts);
 
         // FINGER CONTROL (TELEOP) ----------------------------------------------
