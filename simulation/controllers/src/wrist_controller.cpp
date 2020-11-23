@@ -26,7 +26,7 @@ int main(int argc, char **argv)
     msg.pose.orientation.x = 0.0;
     msg.pose.orientation.y = 0.0;
     msg.pose.orientation.z = 0.0;
-    msg.pose.orientation.w = 0.0;
+    msg.pose.orientation.w = 1.0;
 
     // TODO: attention if I run this in a simulation (e.g. on a HPC) this rate might
     // not be sufficient to keep the hand in the desired pose because the frames are executed
