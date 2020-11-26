@@ -8,7 +8,7 @@
     <!-- gazebo arguments  -->
     <arg name="debug" default="false" />
     <arg name="gui" default="true" />
-    <arg name="pause" default="true" />
+    <arg name="pause" default="false" />
     <arg name="world_name" default="$(find description)/worlds/reflex.world" />
 
     <!-- include gazebo_ros launcher -->
