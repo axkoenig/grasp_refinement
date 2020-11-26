@@ -11,8 +11,15 @@
     preshape_j2_effort_controller 
     proximal_j1_effort_controller 
     proximal_j2_effort_controller 
-    proximal_j3_effort_controller"/>
-  
+    proximal_j3_effort_controller
+    finger_1_proximal_to_flex_position_controller
+    finger_2_proximal_to_flex_position_controller
+    finger_3_proximal_to_flex_position_controller
+    finger_1_flex_to_distal_position_controller
+    finger_2_flex_to_distal_position_controller
+    finger_3_flex_to_distal_position_controller
+    "/>
+
   <!-- launch custom reflex controller for open/close services-->
   <node pkg="controllers" type="finger_control_node" name="reflex_actuation" respawn="true"/>
 

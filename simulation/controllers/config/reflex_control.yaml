@@ -25,3 +25,30 @@ gazebo:
     type: effort_controllers/JointEffortController
     joint: proximal_joint_3
     pid: {p: 1.0, i: 0.0, d: 0.0}
+
+  # Flexure position Controllers ---------------------------------------
+  finger_1_proximal_to_flex_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: proximal_1_to_flex
+    pid: {p: 0.05, i: 0.0, d: 0.0}
+  finger_2_proximal_to_flex_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: proximal_2_to_flex
+    pid: {p: 0.05, i: 0.0, d: 0.0}
+  finger_3_proximal_to_flex_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: proximal_3_to_flex
+    pid: {p: 0.05, i: 0.0, d: 0.0}
+
+  finger_1_flex_to_distal_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: flex_to_distal_1
+    pid: {p: 0.05, i: 0.0, d: 0.0}
+  finger_2_flex_to_distal_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: flex_to_distal_2
+    pid: {p: 0.05, i: 0.0, d: 0.0}
+  finger_3_flex_to_distal_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: flex_to_distal_3
+    pid: {p: 0.05, i: 0.0, d: 0.0}
