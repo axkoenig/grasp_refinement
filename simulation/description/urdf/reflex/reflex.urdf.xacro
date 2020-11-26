@@ -34,44 +34,53 @@
   </material>
 
   <!-- ======================================= Masses ======================================== -->
-  <!-- These are rough approximations, the total hand mass was measured to be about 0.9kg,     -->
-  <!-- most of it concentrated in the shell anyways, so for sake of arm controller, most mass  -->
-  <!-- is being given to shell/pad, treating fingers as almost massless, so that KDL chain for -->
-  <!-- arm can just go through the palm pad and be accounting for most of the hand mass.       -->
+  <!-- These are rough approximations, the total hand mass was measured to be about 0.9kg     -->
+  <!-- final mass: 0.6+0.03+2*0.02+3*(0.025+0.015+0.01+0.02+0.01) = 0.91 -->
 
+  <xacro:property name="shell_mass" value="0.6"/>
+  <xacro:property name="pad_mass" value="0.03"/>
+  <!-- these links occur twice -->
+  <xacro:property name="swivel_link_mass" value="0.02"/>
+  <!-- these links occur three times (once on each finger) -->
+  <xacro:property name="proximal_link_mass" value="0.025"/>
+  <xacro:property name="proximal_pad_mass" value="0.015"/>
   <xacro:property name="flex_link_mass" value="0.01"/>
-  <xacro:property name="proximal_link_mass" value="0.01"/>
-  <xacro:property name="distal_link_mass" value="0.01"/>
-  <xacro:property name="proximal_pad_mass" value="0.01"/>
+  <xacro:property name="distal_link_mass" value="0.02"/>
   <xacro:property name="distal_pad_mass" value="0.01"/>
-  <xacro:property name="swivel_link_mass" value="0.01"/>
-  <xacro:property name="shell_mass" value="0.74"/>
-  <xacro:property name="pad_mass" value="0.1"/>
 
   <!-- ====================================== Link Macros ==================================== -->
+
+  <xacro:property name="flex_link_box_x" value="0.017"/>
+  <xacro:property name="flex_link_box_y" value="0.014"/>
+  <xacro:property name="flex_link_box_z" value="0.0065"/>
 
   <xacro:macro name="flex_link" params="finger_id">
     <link name="finger_${finger_id}_flex_link">
       <visual>
-        <origin xyz="0.0005 0 -0.003" rpy="0 0 0"/>
+        <origin xyz="${flex_link_box_x/2} 0 ${flex_link_box_z/2}" rpy="0 0 0"/>
         <geometry>
-          <box size="0.017 0.014 0.0065"/>
+          <box size="${flex_link_box_x} ${flex_link_box_y} ${flex_link_box_z}"/>
         </geometry>
         <material name="gold"/>
       </visual>
       <inertial>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <origin xyz="${flex_link_box_x/2} 0 ${flex_link_box_z/2}" rpy="0 0 0"/>
         <mass value="${flex_link_mass}"/>
-        <xacro:cuboid_inertia m="${flex_link_mass}" x="0.005" y="0.014" z="0.015"/>
+        <xacro:cuboid_inertia m="${flex_link_mass}" x="${flex_link_box_x}" y="${flex_link_box_y}" z="${flex_link_box_z}"/>
       </inertial>
       <collision>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <origin xyz="${flex_link_box_x/2} 0 ${flex_link_box_z/2}" rpy="0 0 0"/>
         <geometry>
-          <box size="0.01 0.01 0.01"/>
+          <box size="${flex_link_box_x} ${flex_link_box_y} ${flex_link_box_z}"/>
         </geometry>
       </collision>
     </link>
   </xacro:macro>
+
+  <!-- approx length, height and width of a cuboid surrounding the link -->
+  <xacro:property name="proximal_link_box_x" value="0.071"/>
+  <xacro:property name="proximal_link_box_y" value="0.014"/>
+  <xacro:property name="proximal_link_box_z" value="0.012"/>
 
   <xacro:macro name="proximal_link" params="finger_id">
     <link name="proximal_${finger_id}">
@@ -83,9 +92,9 @@
         <material name="black"/>
       </visual>
       <inertial>
-        <origin xyz="-0.011 0.007 0.011" rpy="${pi} 0 0"/>
+        <origin xyz="${proximal_link_box_x/2-0.011} 0 0" rpy="0 0 0"/>
         <mass value="${proximal_link_mass}"/>
-        <xacro:cuboid_inertia m="${proximal_link_mass}" x="0.02" y="0.15" z="0.071"/>
+        <xacro:cuboid_inertia m="${proximal_link_mass}" x="${proximal_link_box_x}" y="${proximal_link_box_y}" z="${proximal_link_box_z}"/>
       </inertial>
       <collision>
         <origin xyz="-0.011 0.007 0.011" rpy="${pi} 0 0"/>
@@ -96,28 +105,37 @@
     </link>
   </xacro:macro>
 
+  <!-- approx length, height and width of a cuboid surrounding the link -->
+  <xacro:property name="distal_link_box_x" value="0.036"/>
+  <xacro:property name="distal_link_box_y" value="${proximal_link_box_y}"/>
+  <xacro:property name="distal_link_box_z" value="0.012"/>
+
   <xacro:macro name="distal_link" params="finger_id">
     <link name="distal_${finger_id}">
       <visual>
-        <origin xyz="-0.077 0.007 0.007" rpy="${pi} 0 0"/>
+        <origin xyz="${-0.077-flex_link_box_x/2} 0.007 ${0.007+flex_link_box_z/2+0.004+flex_z_offset}" rpy="${pi} 0 0"/>
         <geometry>
           <mesh filename="${mesh_path}/distal.STL"/>
         </geometry>
         <material name="black"/>
       </visual>
       <inertial>
-        <origin xyz="-0.077 0.007 0.007" rpy="3.1459 0 0"/>
+        <origin xyz="${distal_link_box_x/2} 0 ${distal_link_box_z/2-0.002}" rpy="0 0 0"/>
         <mass value="${distal_link_mass}"/>
-        <xacro:cuboid_inertia m="${distal_link_mass}" x="0.017" y="0.15" z="0.039"/>
+        <xacro:cuboid_inertia m="${distal_link_mass}" x="${distal_link_box_x}" y="${distal_link_box_y}" z="${distal_link_box_z}"/>
       </inertial>
       <collision>
-        <origin xyz="-0.077 0.007 0.007" rpy="${pi} 0 0"/>
+        <origin xyz="${-0.077-flex_link_box_x/2} 0.007 ${0.007+flex_link_box_z/2}" rpy="${pi} 0 0"/>
         <geometry>
           <mesh filename="${mesh_path}/distal_coll.STL"/>
         </geometry>
       </collision>
     </link>
   </xacro:macro>
+
+  <xacro:property name="proximal_pad_box_x" value="0.016"/>
+  <xacro:property name="proximal_pad_box_y" value="0.020"/>
+  <xacro:property name="proximal_pad_box_z" value="0.05"/>
 
   <xacro:macro name="proximal_pad" params="finger_id">
     <link name="proximal_${finger_id}_pad">
@@ -129,9 +147,9 @@
         <material name="dark_grey"/>
       </visual>
       <inertial>
-        <origin xyz="-0.008 0.014 -0.002" rpy="${pi/2} ${pi/2} 0"/>
+        <origin xyz="0 0.004 -0.035" rpy="0 0 0"/>
         <mass value="${proximal_pad_mass}"/>
-        <xacro:cuboid_inertia m="${proximal_pad_mass}" x="0.005" y="0.15" z="0.071"/>
+        <xacro:cuboid_inertia m="${proximal_pad_mass}" x="${proximal_pad_box_x}" y="${proximal_pad_box_y}" z="${proximal_pad_box_z}"/>
       </inertial>
       <collision>
         <origin xyz="-0.008 0.014 -0.002" rpy="${pi/2} ${pi/2} 0"/>
@@ -142,28 +160,38 @@
     </link>
   </xacro:macro>
 
+  <xacro:property name="distal_pad_box_x" value="${proximal_pad_box_x}"/>
+  <xacro:property name="distal_pad_box_y" value="0.018"/>
+  <xacro:property name="distal_pad_box_z" value="0.037"/>
+
   <xacro:macro name="distal_pad" params="finger_id">
     <link name="distal_${finger_id}_pad">
       <visual>
-        <origin xyz="-0.00825 0.009 0.057" rpy="${pi/2} ${pi/2} 0"/>
+        <!-- setting these xyz values by eye as transformations get too complex -->
+        <origin xyz="-0.008 0.0155 0.076" rpy="${pi/2} ${pi/2} 0"/>
         <geometry>
           <mesh filename="${mesh_path}/distal_pad.STL"/>
         </geometry>
         <material name="dark_grey"/>
       </visual>
       <inertial>
-        <origin xyz="-0.00825 0.009 0.057" rpy="${pi/2} ${pi/2} 0"/>
+        <origin xyz="0 ${distal_pad_box_y/2-0.002} ${-distal_pad_box_z/2+0.0005}" rpy="0 0 0"/>
         <mass value="${distal_pad_mass}"/>
-        <xacro:cuboid_inertia m="${distal_pad_mass}" x="0.005" y="0.15" z="0.039"/>
+        <xacro:cuboid_inertia m="${distal_pad_mass}" x="${distal_pad_box_x}" y="${distal_pad_box_y}" z="${distal_pad_box_z}"/>
       </inertial>
       <collision>
-        <origin xyz="-0.00825 0.009 0.057" rpy="${pi/2} ${pi/2} 0"/>
+        <origin xyz="-0.009 0.0155 0.076" rpy="${pi/2} ${pi/2} 0"/>
         <geometry>
           <mesh filename="${mesh_path}/distal_pad_coll.STL"/>
         </geometry>
       </collision>
     </link>
   </xacro:macro>
+
+  <!-- approx length, height and width of a cuboid surrounding the link -->
+  <xacro:property name="swivel_box_x" value="0.03"/>
+  <xacro:property name="swivel_box_y" value="0.03"/>
+  <xacro:property name="swivel_box_z" value="0.015"/>
 
   <xacro:macro name="swivel_link" params="finger_id">
     <link name="swivel_${finger_id}">
@@ -175,9 +203,9 @@
         <material name="black"/>
       </visual>
       <inertial>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <origin xyz="0 0 ${swivel_box_z/2}" rpy="0 0 0"/>
         <mass value="${swivel_link_mass}"/>
-        <xacro:cuboid_inertia m="${swivel_link_mass}" x="0.022" y="0.032" z="0.03"/>
+        <xacro:cuboid_inertia m="${swivel_link_mass}" x="${swivel_box_x}" y="${swivel_box_y}" z="${swivel_box_z}"/>
       </inertial>
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -187,6 +215,12 @@
       </collision>
     </link>
   </xacro:macro>
+
+  <!-- approx length, height and width of a cuboid surrounding the link -->
+  <xacro:property name="shell_box_x" value="0.13"/>
+  <xacro:property name="shell_box_y" value="0.09"/>
+  <xacro:property name="shell_box_z" value="0.07"/>
+  <xacro:property name="shell_x_offset" value="0.01"/>
 
   <xacro:macro name="shell_link">
     <link name="shell">
@@ -198,9 +232,9 @@
         <material name="black"/>
       </visual>
       <inertial>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <origin xyz="${shell_x_offset} 0 ${shell_box_z/2}" rpy="0 0 0"/>
         <mass value="${shell_mass}"/>
-        <xacro:cuboid_inertia m="${shell_mass}" x="0.066" y="0.091" z="0.136"/>
+        <xacro:cuboid_inertia m="${shell_mass}" x="${shell_box_x}" y="${shell_box_y}" z="${shell_box_z}"/>
       </inertial>
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -210,6 +244,9 @@
       </collision>
     </link>
   </xacro:macro>
+
+  <!-- y, z measurements we take from the shell -->
+  <xacro:property name="pad_box_y" value="0.022"/>
 
   <xacro:macro name="pad_link">
     <link name="pad">
@@ -221,9 +258,9 @@
         <material name="dark_grey"/>
       </visual>
       <inertial>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <origin xyz="0 ${pad_box_y/2} ${shell_x_offset}" rpy="0 0 0"/>
         <mass value="${pad_mass}"/>
-        <xacro:cuboid_inertia m="${pad_mass}" x="0.066" y="0.091" z="0.136"/>
+        <xacro:cuboid_inertia m="${pad_mass}" x="${shell_box_y}" y="${pad_box_y}" z="${shell_box_x}"/>
       </inertial>
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -233,7 +270,6 @@
       </collision>
     </link>
   </xacro:macro>
-  <link name="palm_link" />
 
   <!-- =================================== Tactile macros =================================== -->
   <!-- Sensor links are rendered only to give a link that the Gazebo sensor plugin can latch  -->
@@ -266,16 +302,15 @@
 
   <xacro:macro name="sensor_joint" params="location finger_id sensor_id">
     <joint name="${location}_${finger_id}_to_sensor_${sensor_id}" type="fixed">
-    <!-- TODO check why z_offset is different for distal and proximal  -->
       <xacro:if value="${location == 'proximal'}">
         <xacro:property name="x_offset" value="0.012"/>
         <xacro:property name="x_gap" value="0.008"/>
         <xacro:property name="z_offset" value="0.014"/>
       </xacro:if>
       <xacro:if value="${location == 'distal'}">
-        <xacro:property name="x_offset" value="0.008"/>
+        <xacro:property name="x_offset" value="-0.001"/>
         <xacro:property name="x_gap" value="0.008"/>
-        <xacro:property name="z_offset" value="0.01"/>
+        <xacro:property name="z_offset" value="0.0155"/>
       </xacro:if>
       <origin xyz="${x_offset + x_gap * sensor_id} 0 ${z_offset}" rpy="0 0 0"/>
       <parent link="${location}_${finger_id}"/>
@@ -283,18 +318,11 @@
     </joint>
   </xacro:macro>
 
-  <joint name="palm" type="fixed">
-    <origin xyz="0 0 0" rpy="3.14159265358979 0 1.5707963267949"/>
-    <parent link="pad" />
-    <child link="palm_link" />
-    <axis xyz="0 0 0"/>
-  </joint>
-
   <!-- ===================================== Joint Macros ===================================== -->
 
   <xacro:macro name="distal_to_pad" params="finger_id">
     <joint name="distal_${finger_id}_to_pad" type="fixed">
-      <origin xyz="-0.01 0 0.001" rpy="${pi/2} 0 -${pi/2}"/>
+      <origin xyz="0 0 0" rpy="${pi/2} 0 -${pi/2}"/>
       <parent link="distal_${finger_id}"/>
       <child link="distal_${finger_id}_pad"/>
     </joint>
@@ -309,18 +337,28 @@
   </xacro:macro>
 
   <xacro:macro name="flex_to_distal" params="finger_id">
-    <joint name="flex_to_distal_${finger_id}" type="fixed">
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+    <joint name="flex_to_distal_${finger_id}" type="revolute">
+      <origin xyz="${flex_link_box_x} 0 0" rpy="0 0 0"/>
       <parent link="finger_${finger_id}_flex_link"/>
       <child link="distal_${finger_id}"/>
+      <axis xyz="0 -1 0"/>
+      <dynamics damping="0.0001" />
+      <!-- TODO might need to tune effort and velocity values -->
+      <limit effort="0.1" lower="0.0" upper="${pi/6}" velocity="1"/>
     </joint>
   </xacro:macro>
 
+  <xacro:property name="flex_z_offset" value="-0.002"/>
+
   <xacro:macro name="proximal_to_flex" params="finger_id">
-    <joint name="proximal_${finger_id}_to_flex" type="fixed">
-      <origin xyz="0.07 0 0.004" rpy="0 0 0"/>
+    <joint name="proximal_${finger_id}_to_flex" type="revolute">
+      <origin xyz="${0.0705-flex_link_box_x/2} 0 ${flex_z_offset}" rpy="0 0 0"/>
       <parent link="proximal_${finger_id}"/>
       <child link="finger_${finger_id}_flex_link"/>
+      <axis xyz="0 -1 0"/>
+      <dynamics damping="0.0001" />
+      <!-- TODO might need to tune effort and velocity values -->
+      <limit effort="0.1" lower="0.0" upper="${pi/6}" velocity="1"/>
     </joint>
   </xacro:macro>
 
