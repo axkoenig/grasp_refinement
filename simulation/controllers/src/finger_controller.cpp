@@ -75,7 +75,8 @@ private:
 
   void callback(const reflex_msgs::PoseCommand &msg)
   {
-    finger_controllers[0].send_commands(msg.f1, -msg.preshape / 2);
+    // preshape rotation is equal and opposite
+    finger_controllers[0].send_commands(msg.f1, msg.preshape / 2);
     finger_controllers[1].send_commands(msg.f2, msg.preshape / 2);
     finger_controllers[2].send_commands(msg.f3);
   }
