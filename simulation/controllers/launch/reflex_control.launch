@@ -7,11 +7,11 @@
   <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
     output="screen" ns="gazebo" 
     args="joint_state_controller 
-    preshape_j1_position_controller 
-    preshape_j2_position_controller 
-    proximal_j1_position_controller 
-    proximal_j2_position_controller 
-    proximal_j3_position_controller
+    finger_1_preshape_position_controller 
+    finger_2_preshape_position_controller 
+    finger_1_proximal_position_controller 
+    finger_2_proximal_position_controller 
+    finger_3_proximal_position_controller
     finger_1_proximal_to_flex_position_controller
     finger_2_proximal_to_flex_position_controller
     finger_3_proximal_to_flex_position_controller
@@ -20,7 +20,7 @@
     finger_3_flex_to_distal_position_controller
     "/>
 
-  <!-- launch custom reflex controller for open/close services-->
-  <node pkg="controllers" type="finger_control_node" name="reflex_actuation" respawn="true"/>
+  <!-- launch finger controllers -->
+  <node pkg="controllers" type="finger_control_node" name="finger_control_node" respawn="true" output="screen"/>
 
 </launch>
