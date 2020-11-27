@@ -5,9 +5,6 @@
 #include <gazebo_msgs/ContactsState.h>
 #include <reflex_msgs/Hand.h>
 
-// remove
-#include <iostream>
-
 std::string node_name = "sensor";
 std::string ns = "gazebo";
 std::string topic_name = "reflex/hand_state";
@@ -89,24 +86,24 @@ public:
 class ReflexFinger
 {
 private:
-    int finger_idx;
+    int finger_id;
 
 public:
     ReflexSensor sensors[9];
 
-    ReflexFinger(int finger_idx)
+    ReflexFinger(int finger_id)
     {
-        finger_idx = finger_idx;
-
-        sensors[0].setTopic(ns + "/proximal_" + std::to_string(finger_idx) + "_sensor_1_bumper");
-        sensors[1].setTopic(ns + "/proximal_" + std::to_string(finger_idx) + "_sensor_2_bumper");
-        sensors[2].setTopic(ns + "/proximal_" + std::to_string(finger_idx) + "_sensor_3_bumper");
-        sensors[3].setTopic(ns + "/proximal_" + std::to_string(finger_idx) + "_sensor_4_bumper");
-        sensors[4].setTopic(ns + "/proximal_" + std::to_string(finger_idx) + "_sensor_5_bumper");
-        sensors[5].setTopic(ns + "/distal_" + std::to_string(finger_idx) + "_sensor_1_bumper");
-        sensors[6].setTopic(ns + "/distal_" + std::to_string(finger_idx) + "_sensor_2_bumper");
-        sensors[7].setTopic(ns + "/distal_" + std::to_string(finger_idx) + "_sensor_3_bumper");
-        sensors[8].setTopic(ns + "/distal_" + std::to_string(finger_idx) + "_sensor_4_bumper");
+        finger_id = finger_id;
+        
+        sensors[0].setTopic(ns + "/proximal_" + std::to_string(finger_id) + "_sensor_1_bumper");
+        sensors[1].setTopic(ns + "/proximal_" + std::to_string(finger_id) + "_sensor_2_bumper");
+        sensors[2].setTopic(ns + "/proximal_" + std::to_string(finger_id) + "_sensor_3_bumper");
+        sensors[3].setTopic(ns + "/proximal_" + std::to_string(finger_id) + "_sensor_4_bumper");
+        sensors[4].setTopic(ns + "/proximal_" + std::to_string(finger_id) + "_sensor_5_bumper");
+        sensors[5].setTopic(ns + "/distal_" + std::to_string(finger_id) + "_sensor_1_bumper");
+        sensors[6].setTopic(ns + "/distal_" + std::to_string(finger_id) + "_sensor_2_bumper");
+        sensors[7].setTopic(ns + "/distal_" + std::to_string(finger_id) + "_sensor_3_bumper");
+        sensors[8].setTopic(ns + "/distal_" + std::to_string(finger_id) + "_sensor_4_bumper");
     }
 };
 
