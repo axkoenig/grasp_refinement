@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   tf2
   tf2_ros
+  tf2_geometry_msgs
   reflex_msgs
   std_srvs
 )
