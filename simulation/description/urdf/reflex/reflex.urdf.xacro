@@ -344,7 +344,7 @@
       <axis xyz="0 -1 0"/>
       <dynamics damping="0.0001" />
       <!-- TODO might need to tune effort and velocity values -->
-      <limit effort="0.1" lower="0.0" upper="${pi/6}" velocity="1"/>
+      <limit effort="1" lower="0.0" upper="${pi/6}" velocity="0.1"/>
     </joint>
   </xacro:macro>
 
@@ -358,7 +358,7 @@
       <axis xyz="0 -1 0"/>
       <dynamics damping="0.0001" />
       <!-- TODO might need to tune effort and velocity values -->
-      <limit effort="0.1" lower="0.0" upper="${pi/6}" velocity="1"/>
+      <limit effort="1" lower="0.0" upper="${pi/6}" velocity="0.1"/>
     </joint>
   </xacro:macro>
 
@@ -376,7 +376,7 @@
       <parent link="shell"/>
       <child link="swivel_${finger_id}"/>
       <dynamics damping="0.1" />
-      <limit effort="0.2" lower="0.0" upper="${pi/2}" velocity="0.01"/>
+      <limit effort="1" lower="0.0" upper="${pi/2}" velocity="0.1"/>
       <xacro:if value="${finger_id == 1}">
         <origin xyz="0.0503973683071414 -0.026 0.063" rpy="0 0 0"/>
         <axis xyz="0 0 -1"/>
@@ -393,7 +393,7 @@
       <child link="proximal_${finger_id}"/>
       <axis xyz="0 -1 0"/>
       <dynamics damping="0.1" />
-      <limit effort="0.2" lower="0.0" upper="${pi}" velocity="0.01"/>
+      <limit effort="1" lower="0.0" upper="${pi}" velocity="0.1"/>
       <xacro:if value="${finger_id == 3}">
         <origin xyz="-0.03 0 0.0816" rpy="0 0.28 ${pi}"/>
         <parent link="shell"/>
