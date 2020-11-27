@@ -4,7 +4,7 @@
 #include <std_msgs/Float64.h>
 #include <std_srvs/SetBool.h>
 #include <reflex_msgs/PoseCommand.h>
-
+#include <math.h>
 
 std::string open_srv_name = "reflex/open_hand";
 std::string close_srv_name = "reflex/close_hand";
@@ -26,7 +26,7 @@ private:
     std::array<float, 4> close_pos = {2.5, 2.5, 2.5, 0};
     std::array<float, 4> cur_pos = open_pos;
     std::array<float, 4> low_limits = {0, 0, 0, 0};
-    std::array<float, 4> high_limits = {3, 3, 3, 1.5};
+    std::array<float, 4> high_limits = {M_PI, M_PI, M_PI, M_PI};
 
 public:
     ReflexCommander(ros::NodeHandle *nh)
