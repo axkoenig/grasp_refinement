@@ -4,64 +4,90 @@
 #include <reflex_msgs/PoseCommand.h>
 
 std::string pos_cmd_topic = "reflex/pos_cmd";
-std::string node_name = "finger_controller_node";
-std::string proximal_1_cmd_topic = "/gazebo/proximal_j1_position_controller/command";
-std::string proximal_2_cmd_topic = "/gazebo/proximal_j2_position_controller/command";
-std::string proximal_3_cmd_topic = "/gazebo/proximal_j3_position_controller/command";
-std::string preshape_1_cmd_topic = "/gazebo/preshape_j1_position_controller/command";
-std::string preshape_2_cmd_topic = "/gazebo/preshape_j2_position_controller/command";
+std::string node_name = "finger_control_node";
+std::string ns = "/gazebo";
 
-class ReflexPositionController
+// flexure executes *scaling_factor of rotation of proximal link
+float scaling_factor = 0.2;
+
+class ReflexFingerPositionController
 {
 private:
-  ros::Subscriber sub;
+  int finger_id;
 
-  ros::Publisher proximal_1_cmd_pub;
-  ros::Publisher proximal_2_cmd_pub;
-  ros::Publisher proximal_3_cmd_pub;
-  ros::Publisher preshape_1_cmd_pub;
-  ros::Publisher preshape_2_cmd_pub;
+  // publishers
+  ros::Publisher preshape_pub;
+  ros::Publisher proximal_pub;
+  ros::Publisher proximal_to_flex_pub;
+  ros::Publisher flex_to_distal_pub;
 
-  std_msgs::Float64 proximal_1_cmd;
-  std_msgs::Float64 proximal_2_cmd;
-  std_msgs::Float64 proximal_3_cmd;
-  std_msgs::Float64 preshape_1_cmd;
-  std_msgs::Float64 preshape_2_cmd;
+  // messages
+  std_msgs::Float64 preshape_msg;
+  std_msgs::Float64 proximal_msg;
+  std_msgs::Float64 proximal_to_flex_msg;
+  std_msgs::Float64 flex_to_distal_msg;
 
 public:
-  ReflexPositionController(ros::NodeHandle *nh)
+  ReflexFingerPositionController(ros::NodeHandle *nh, int finger_id)
   {
-    sub = nh->subscribe(pos_cmd_topic, 1, &ReflexPositionController::callback, this);
+    finger_id = finger_id;
 
-    proximal_1_cmd_pub = nh->advertise<std_msgs::Float64>(proximal_1_cmd_topic, 1);
-    proximal_2_cmd_pub = nh->advertise<std_msgs::Float64>(proximal_2_cmd_topic, 1);
-    proximal_3_cmd_pub = nh->advertise<std_msgs::Float64>(proximal_3_cmd_topic, 1);
-    preshape_1_cmd_pub = nh->advertise<std_msgs::Float64>(preshape_1_cmd_topic, 1);
-    preshape_2_cmd_pub = nh->advertise<std_msgs::Float64>(preshape_2_cmd_topic, 1);
+    std::string proximal_topic = ns + "/finger_" + std::to_string(finger_id) + "_proximal_position_controller/command";
+    std::string proximal_to_flex_topic = ns + "/finger_" + std::to_string(finger_id) + "_proximal_to_flex_position_controller/command";
+    std::string flex_to_distal_topic = ns + "/finger_" + std::to_string(finger_id) + "_flex_to_distal_position_controller/command";
+
+    proximal_pub = nh->advertise<std_msgs::Float64>(proximal_topic, 1);
+    proximal_to_flex_pub = nh->advertise<std_msgs::Float64>(proximal_to_flex_topic, 1);
+    flex_to_distal_pub = nh->advertise<std_msgs::Float64>(flex_to_distal_topic, 1);
+
+    if (finger_id != 3)
+    {
+      std::string preshape_topic = ns + "/finger_" + std::to_string(finger_id) + "_preshape_position_controller/command";
+      preshape_pub = nh->advertise<std_msgs::Float64>(preshape_topic, 1);
+    }
   }
+  void send_commands(float proximal, float preshape = 0.0)
+  {
+    proximal_msg.data = proximal;
+    proximal_to_flex_msg.data = scaling_factor * proximal;
+    flex_to_distal_msg.data = scaling_factor * proximal;
+
+    proximal_pub.publish(proximal_msg);
+    proximal_to_flex_pub.publish(proximal_to_flex_msg);
+    flex_to_distal_pub.publish(flex_to_distal_msg);
+
+    if (finger_id != 3)
+    {
+      preshape_msg.data = preshape;
+      preshape_pub.publish(preshape_msg);
+    }
+  }
+};
+
+class ReflexHandPositionController
+{
+private:
+  ros::NodeHandle nh;
+  ros::Subscriber sub = nh.subscribe(pos_cmd_topic, 1, &ReflexHandPositionController::callback, this);
+  ReflexFingerPositionController finger_controllers[3] = {ReflexFingerPositionController(&nh, 1),
+                                                          ReflexFingerPositionController(&nh, 2),
+                                                          ReflexFingerPositionController(&nh, 3)};
 
   void callback(const reflex_msgs::PoseCommand &msg)
   {
-    proximal_1_cmd.data = msg.f1;
-    proximal_2_cmd.data = msg.f2;
-    proximal_3_cmd.data = msg.f3;
-
-    // movement of preshape motors is equal and opposite
-    preshape_1_cmd.data = msg.preshape/2;
-    preshape_2_cmd.data = msg.preshape/2;
-
-    preshape_1_cmd_pub.publish(preshape_1_cmd);
-    preshape_2_cmd_pub.publish(preshape_2_cmd);
-    proximal_1_cmd_pub.publish(proximal_1_cmd);
-    proximal_2_cmd_pub.publish(proximal_2_cmd);
-    proximal_3_cmd_pub.publish(proximal_3_cmd);
+    finger_controllers[0].send_commands(msg.f1, -msg.preshape / 2);
+    finger_controllers[1].send_commands(msg.f2, msg.preshape / 2);
+    finger_controllers[2].send_commands(msg.f3);
   }
 };
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "reflex_controller");
-  ros::NodeHandle nh;
-  ReflexPositionController rpc = ReflexPositionController(&nh);
+  ros::init(argc, argv, node_name);
+  ReflexHandPositionController rpc = ReflexHandPositionController();
+
+  ROS_INFO("Launched %s node.", node_name.c_str());
+  ROS_INFO("Listening to %s ...", pos_cmd_topic.c_str());
+
   ros::spin();
 }
