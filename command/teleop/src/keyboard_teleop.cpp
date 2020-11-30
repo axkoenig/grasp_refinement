@@ -4,6 +4,7 @@
 #include <geometry_msgs/TransformStamped.h>
 #include <tf2/LinearMath/Transform.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <math.h>
 
 #include <iostream>
 #include <map>
@@ -16,25 +17,28 @@ std::string source_frame = "world";
 std::string target_frame = "reflex";
 
 float trans_scaling = 0.01;
-float rot_scaling = 0.05;
+float rot_scaling = 0.2;
 float finger_scaling = 0.1;
+
+// format: {x, y, z, r, p ,y} in "reflex" frame
+std::array<float, 6> init_pose = {0, 0, 0.1, -M_PI / 2, 0, 0};
 
 // keys for wrist teleoperation (note this is for my german keyboard)
 std::map<char, std::vector<float>> wrist_bindings{
 
     // format: {x, y, z, r, p ,y}
-    {'u', {-1, 0, 0, 0, 0, 0}},
-    {'i', {0, -1, 0, 0, 0, 0}},
-    {'o', {0, 0, -1, 0, 0, 0}},
-    {'j', {0, 0, 0, -1, 0, 0}},
-    {'k', {0, 0, 0, 0, -1, 0}},
-    {'l', {0, 0, 0, 0, 0, -1}},
-    {'U', {1, 0, 0, 0, 0, 0}},
-    {'I', {0, 1, 0, 0, 0, 0}},
-    {'O', {0, 0, 1, 0, 0, 0}},
-    {'J', {0, 0, 0, 1, 0, 0}},
-    {'K', {0, 0, 0, 0, 1, 0}},
-    {'L', {0, 0, 0, 0, 0, 1}},
+    {'u', {1, 0, 0, 0, 0, 0}},
+    {'i', {0, 1, 0, 0, 0, 0}},
+    {'o', {0, 0, 1, 0, 0, 0}},
+    {'j', {0, 0, 0, 1, 0, 0}},
+    {'k', {0, 0, 0, 0, 1, 0}},
+    {'l', {0, 0, 0, 0, 0, 1}},
+    {'U', {-1, 0, 0, 0, 0, 0}},
+    {'I', {0, -1, 0, 0, 0, 0}},
+    {'O', {0, 0, -1, 0, 0, 0}},
+    {'J', {0, 0, 0, -1, 0, 0}},
+    {'K', {0, 0, 0, 0, -1, 0}},
+    {'L', {0, 0, 0, 0, 0, -1}},
 };
 
 // keys for wrist teleoperation (note this is for my german keyboard)
@@ -82,6 +86,16 @@ int getch(void)
     return ch;
 }
 
+tf2::Transform calcReflexInWorld(std::array<float, 6> reflex_pose)
+{
+    tf2::Vector3 t = {reflex_pose[0], reflex_pose[1], reflex_pose[2]};
+    tf2::Quaternion q;
+    q.setRPY(reflex_pose[3], reflex_pose[4], reflex_pose[5]);
+    tf2::Transform transform(q, t);
+
+    return transform.inverse();
+}
+
 // END CODE FROM https://github.com/methylDragon/teleop_twist_keyboard_cpp/blob/master/src/teleop_twist_keyboard.cpp
 
 int main(int argc, char **argv)
@@ -94,23 +108,25 @@ int main(int argc, char **argv)
 
     static tf2_ros::TransformBroadcaster br;
     geometry_msgs::TransformStamped ts;
+    char key(' ');
 
-    // init transform for wrist calculations
-    tf2::Transform transform(tf2::Quaternion{0, 0, 0, 1}, tf2::Vector3{0, 0, 0});
+    std::array<float, 6> cur_pose = init_pose;
+    tf2::Transform transform;
+    transform = calcReflexInWorld(init_pose);
 
-    // populate and send first wrist transform
+    // populate and send initial wrist transform
     ts.header.frame_id = source_frame;
     ts.child_frame_id = target_frame;
-    ts.transform.translation.x = 0;
-    ts.transform.translation.y = 0;
-    ts.transform.translation.z = 0;
-    ts.transform.rotation.x = 0;
-    ts.transform.rotation.y = 0;
-    ts.transform.rotation.z = 0;
-    ts.transform.rotation.w = 1;
+    ts.header.stamp = ros::Time::now();
+    ts.transform = tf2::toMsg(transform);
+
+    // TODO find another, more elegant solution for this
+    // wait before publishing first transform to fix warning from wrist_control_node 
+    // ""reflex" passed to lookupTransform argument target_frame does not exist."
+    ros::Duration(1).sleep();
+
     ts.header.stamp = ros::Time::now();
     br.sendTransform(ts);
-    char key(' ');
 
     ROS_INFO("Listening to keyboard input...");
 
@@ -121,27 +137,26 @@ int main(int argc, char **argv)
         // WRIST CONTROL --------------------------------------------------------
         if (wrist_bindings.count(key) == 1)
         {
-            // incremental translation
-            tf2::Vector3 t(wrist_bindings[key][0], wrist_bindings[key][1], wrist_bindings[key][2]);
-            tf2::Transform transl_incr(tf2::Quaternion{0, 0, 0, 1}, t * trans_scaling);
+            // x, y, z
+            cur_pose[0] += trans_scaling * wrist_bindings[key][0];
+            cur_pose[1] += trans_scaling * wrist_bindings[key][1];
+            cur_pose[2] += trans_scaling * wrist_bindings[key][2];
 
-            // incremental rotation
-            tf2::Quaternion q;
-            q.setRPY(wrist_bindings[key][3] * rot_scaling, wrist_bindings[key][4] * rot_scaling, wrist_bindings[key][5] * rot_scaling);
-            tf2::Transform rot_incr(q, tf2::Vector3{0, 0, 0});
-
-            // translate to origin, rotate incrementally, translate back incrementally
-            tf2::Transform transl_origin(tf2::Quaternion{0, 0, 0, 1}, transform.getOrigin());
-            transform = transform * transl_origin.inverse() * rot_incr * transl_origin * transl_incr;
+            // r, p, y
+            cur_pose[3] += trans_scaling * wrist_bindings[key][3];
+            cur_pose[4] += trans_scaling * wrist_bindings[key][4];
+            cur_pose[5] += trans_scaling * wrist_bindings[key][5];
 
             ROS_INFO("Wrist transform updated.");
         }
         else if (key == 'm')
         {
-            // reset wrist to world frame
-            transform.setIdentity();
+            // reset wrist to init frame
+            cur_pose = init_pose;
             ROS_INFO("Wrist transform reset.");
         }
+
+        transform = calcReflexInWorld(cur_pose);
         ts.header.stamp = ros::Time::now();
         ts.transform = tf2::toMsg(transform);
         br.sendTransform(ts);
