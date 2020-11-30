@@ -15,6 +15,37 @@
         <pose>0.211413 -0.480231 0.339124 0 0.499643 1.940195</pose>
       </camera>
     </gui>
-    
+
+    <!-- cylinder -->
+    <model name="cylinder">
+      <link name="cylinder_link">
+        <pose>0 0.3 0 0 0 0</pose>
+        <collision name="cylinder_collision">
+          <geometry>
+            <cylinder>
+              <radius>0.04</radius>
+              <length>0.15</length>
+            </cylinder>
+          </geometry>
+        </collision>
+
+        <visual name="cylinder_visual">
+          <geometry>
+            <cylinder>
+              <radius>0.04</radius>
+              <length>0.15</length>
+            </cylinder>
+          </geometry>
+
+          <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/Blue</name>
+            </script>
+          </material>
+        </visual>
+      </link>
+    </model>
+
   </world>
 </sdf>
