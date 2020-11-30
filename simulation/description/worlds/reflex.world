@@ -44,6 +44,20 @@
             </script>
           </material>
         </visual>
+
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <inertia>
+            <ixx>0.000455</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.000455</iyy>
+            <iyz>0</iyz>
+            <izz>0.00016</izz>
+          </inertia>
+          <mass>0.2</mass>
+        </inertial>
+
       </link>
     </model>
 
