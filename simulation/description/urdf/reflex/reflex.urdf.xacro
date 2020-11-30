@@ -35,7 +35,7 @@
 
   <!-- ======================================= Masses ======================================== -->
   <!-- These are rough approximations, the total hand mass was measured to be about 0.9kg     -->
-  <!-- final mass: 0.6+0.03+2*0.02+3*(0.025+0.015+0.01+0.02+0.01) = 0.91 -->
+  <!-- final mass: 0.6+0.03+2*0.02+3*(0.025+0.015+0.02+0.02+0.01) = 0.94 -->
 
   <xacro:property name="shell_mass" value="0.6"/>
   <xacro:property name="pad_mass" value="0.03"/>
@@ -44,7 +44,7 @@
   <!-- these links occur three times (once on each finger) -->
   <xacro:property name="proximal_link_mass" value="0.025"/>
   <xacro:property name="proximal_pad_mass" value="0.015"/>
-  <xacro:property name="flex_link_mass" value="0.01"/>
+  <xacro:property name="flex_link_mass" value="0.02"/>
   <xacro:property name="distal_link_mass" value="0.02"/>
   <xacro:property name="distal_pad_mass" value="0.01"/>
 
