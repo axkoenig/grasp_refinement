@@ -39,6 +39,11 @@
         <remap from="/joint_states" to="/reflex/joint_states"/>
     </node>
 
+    <!-- Keyboard teleoperation node -->
+    <group if="$(arg run_teleop_node)">
+        <node pkg="teleop" type="teleop_node" name="teleop_node" respawn="false" output="screen"/>
+    </group>
+
     <!-- Launch controllers -->
     <group if="$(arg launch_finger_controllers)">
         <include file="$(find controllers)/launch/reflex_control.launch" />
@@ -53,11 +58,5 @@
     <group if="$(arg run_wrist_controller_node)">
         <node pkg="controllers" type="wrist_control_node" name="wrist_control_node" respawn="false"/>
     </group>
-
-    <!-- Keyboard teleoperation node -->
-    <group if="$(arg run_teleop_node)">
-        <node pkg="teleop" type="teleop_node" name="teleop_node" respawn="false" output="screen"/>
-    </group>
-    
 
 </launch>
