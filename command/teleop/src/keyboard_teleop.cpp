@@ -161,7 +161,7 @@ int main(int argc, char **argv)
         // FINGER CONTROL (PRIMITIVES) ------------------------------------------
         switch (key)
         {
-        case 'y':
+        case 'c':
         {
             rc.executePrimitive(rc.Primitive::Close);
             ROS_INFO("Sent Reflex close command.");
@@ -171,6 +171,12 @@ int main(int argc, char **argv)
         {
             rc.executePrimitive(rc.Primitive::Open);
             ROS_INFO("Sent Reflex open command.");
+            break;
+        }
+        case 'y':
+        {
+            rc.executePrimitive(rc.Primitive::Pinch);
+            ROS_INFO("Sent Reflex pinch command.");
             break;
         }
         }
