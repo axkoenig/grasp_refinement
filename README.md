@@ -3,10 +3,11 @@
 [![Build Status](https://travis-ci.com/axkoenig/grasp_refinement.svg?token=KeJradpJgXCJqZfQ8pwB&branch=main)](https://travis-ci.com/axkoenig/grasp_refinement)
 
 ## Install Software 
+1. Install Gazebo 11 with the DART 6 physics engine (DART has proven to work better at simulating grasping than the default physics engine (ODE)). You will need to build Gazebo from source to work with DART. Follow the [official instructions](http://gazebosim.org/tutorials?tut=install_from_source&cat=install) for doing so.
 
-1. Install ROS noetic by following the [official instructions](https://wiki.ros.org/noetic/Installation/Ubuntu).
+2. Install ROS noetic by following the [official instructions](https://wiki.ros.org/noetic/Installation/Ubuntu). The ```ros-noetic-desktop``` is recommended. The ```ros-noetic-desktop-full``` would also install Gazebo and this might conflict with the installation from step 1. 
 
-2. Setup new catkin workspace.
+3. Setup new catkin workspace.
 
 ```bash
 mkdir ~/catkin_ws/src -p
@@ -14,29 +15,30 @@ cd ~/catkin_ws/src
 catkin_init_workspace
 ```
 
-3. Clone repository with its submodules into ```src``` folder.
+4. Clone repository with its submodules into ```src``` folder.
 
 ```bash
 git clone --recursive https://github.com/axkoenig/grasp_refinement.git
 ```
 
-4. Build workspace.
+5. Build workspace.
 
 ```bash
 cd ~/catkin_ws
 catkin_make
 ```
 
-5. Source this workspace and, if you like, add it to your ```.bashrc```.
+6. Source this workspace and, if you like, add it to your ```.bashrc```.
 
 ```bash
 source ~/catkin_ws/devel/setup.bash
 echo "source ~/catkin_ws/devel/setup.bash" >> ~/.bashrc
 ```
 
-6. Install ROS controllers for robot control.
+7. Install ROS controllers for robot control and the Gazebo ROS integration.
 ```bash
 sudo apt-get install ros-noetic-ros-control ros-noetic-ros-controllers
+sudo apt-get install ros-noetic-gazebo-ros-pkgs ros-noetic-gazebo-ros-control
 ``` 
 
 ## Troubleshooting
