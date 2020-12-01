@@ -7,7 +7,13 @@
 
 2. Install ROS noetic by following the [official instructions](https://wiki.ros.org/noetic/Installation/Ubuntu). The ```ros-noetic-desktop``` is recommended. The ```ros-noetic-desktop-full``` would also install Gazebo and this might conflict with the installation from step 1. 
 
-3. Setup new catkin workspace.
+3. Install ROS controllers for robot control and the Gazebo ROS integration.
+```bash
+sudo apt-get install ros-noetic-ros-control ros-noetic-ros-controllers
+sudo apt-get install ros-noetic-gazebo-ros-pkgs ros-noetic-gazebo-ros-control
+``` 
+
+4. Setup new catkin workspace.
 
 ```bash
 mkdir ~/catkin_ws/src -p
@@ -15,31 +21,25 @@ cd ~/catkin_ws/src
 catkin_init_workspace
 ```
 
-4. Clone repository with its submodules into ```src``` folder.
+5. Clone repository with its submodules into ```src``` folder.
 
 ```bash
 git clone --recursive https://github.com/axkoenig/grasp_refinement.git
 ```
 
-5. Build workspace.
+6. Build workspace.
 
 ```bash
 cd ~/catkin_ws
 catkin_make
 ```
 
-6. Source this workspace and, if you like, add it to your ```.bashrc```.
+7. Source this workspace and, if you like, add it to your ```.bashrc```.
 
 ```bash
 source ~/catkin_ws/devel/setup.bash
 echo "source ~/catkin_ws/devel/setup.bash" >> ~/.bashrc
 ```
-
-7. Install ROS controllers for robot control and the Gazebo ROS integration.
-```bash
-sudo apt-get install ros-noetic-ros-control ros-noetic-ros-controllers
-sudo apt-get install ros-noetic-gazebo-ros-pkgs ros-noetic-gazebo-ros-control
-``` 
 
 ## Troubleshooting
 
