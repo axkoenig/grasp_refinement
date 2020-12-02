@@ -74,7 +74,6 @@
     <xacro:property name="sensor_name" value="gazebo/${link_name}"/>
 
     <gazebo reference="${link_name}">
-      <selfCollide value="true" />
       <sensor name="${sensor_name}" type="contact">
         <alwaysOn>true</alwaysOn>
         <!-- 50 Hz is the real sampling rate of the Reflex tactile sensors -->
