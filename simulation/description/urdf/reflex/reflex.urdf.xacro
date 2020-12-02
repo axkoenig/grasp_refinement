@@ -278,23 +278,28 @@
   <!-- enough not to interfere with the hand dynamics, but not so small that they physics     -->
   <!-- engine chokes on it (e.g. 1e-8 is too small and the links disappear).                  -->
 
+  <xacro:property name="sensor_box_x" value="0.006"/>
+  <xacro:property name="sensor_box_y" value="0.006"/>
+  <xacro:property name="sensor_box_z" value="0.0003"/>
+  <xacro:property name="sensor_mass" value="1e-5"/>
+
   <xacro:macro name="sensor_link" params="location finger_id sensor_id">
     <link name="${location}_${finger_id}_sensor_${sensor_id}">
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0"/>
         <geometry>
-          <box size="0.006 0.006 0.0003"/>
+          <box size="${sensor_box_x} ${sensor_box_y} ${sensor_box_z}"/>
         </geometry>
       </visual>
       <inertial>
         <origin xyz="0 0 0" rpy="0 0 0"/>
-        <mass value="1e-5"/>
-        <xacro:cuboid_inertia m="1e-5" x="0.006" y="0.006" z="0.0003"/>
+        <mass value="${sensor_mass}"/>
+        <xacro:cuboid_inertia m="${sensor_mass}" x="${sensor_box_x}" y="${sensor_box_y}" z="${sensor_box_z}"/>
       </inertial>
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0"/>
         <geometry>
-          <box size="0.006 0.006 0.0003"/>
+          <box size="${sensor_box_x} ${sensor_box_y} ${sensor_box_z}"/>
         </geometry>
       </collision>
     </link>
@@ -342,9 +347,9 @@
       <parent link="finger_${finger_id}_flex_link"/>
       <child link="distal_${finger_id}"/>
       <axis xyz="0 -1 0"/>
-      <dynamics damping="0.0001" />
-      <!-- TODO might need to tune effort and velocity values -->
-      <limit effort="1" lower="0.0" upper="${pi/6}" velocity="0.1"/>
+      <!-- note: I estimate the remaining damping/effort/velocity is half of the proximal links -->
+      <dynamics damping="0.05" friction="0"/>
+      <limit effort="1" lower="0.0" upper="${pi/6}" velocity="0.5"/>
     </joint>
   </xacro:macro>
 
@@ -356,9 +361,9 @@
       <parent link="proximal_${finger_id}"/>
       <child link="finger_${finger_id}_flex_link"/>
       <axis xyz="0 -1 0"/>
-      <dynamics damping="0.0001" />
-      <!-- TODO might need to tune effort and velocity values -->
-      <limit effort="1" lower="0.0" upper="${pi/6}" velocity="0.1"/>
+      <!-- note: I estimate the remaining damping/effort/velocity is half of the proximal links -->
+      <dynamics damping="0.05" friction="0"/>
+      <limit effort="1" lower="0.0" upper="${pi/6}" velocity="0.5"/>
     </joint>
   </xacro:macro>
 
@@ -372,11 +377,13 @@
   </xacro:macro>
 
   <xacro:macro name="preshape" params="finger_id">
-    <joint name="preshape_${finger_id}" type="${joint_type}">
+    <joint name="preshape_${finger_id}" type="revolute">
       <parent link="shell"/>
       <child link="swivel_${finger_id}"/>
-      <dynamics damping="0.1" />
-      <limit effort="1" lower="0.0" upper="${pi/2}" velocity="0.1"/>
+      <!-- damping factor of 0.1 makes the joint move smoother -->
+      <dynamics damping="0.1" friction="0"/>
+      <!-- note: the dynamixel motors can apply roughly 2Nm (see datasheet) -->
+      <limit effort="2" lower="0.0" upper="${pi/2}" velocity="1"/>
       <xacro:if value="${finger_id == 1}">
         <origin xyz="0.0503973683071414 -0.026 0.063" rpy="0 0 0"/>
         <axis xyz="0 0 -1"/>
@@ -389,11 +396,13 @@
   </xacro:macro>
 
   <xacro:macro name="proximal" params="finger_id">
-    <joint name="proximal_joint_${finger_id}" type="${joint_type}">
+    <joint name="proximal_joint_${finger_id}" type="revolute">
       <child link="proximal_${finger_id}"/>
       <axis xyz="0 -1 0"/>
-      <dynamics damping="0.1" />
-      <limit effort="1" lower="0.0" upper="${pi}" velocity="0.1"/>
+      <!-- damping factor of 0.1 makes the joint move smoother -->
+      <dynamics damping="0.1" friction="0"/>
+      <!-- note: the dynamixel motors can apply roughly 2Nm (see datasheet) -->
+      <limit effort="2" lower="0.0" upper="${pi}" velocity="1"/>
       <xacro:if value="${finger_id == 3}">
         <origin xyz="-0.03 0 0.0816" rpy="0 0.28 ${pi}"/>
         <parent link="shell"/>
