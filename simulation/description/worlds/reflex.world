@@ -19,7 +19,7 @@
     <!-- cylinder -->
     <model name="cylinder">
       <link name="cylinder_link">
-        <pose>0 0.3 0 0 0 0</pose>
+        <pose>0 0.3 0.0751 0 0 0</pose>
         <collision name="cylinder_collision">
           <geometry>
             <cylinder>
