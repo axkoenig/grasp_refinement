@@ -4,7 +4,7 @@ gazebo:
     type: joint_state_controller/JointStateController
     publish_rate: 500
 
-  # Effort Controllers ---------------------------------------
+  # Finger Position Controllers ---------------------------------------
   finger_1_preshape_position_controller:
     type: effort_controllers/JointPositionController
     joint: preshape_1
