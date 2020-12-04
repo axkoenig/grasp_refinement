@@ -121,7 +121,7 @@ int main(int argc, char **argv)
     ts.transform = tf2::toMsg(transform);
 
     // TODO find another, more elegant solution for this
-    // wait before publishing first transform to fix warning from wrist_control_node 
+    // wait before publishing first transform to fix warning from wrist_controller_node 
     // ""reflex" passed to lookupTransform argument target_frame does not exist."
     ros::Duration(1).sleep();
 
