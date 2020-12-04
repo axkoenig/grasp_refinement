@@ -53,7 +53,7 @@
 
     <!-- Sensors node -->
     <group if="$(arg run_sensors_node)">
-        <node pkg="sensors" type="sensors_node" name="sensors_node" respawn="false"/>
+        <node pkg="sensor_listener" type="sensor_listener_node" name="sensor_listener_node" respawn="false"/>
     </group>
 
     <!-- Wrist controller node -->
