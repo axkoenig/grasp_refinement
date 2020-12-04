@@ -21,6 +21,6 @@
     "/>
 
   <!-- launch finger finger_controller -->
-  <node pkg="finger_controller" type="finger_control_node" name="finger_control_node" respawn="true" output="screen"/>
+  <node pkg="finger_controller" type="finger_controller_node" name="finger_controller_node" respawn="true" output="screen"/>
 
 </launch>

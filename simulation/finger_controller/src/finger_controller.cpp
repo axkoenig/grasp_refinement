@@ -4,7 +4,7 @@
 #include <reflex_msgs/PoseCommand.h>
 
 std::string pos_cmd_topic = "reflex/pos_cmd";
-std::string node_name = "finger_control_node";
+std::string node_name = "finger_controller_node";
 std::string ns = "/gazebo";
 
 // flexure executes *scaling_factor of rotation of proximal link

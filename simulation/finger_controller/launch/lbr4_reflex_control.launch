@@ -22,6 +22,6 @@
     lbr4_j6_position_controller"/>
   
   <!-- launch custom reflex controller for open/close services-->
-  <node pkg="finger_controller" type="finger_control_node" name="reflex_actuation" respawn="true"/>
+  <node pkg="finger_controller" type="finger_controller_node" name="reflex_actuation" respawn="true"/>
 
 </launch>
