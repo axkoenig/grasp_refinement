@@ -20,6 +20,7 @@ int main(int argc, char **argv)
     msg.reference_frame = source_frame;
     msg.model_name = target_frame;
 
+// todo change the starting pose
     msg.pose.position.x = 0.0;
     msg.pose.position.y = 0.0;
     msg.pose.position.z = 0.0;

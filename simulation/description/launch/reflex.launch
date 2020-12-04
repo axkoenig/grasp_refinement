@@ -2,10 +2,10 @@
 <launch>
 
     <!-- custom arguments -->
-    <arg name="run_sensors_node" default="true" />
-    <arg name="run_wrist_controller_node" default="true" />
-    <arg name="run_teleop_node" default="true" />
-    <arg name="launch_finger_controllers" default="true" />
+    <arg name="run_sensors_node" default="false" />
+    <arg name="run_wrist_controller_node" default="false" />
+    <arg name="run_teleop_node" default="false" />
+    <arg name="launch_finger_controllers" default="false" />
 
     <!-- gazebo arguments  -->
     <arg name="debug" default="false" />
@@ -48,7 +48,7 @@
 
     <!-- Launch controllers -->
     <group if="$(arg launch_finger_controllers)">
-        <include file="$(find controllers)/launch/reflex_control.launch" />
+        <include file="$(find finger_controller)/launch/reflex_control.launch" />
     </group>
 
     <!-- Sensors node -->
@@ -58,7 +58,7 @@
 
     <!-- Wrist controller node -->
     <group if="$(arg run_wrist_controller_node)">
-        <node pkg="controllers" type="wrist_control_node" name="wrist_control_node" respawn="false"/>
+        <node pkg="finger_controller" type="wrist_control_node" name="wrist_control_node" respawn="false"/>
     </group>
 
 </launch>

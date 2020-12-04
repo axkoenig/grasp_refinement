@@ -1,7 +1,7 @@
 <launch>
 
   <!-- Load joint controller configurations from YAML file to parameter server -->
-  <rosparam file="$(find controllers)/config/reflex_control.yaml" command="load"/>
+  <rosparam file="$(find finger_controller)/config/reflex_control.yaml" command="load"/>
 
   <!-- load the controllers -->
   <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
@@ -20,7 +20,7 @@
     finger_3_flex_to_distal_position_controller
     "/>
 
-  <!-- launch finger controllers -->
-  <node pkg="controllers" type="finger_control_node" name="finger_control_node" respawn="true" output="screen"/>
+  <!-- launch finger finger_controller -->
+  <node pkg="finger_controller" type="finger_control_node" name="finger_control_node" respawn="true" output="screen"/>
 
 </launch>
