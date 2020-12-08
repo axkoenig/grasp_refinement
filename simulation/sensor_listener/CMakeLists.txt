@@ -131,6 +131,7 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/sensor_listener_node.cpp)
 add_executable(${PROJECT_NAME}_node src/sensor_listener.cpp)
+add_executable(${PROJECT_NAME}_debug_node src/debug_listener.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -150,6 +151,9 @@ add_dependencies(${PROJECT_NAME}_node reflex_msgs_generate_messages_cpp ${catkin
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_node
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(${PROJECT_NAME}_debug_node
   ${catkin_LIBRARIES}
 )
 

@@ -2,7 +2,8 @@
 <launch>
 
     <!-- custom arguments -->
-    <arg name="run_sensors_node" default="true" />
+    <arg name="run_sensors_node" default="false" />
+    <arg name="run_debug_node" default="true" />
     <arg name="run_wrist_controller_node" default="true" />
     <arg name="run_teleop_node" default="true" />
     <arg name="launch_finger_controllers" default="true" />
@@ -21,7 +22,7 @@
         <arg name="paused" value="$(arg pause)" />
         <arg name="use_sim_time" value="true" />
         <arg name="physics" value="dart" />
-        <arg name="verbose" value="false" />
+        <arg name="verbose" value="true" />
     </include>
 
     <node name="reflex_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param robot_description -model reflex" />
@@ -54,6 +55,11 @@
     <!-- Sensors node -->
     <group if="$(arg run_sensors_node)">
         <node pkg="sensor_listener" type="sensor_listener_node" name="sensor_listener_node" respawn="false"/>
+    </group>
+
+    <!-- Run debug sensors on link (outputs force and penetration depth for each link) -->
+    <group if="$(arg run_debug_node)">
+        <node pkg="sensor_listener" type="sensor_listener_debug_node" name="sensor_listener_debug_node" respawn="false"/>
     </group>
 
     <!-- Wrist controller node -->
