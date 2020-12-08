@@ -9,23 +9,30 @@
       <uri>model://ground_plane</uri>
     </include>
 
-    <!-- modify camera view point to zoom in on reflex -->
+    <!-- modify camera view point -->
     <gui>
       <camera name="user_camera">
-        <pose>0.211413 -0.480231 0.339124 0 0.499643 1.940195</pose>
+        <!-- zoomed on reflex -->
+        <!-- <pose>0.211413 -0.480231 0.339124 0 0.499643 1.940195</pose> -->
+        <!-- zoomed on whole grapsing situation (with cylinder) -->
+        <pose>0.5 0.5 0.43 0 0.57 -2.47</pose>
       </camera>
     </gui>
 
     <!-- cylinder -->
     <model name="cylinder">
       <link name="cylinder_link">
-        <pose>0 0.3 0.0751 0 0 0</pose>
+        <pose>0 0.185 1 0 0 0</pose>
         <collision name="cylinder_collision">
           <geometry>
             <cylinder>
               <radius>0.04</radius>
               <length>0.15</length>
             </cylinder>
+
+            <!-- <box>
+              <size>0.08 0.08 0.15</size>
+            </box> -->
           </geometry>
         </collision>
 
@@ -35,12 +42,16 @@
               <radius>0.04</radius>
               <length>0.15</length>
             </cylinder>
+
+            <!-- <box>
+              <size>0.08 0.08 0.15</size>
+            </box> -->
           </geometry>
 
           <material>
             <script>
               <uri>file://media/materials/scripts/gazebo.material</uri>
-              <name>Gazebo/Blue</name>
+              <name>Gazebo/Green</name>
             </script>
           </material>
         </visual>
