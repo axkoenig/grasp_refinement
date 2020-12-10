@@ -22,7 +22,7 @@
         <arg name="paused" value="$(arg pause)" />
         <arg name="use_sim_time" value="true" />
         <arg name="physics" value="dart" />
-        <arg name="verbose" value="true" />
+        <arg name="verbose" value="false" />
     </include>
 
     <node name="reflex_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param robot_description -model reflex" />
@@ -64,7 +64,7 @@
 
     <!-- Wrist controller node -->
     <group if="$(arg run_wrist_controller_node)">
-        <node pkg="wrist_controller" type="wrist_controller_node" name="wrist_controller_node" respawn="false"/>
+        <include file="$(find wrist_controller)/launch/wrist_controller.launch" />
     </group>
 
 </launch>
