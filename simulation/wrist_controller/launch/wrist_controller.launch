@@ -1,0 +1,21 @@
+<launch>
+
+  <!-- Load joint controller configurations from YAML file to parameter server -->
+  <rosparam file="$(find wrist_controller)/config/wrist_control.yaml" command="load"/>
+
+  <!-- load the controllers -->
+  <node name="wrist_controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
+    output="screen" ns="gazebo" 
+    args="virtual_joint_state_controller 
+    virtual_px_position_controller
+    virtual_py_position_controller
+    virtual_pz_position_controller
+    virtual_ry_position_controller
+    virtual_rp_position_controller 
+    virtual_rr_position_controller
+    "/>
+
+  <!-- launch finger finger_controller -->
+  <node pkg="wrist_controller" type="wrist_controller_node" name="wrist_controller_node" respawn="true" output="screen"/>
+
+</launch>

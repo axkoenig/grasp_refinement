@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="wrist_transmission" params="axes">
+    <transmission name="virtual_${axes}_transmission">
+      <type>transmission_interface/SimpleTransmission</type>
+      <joint name="virtual_${axes}_joint">
+        <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      </joint>
+      <actuator name="virtual_${axes}_joint_motor">
+        <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        <mechanicalReduction>1</mechanicalReduction>
+      </actuator>
+    </transmission>
+  </xacro:macro>
+
+  <xacro:wrist_transmission axes="px"/>
+  <xacro:wrist_transmission axes="py"/>
+  <xacro:wrist_transmission axes="pz"/>
+  <xacro:wrist_transmission axes="ry"/>
+  <xacro:wrist_transmission axes="rp"/>
+  <xacro:wrist_transmission axes="rr"/>
+
+</robot>

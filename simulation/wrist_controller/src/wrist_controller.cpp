@@ -2,12 +2,36 @@
 #include <gazebo_msgs/ModelState.h>
 #include <tf2_ros/transform_listener.h>
 #include <geometry_msgs/TransformStamped.h>
+#include <std_msgs/Float64.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
 #include <string>
 
 std::string node_name = "wrist_control";
+std::string ns = "gazebo";
 std::string topic_name = "gazebo/set_model_state";
 std::string source_frame = "world";
 std::string target_frame = "reflex";
+
+class WristAxisController
+{
+private:
+    ros::Publisher pub;
+    std_msgs::Float64 msg;
+
+public:
+    WristAxisController(ros::NodeHandle *nh, std::string axis)
+    {
+        std::string topic = ns + "/virtual_" + axis + "_position_controller/command";
+        pub = nh->advertise<std_msgs::Float64>(topic, 1);
+    }
+
+    void sendCommand(float command)
+    {
+        msg.data = command;
+        pub.publish(msg);
+    }
+};
 
 int main(int argc, char **argv)
 {
@@ -16,26 +40,17 @@ int main(int argc, char **argv)
     ros::Publisher pub = nh.advertise<gazebo_msgs::ModelState>(topic_name, 1);
     ROS_INFO("Launched %s node.", node_name.c_str());
 
-    gazebo_msgs::ModelState msg;
-    msg.reference_frame = source_frame;
-    msg.model_name = target_frame;
-
-// todo change the starting pose
-    msg.pose.position.x = 0.0;
-    msg.pose.position.y = 0.0;
-    msg.pose.position.z = 0.0;
-    msg.pose.orientation.x = 0.0;
-    msg.pose.orientation.y = 0.0;
-    msg.pose.orientation.z = 0.0;
-    msg.pose.orientation.w = 1.0;
-
-    // TODO: attention if I run this in a simulation (e.g. on a HPC) this rate might
-    // not be sufficient to keep the hand in the desired pose because the frames are executed
-    // much quicker
     ros::Rate rate(1000);
     tf2_ros::Buffer tfBuffer;
     tf2_ros::TransformListener tfListener(tfBuffer);
     geometry_msgs::TransformStamped ts;
+
+    WristAxisController px_controller = WristAxisController(&nh, "px");
+    WristAxisController py_controller = WristAxisController(&nh, "py");
+    WristAxisController pz_controller = WristAxisController(&nh, "pz");
+    WristAxisController rr_controller = WristAxisController(&nh, "rr");
+    WristAxisController rp_controller = WristAxisController(&nh, "rp");
+    WristAxisController ry_controller = WristAxisController(&nh, "ry");
 
     while (ros::ok())
     {
@@ -50,15 +65,34 @@ int main(int argc, char **argv)
             continue;
         }
 
-        msg.pose.position.x = ts.transform.translation.x;
-        msg.pose.position.y = ts.transform.translation.y;
-        msg.pose.position.z = ts.transform.translation.z;
-        msg.pose.orientation.x = ts.transform.rotation.x;
-        msg.pose.orientation.y = ts.transform.rotation.y;
-        msg.pose.orientation.z = ts.transform.rotation.z;
-        msg.pose.orientation.w = ts.transform.rotation.w;
+        // convert geometry_msgs::Quaternion to tf2::Quaterion
+        tf2::Quaternion q = tf2::Quaternion(ts.transform.rotation.x,
+                                            ts.transform.rotation.y,
+                                            ts.transform.rotation.z,
+                                            ts.transform.rotation.w);
 
-        pub.publish(msg);
+        // form rotation matrix and obtain r, p, y
+        double r, p, y;
+        tf2::Matrix3x3(q).getRPY(r, p, y);
+
+        // update commands
+        px_controller.sendCommand(ts.transform.translation.x);
+        py_controller.sendCommand(ts.transform.translation.y);
+        pz_controller.sendCommand(ts.transform.translation.z);
+        rr_controller.sendCommand(r);
+        rp_controller.sendCommand(p);
+        ry_controller.sendCommand(y);
+
+        // ROS_INFO("X Y Z R P Y");
+        // ROS_INFO("%s, %s, %s, %s, %s, %s",
+        //          std::to_string(ts.transform.translation.x).c_str(),
+        //          std::to_string(ts.transform.translation.y).c_str(),
+        //          std::to_string(ts.transform.translation.z).c_str(),
+        //          std::to_string(r).c_str(),
+        //          std::to_string(p).c_str(),
+        //          std::to_string(y).c_str());
+
+        ros::spinOnce();
         rate.sleep();
     }
 
