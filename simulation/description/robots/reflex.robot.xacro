@@ -1,12 +1,7 @@
 <?xml version="1.0" ?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="reflex">
 
-    <!-- add base link without inertia because KDL does not support a root link with inertia -->
-    <link name="base" />
-    <joint name="base_to_shell_joint" type="fixed">
-        <parent link="base" />
-        <child link = "shell" />
-    </joint>
+    <xacro:include filename="$(find wrist_controller)/urdf/wrist.urdf.xacro"/>
 
     <xacro:property name="urdf_path" value="$(find description)/urdf"/>
     <xacro:include filename="${urdf_path}/reflex/reflex.urdf.xacro"/>
