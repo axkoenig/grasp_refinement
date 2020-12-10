@@ -21,7 +21,7 @@ float rot_scaling = 0.2;
 float finger_scaling = 0.1;
 
 // format: {x, y, z, r, p ,y} in "reflex" frame
-std::array<float, 6> init_pose = {0, 0, 0.1, -M_PI / 2, 0, 0};
+std::array<float, 6> init_pose = {0, 0, 0, 0, 0, 0};
 
 // keys for wrist teleoperation (note this is for my german keyboard)
 std::map<char, std::vector<float>> wrist_bindings{
