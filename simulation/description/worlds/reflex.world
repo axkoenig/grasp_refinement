@@ -25,13 +25,13 @@
         <pose>0 0.185 1 0 0 0</pose>
         <collision name="cylinder_collision">
           <geometry>
-            <cylinder>
+            <!-- <cylinder>
               <radius>0.04</radius>
               <length>0.15</length>
-            </cylinder>
-            <!-- <sphere>
+            </cylinder> -->
+            <sphere>
               <radius>0.05</radius>
-            </sphere> -->
+            </sphere>
             <!-- <box>
               <size>0.08 0.08 0.15</size>
             </box> -->
@@ -40,13 +40,13 @@
 
         <visual name="cylinder_visual">
           <geometry>
-            <cylinder>
+            <!-- <cylinder>
               <radius>0.04</radius>
               <length>0.15</length>
-            </cylinder>
-            <!-- <sphere>
+            </cylinder> -->
+            <sphere>
               <radius>0.05</radius>
-            </sphere> -->
+            </sphere>
             <!-- <box>
               <size>0.08 0.08 0.15</size>
             </box> -->
@@ -63,23 +63,23 @@
         <inertial>
           <pose>0 0 0 0 0 0</pose>
           <!-- inertia for sphere -->
-          <!-- <inertia>
+          <inertia>
             <ixx>0.0002</ixx>
             <ixy>0</ixy>
             <ixz>0</ixz>
             <iyy>0.0002</iyy>
             <iyz>0</iyz>
             <izz>0.0002</izz>
-          </inertia> -->
+          </inertia>
 
-          <inertia>
+          <!-- <inertia>
             <ixx>0.000455</ixx>
             <ixy>0</ixy>
             <ixz>0</ixz>
             <iyy>0.000455</iyy>
             <iyz>0</iyz>
             <izz>0.00016</izz>
-          </inertia>
+          </inertia> -->
 
           <mass>0.2</mass>
         </inertial>
