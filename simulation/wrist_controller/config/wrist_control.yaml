@@ -8,26 +8,26 @@ gazebo:
   virtual_px_position_controller:
     type: effort_controllers/JointPositionController
     joint: virtual_px_joint
-    pid: {p: 1000, i: 0.0, d: 1}
+    pid: {p: 4000, i: 0.0, d: 150}
   virtual_py_position_controller:
     type: effort_controllers/JointPositionController
     joint: virtual_py_joint
-    pid: {p: 1000, i: 0.0, d: 1}
+    pid: {p: 4000, i: 0.0, d: 150}
   virtual_pz_position_controller:
     type: effort_controllers/JointPositionController
     joint: virtual_pz_joint
-    pid: {p: 1000, i: 0.0, d: 1}
+    pid: {p: 10000, i: 0.0, d: 400}
 
   # Rotation ---------------------------------------
   virtual_ry_position_controller:
     type: effort_controllers/JointPositionController
     joint: virtual_ry_joint
-    pid: {p: 1000, i: 0.0, d: 1}
+    pid: {p: 2000, i: 0.0, d: 5}
   virtual_rp_position_controller:
     type: effort_controllers/JointPositionController
     joint: virtual_rp_joint
-    pid: {p: 1000, i: 0.0, d: 1}
+    pid: {p: 2000, i: 0.0, d: 5}
   virtual_rr_position_controller:
     type: effort_controllers/JointPositionController
     joint: virtual_rr_joint
-    pid: {p: 1000, i: 0.0, d: 1}
+    pid: {p: 2000, i: 0.0, d: 5}
