@@ -83,15 +83,6 @@ int main(int argc, char **argv)
         rp_controller.sendCommand(p);
         ry_controller.sendCommand(y);
 
-        // ROS_INFO("X Y Z R P Y");
-        // ROS_INFO("%s, %s, %s, %s, %s, %s",
-        //          std::to_string(ts.transform.translation.x).c_str(),
-        //          std::to_string(ts.transform.translation.y).c_str(),
-        //          std::to_string(ts.transform.translation.z).c_str(),
-        //          std::to_string(r).c_str(),
-        //          std::to_string(p).c_str(),
-        //          std::to_string(y).c_str());
-
         ros::spinOnce();
         rate.sleep();
     }
