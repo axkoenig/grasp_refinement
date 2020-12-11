@@ -69,8 +69,8 @@
         <axis xyz="0 0 1"/>
         <parent link="virtual_pz_link"/>
         <child link="virtual_ry_link"/>
-        <limit effort="50.00" velocity="25.0"/>
-        <dynamics damping="100.0" friction="5.0"/>
+        <limit effort="${rotation_effort}" velocity="${rotation_velocity}"/>
+        <dynamics damping="${rotation_damping}" friction="${rotation_friction}"/>
     </joint>
     <link name="virtual_ry_link">
         <inertial>
