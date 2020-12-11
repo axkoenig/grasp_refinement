@@ -6,12 +6,13 @@
     <xacro:property name="translation_velocity" value="25"/>
     <xacro:property name="translation_up_lim" value="5"/>
     <xacro:property name="translation_low_lim" value="-5"/>
-    <xacro:property name="translation_damping" value="30"/>
+    <xacro:property name="translation_damping" value="60"/>
+    <xacro:property name="translation_friction" value="0"/>
 
     <!-- rotation properties -->
     <xacro:property name="rotation_effort" value="1000"/>
     <xacro:property name="rotation_velocity" value="25"/>
-    <xacro:property name="rotation_damping" value="0"/>
+    <xacro:property name="rotation_damping" value="60"/>
     <xacro:property name="rotation_friction" value="0"/>
 
     <!-- links and joints for translation -->
@@ -22,7 +23,7 @@
         <parent link="world"/>
         <child link="virtual_px_link"/>
         <limit effort="${translation_effort}" lower="${translation_low_lim}" upper="${translation_up_lim}" velocity="${translation_velocity}"/>
-        <dynamics damping="${translation_damping}"/>
+        <dynamics damping="${translation_damping}" friction="${translation_friction}"/>
     </joint>
     <link name="virtual_px_link">
         <inertial>
@@ -37,7 +38,7 @@
         <parent link="virtual_px_link"/>
         <child link="virtual_py_link"/>
         <limit effort="${translation_effort}" lower="${translation_low_lim}" upper="${translation_up_lim}" velocity="${translation_velocity}"/>
-        <dynamics damping="${translation_damping}"/>
+        <dynamics damping="${translation_damping}" friction="${translation_friction}"/>
     </joint>
     <link name="virtual_py_link">
         <inertial>
@@ -52,7 +53,7 @@
         <parent link="virtual_py_link"/>
         <child link="virtual_pz_link"/>
         <limit effort="${translation_effort}" lower="${translation_low_lim}" upper="${translation_up_lim}" velocity="${translation_velocity}"/>
-        <dynamics damping="${translation_damping}"/>
+        <dynamics damping="${translation_damping}" friction="${translation_friction}"/>
     </joint>
     <link name="virtual_pz_link">
         <inertial>
