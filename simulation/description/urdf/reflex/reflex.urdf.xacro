@@ -2,7 +2,7 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="reflex">
 
   <xacro:arg name="actuate_reflex" default="true"/>
-  <xacro:arg name="use_reflex_contact_sensors" default="true"/>
+  <xacro:arg name="use_reflex_contact_sensors" default="false"/>
 
   <!-- Switch joint type for actuated joints depending on if they are being used for control -->
   <xacro:if value="$(arg actuate_reflex)">
