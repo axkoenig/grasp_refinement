@@ -2,6 +2,7 @@
 #include <std_msgs/Float64.h>
 #include <std_srvs/Trigger.h>
 #include <reflex_msgs/PoseCommand.h>
+#include <teleop/PosIncrement.h>
 #include <math.h>
 
 std::string node_name = "reflex_commander_node";
@@ -27,7 +28,7 @@ private:
     ros::ServiceServer pinch_service;
     ros::ServiceServer sph_open_service;
     ros::ServiceServer sph_close_service;
-    // ros::ServiceServer pos_incr_service;
+    ros::ServiceServer pos_incr_service;
     reflex_msgs::PoseCommand pos_cmd;
 
     // format {finger1, finger2, finger3, preshape}
@@ -40,18 +41,6 @@ private:
     std::array<float, 4> sph_close_pos = {2.5, 2.5, 2.5, M_PI / 2};
     std::array<float, 4> cur_pos = open_pos;
 
-public:
-    ReflexCommander(ros::NodeHandle *nh)
-    {
-        pub = nh->advertise<reflex_msgs::PoseCommand>(pos_cmd_topic, 1);
-        open_service = nh->advertiseService(open_srv_name, &ReflexCommander::callbackOpen, this);
-        close_service = nh->advertiseService(close_srv_name, &ReflexCommander::callbackClose, this);
-        pinch_service = nh->advertiseService(pinch_srv_name, &ReflexCommander::callbackPinch, this);
-        sph_open_service = nh->advertiseService(sph_open_srv_name, &ReflexCommander::callbackSphOpen, this);
-        sph_close_service = nh->advertiseService(sph_close_srv_name, &ReflexCommander::callbackSphClose, this);
-        // pos incr
-    }
-
     enum Primitive
     {
         Open,
@@ -61,7 +50,7 @@ public:
         SphericalClose
     };
 
-    std::string getCurPosStr()
+    std::string getServiceResponse()
     {
         std::string str;
         int size = cur_pos.size();
@@ -73,10 +62,11 @@ public:
                 str += ", ";
             }
         }
-        return str;
+        std::string msg = "Sent [" + str + "] to " + pos_cmd_topic;
+        return msg;
     }
 
-    std::string executePrimitive(Primitive primitive)
+    void executePrimitive(Primitive primitive)
     {
         switch (primitive)
         {
@@ -106,60 +96,62 @@ public:
             break;
         }
         }
-        ReflexCommander::sendCommands();
-        std::string msg = "Sent [" + ReflexCommander::getCurPosStr() + "] to " + pos_cmd_topic;
-        return msg;
+        this->sendCommands();
     }
 
     bool callbackOpen(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
     {
-        std::string msg = ReflexCommander::executePrimitive(Open);
+        this->executePrimitive(Open);
         res.success = true;
-        res.message = msg;
+        res.message = this->getServiceResponse();
         return true;
     }
 
     bool callbackClose(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
     {
-        std::string msg = ReflexCommander::executePrimitive(Close);
+        this->executePrimitive(Close);
         res.success = true;
-        res.message = msg;
+        res.message = this->getServiceResponse();
         return true;
     }
 
     bool callbackPinch(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
     {
-        std::string msg = ReflexCommander::executePrimitive(Pinch);
+        this->executePrimitive(Pinch);
         res.success = true;
-        res.message = msg;
+        res.message = this->getServiceResponse();
         return true;
     }
 
     bool callbackSphOpen(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
     {
-        std::string msg = ReflexCommander::executePrimitive(SphericalOpen);
+        this->executePrimitive(SphericalOpen);
         res.success = true;
-        res.message = msg;
+        res.message = this->getServiceResponse();
         return true;
     }
 
     bool callbackSphClose(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
     {
-        std::string msg = ReflexCommander::executePrimitive(SphericalClose);
+        this->executePrimitive(SphericalClose);
         res.success = true;
-        res.message = msg;
+        res.message = this->getServiceResponse();
         return true;
     }
 
-    // bool callbackPosIncr(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
-    // {
-    //     std::string msg = ReflexCommander::executePrimitive(SphericalClose);
-    //     res.success = true;
-    //     res.message = msg;
-    //     return true;
-    // }
+    bool callbackPosIncr(teleop::PosIncrement::Request &req, teleop::PosIncrement::Response &res)
+    {
+        float increment[4] = {(float)req.f1,
+                              (float)req.f2,
+                              (float)req.f3,
+                              (float)req.preshape};
+        this->executePosIncrement(increment);
+        res.success = true;
+        res.message = this->getServiceResponse();
+        return true;
+    }
 
-    void updatePosIncrement(float increment[4])
+    void executePosIncrement(float increment[4])
     {
         for (int i = 0; i < 4; i++)
         {
@@ -169,6 +161,7 @@ public:
                 cur_pos[i] = val;
             }
         }
+        this->sendCommands();
     }
 
     void sendCommands()
@@ -179,6 +172,18 @@ public:
         pos_cmd.preshape = cur_pos[3];
 
         pub.publish(pos_cmd);
+    }
+
+public:
+    ReflexCommander(ros::NodeHandle *nh)
+    {
+        pub = nh->advertise<reflex_msgs::PoseCommand>(pos_cmd_topic, 1);
+        open_service = nh->advertiseService(open_srv_name, &ReflexCommander::callbackOpen, this);
+        close_service = nh->advertiseService(close_srv_name, &ReflexCommander::callbackClose, this);
+        pinch_service = nh->advertiseService(pinch_srv_name, &ReflexCommander::callbackPinch, this);
+        sph_open_service = nh->advertiseService(sph_open_srv_name, &ReflexCommander::callbackSphOpen, this);
+        sph_close_service = nh->advertiseService(sph_close_srv_name, &ReflexCommander::callbackSphClose, this);
+        pos_incr_service = nh->advertiseService(pos_incr_srv_name, &ReflexCommander::callbackPosIncr, this);
     }
 };
 
