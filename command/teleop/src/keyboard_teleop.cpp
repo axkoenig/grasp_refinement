@@ -6,6 +6,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <math.h>
 #include <std_srvs/Trigger.h>
+#include <teleop/PosIncrement.h>
 
 #include <iostream>
 #include <map>
@@ -117,20 +118,22 @@ int main(int argc, char **argv)
     ros::ServiceClient pinch_client = nh.serviceClient<std_srvs::Trigger>(pinch_srv_name);
     ros::ServiceClient sph_open_client = nh.serviceClient<std_srvs::Trigger>(sph_open_srv_name);
     ros::ServiceClient sph_close_client = nh.serviceClient<std_srvs::Trigger>(sph_close_srv_name);
-    std_srvs::Trigger srv;
+    ros::ServiceClient pos_incr_client = nh.serviceClient<teleop::PosIncrement>(pos_incr_srv_name);
 
+    // service messages
+    std_srvs::Trigger trigger;
+    teleop::PosIncrement pos_incr;
+
+    // init transform broadcaster
     static tf2_ros::TransformBroadcaster br;
     geometry_msgs::TransformStamped ts;
-    char key(' ');
-
-    std::array<float, 6> cur_pose = init_pose;
     tf2::Transform transform;
-    transform = calcReflexInWorld(init_pose);
 
-    // populate and send initial wrist transform
+    // populate initial wrist transform
+    std::array<float, 6> cur_pose = init_pose; 
+    transform = calcReflexInWorld(init_pose);
     ts.header.frame_id = source_frame;
     ts.child_frame_id = target_frame;
-    ts.header.stamp = ros::Time::now();
     ts.transform = tf2::toMsg(transform);
 
     // TODO find another, more elegant solution for this
@@ -138,10 +141,12 @@ int main(int argc, char **argv)
     // ""reflex" passed to lookupTransform argument target_frame does not exist."
     ros::Duration(1).sleep();
 
+    // send initial wrist transform
     ts.header.stamp = ros::Time::now();
     br.sendTransform(ts);
 
     ROS_INFO("Listening to keyboard input...");
+    char key(' ');
 
     while (ros::ok())
     {
@@ -177,47 +182,45 @@ int main(int argc, char **argv)
         // FINGER CONTROL (TELEOP) ----------------------------------------------
         if (finger_bindings.count(key) == 1)
         {
-            float increment[4] = {finger_scaling * finger_bindings[key][0],
-                                  finger_scaling * finger_bindings[key][1],
-                                  finger_scaling * finger_bindings[key][2],
-                                  finger_scaling * finger_bindings[key][3]};
-            // TODO!!!
-            // rc.updatePosIncrement(increment);
-            ROS_INFO("Reflex finger positions updated.");
+            pos_incr.request.f1 = finger_scaling * finger_bindings[key][0];
+            pos_incr.request.f2 = finger_scaling * finger_bindings[key][1];
+            pos_incr.request.f3 = finger_scaling * finger_bindings[key][2];
+            pos_incr.request.preshape = finger_scaling * finger_bindings[key][3];
+            pos_incr_client.call(pos_incr);
+            ROS_INFO("%s", pos_incr.response.message.c_str());
         }
-        // rc.sendCommands();
 
         // FINGER CONTROL (PRIMITIVES) ------------------------------------------
         switch (key)
         {
         case 'c':
         {
-            close_client.call(srv);
-            ROS_INFO("%s", srv.response.message.c_str());
+            close_client.call(trigger);
+            ROS_INFO("%s", trigger.response.message.c_str());
             break;
         }
         case 'x':
         {
-            open_client.call(srv);
-            ROS_INFO("%s", srv.response.message.c_str());
+            open_client.call(trigger);
+            ROS_INFO("%s", trigger.response.message.c_str());
             break;
         }
         case 'y':
         {
-            pinch_client.call(srv);
-            ROS_INFO("%s", srv.response.message.c_str());
+            pinch_client.call(trigger);
+            ROS_INFO("%s", trigger.response.message.c_str());
             break;
         }
         case 'v':
         {
-            sph_open_client.call(srv);
-            ROS_INFO("%s", srv.response.message.c_str());
+            sph_open_client.call(trigger);
+            ROS_INFO("%s", trigger.response.message.c_str());
             break;
         }
         case 'b':
         {
-            sph_close_client.call(srv);
-            ROS_INFO("%s", srv.response.message.c_str());
+            sph_close_client.call(trigger);
+            ROS_INFO("%s", trigger.response.message.c_str());
             break;
         }
         }
