@@ -2,7 +2,7 @@
 <launch>
 
     <!-- custom arguments -->
-    <arg name="run_sensors_node" default="false" />
+    <arg name="run_sensors_node" default="true" />
     <arg name="run_debug_node" default="true" />
     <arg name="run_wrist_controller_node" default="true" />
     <arg name="run_teleop_node" default="true" />
