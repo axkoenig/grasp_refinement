@@ -93,11 +93,11 @@ int getch(void)
     return ch;
 }
 
-tf2::Transform calcReflexInWorld(std::array<float, 6> reflex_pose)
+tf2::Transform calcReflexInWorld(std::array<float, 6> pose)
 {
-    tf2::Vector3 t = {reflex_pose[0], reflex_pose[1], reflex_pose[2]};
+    tf2::Vector3 t = {pose[0], pose[1], pose[2]};
     tf2::Quaternion q;
-    q.setRPY(reflex_pose[3], reflex_pose[4], reflex_pose[5]);
+    q.setRPY(pose[3], pose[4], pose[5]);
     tf2::Transform transform(q, t);
 
     return transform.inverse();
