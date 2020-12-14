@@ -5,23 +5,29 @@
 #include <tf2/LinearMath/Transform.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <math.h>
+#include <std_srvs/Trigger.h>
 
 #include <iostream>
 #include <map>
 #include <termios.h>
 
-#include "reflex_commander.h"
-
 std::string node_name = "teleop_node";
 std::string source_frame = "world";
 std::string target_frame = "reflex";
+
+std::string open_srv_name = "reflex/open";
+std::string close_srv_name = "reflex/close";
+std::string pinch_srv_name = "reflex/pinch";
+std::string sph_open_srv_name = "reflex/spherical_open";
+std::string sph_close_srv_name = "reflex/spherical_close";
+std::string pos_incr_srv_name = "reflex/pos_incr";
 
 float trans_scaling = 0.01;
 float rot_scaling = 0.2;
 float finger_scaling = 0.1;
 
 // format: {x, y, z, r, p ,y} in "reflex" frame
-std::array<float, 6> init_pose = {0, 0, 0, 0, 0, 0};
+std::array<float, 6> init_pose = {0, 0, 0.1, -M_PI / 2, 0, 0};
 
 // keys for wrist teleoperation (note this is for my german keyboard)
 std::map<char, std::vector<float>> wrist_bindings{
@@ -103,8 +109,15 @@ int main(int argc, char **argv)
     ros::init(argc, argv, node_name);
     ros::NodeHandle nh;
     ros::Rate rate(100);
-    ReflexCommander rc = ReflexCommander(&nh);
     ROS_INFO("Launched %s node.", node_name.c_str());
+
+    // service clients for reflex_commander_node
+    ros::ServiceClient open_client = nh.serviceClient<std_srvs::Trigger>(open_srv_name);
+    ros::ServiceClient close_client = nh.serviceClient<std_srvs::Trigger>(close_srv_name);
+    ros::ServiceClient pinch_client = nh.serviceClient<std_srvs::Trigger>(pinch_srv_name);
+    ros::ServiceClient sph_open_client = nh.serviceClient<std_srvs::Trigger>(sph_open_srv_name);
+    ros::ServiceClient sph_close_client = nh.serviceClient<std_srvs::Trigger>(sph_close_srv_name);
+    std_srvs::Trigger srv;
 
     static tf2_ros::TransformBroadcaster br;
     geometry_msgs::TransformStamped ts;
@@ -121,7 +134,7 @@ int main(int argc, char **argv)
     ts.transform = tf2::toMsg(transform);
 
     // TODO find another, more elegant solution for this
-    // wait before publishing first transform to fix warning from wrist_controller_node 
+    // wait before publishing first transform to fix warning from wrist_controller_node
     // ""reflex" passed to lookupTransform argument target_frame does not exist."
     ros::Duration(1).sleep();
 
@@ -168,30 +181,43 @@ int main(int argc, char **argv)
                                   finger_scaling * finger_bindings[key][1],
                                   finger_scaling * finger_bindings[key][2],
                                   finger_scaling * finger_bindings[key][3]};
-            rc.updatePosIncrement(increment);
+            // TODO!!!
+            // rc.updatePosIncrement(increment);
             ROS_INFO("Reflex finger positions updated.");
         }
-        rc.sendCommands();
+        // rc.sendCommands();
 
         // FINGER CONTROL (PRIMITIVES) ------------------------------------------
         switch (key)
         {
         case 'c':
         {
-            rc.executePrimitive(rc.Primitive::Close);
-            ROS_INFO("Sent Reflex close command.");
+            close_client.call(srv);
+            ROS_INFO("%s", srv.response.message.c_str());
             break;
         }
         case 'x':
         {
-            rc.executePrimitive(rc.Primitive::Open);
-            ROS_INFO("Sent Reflex open command.");
+            open_client.call(srv);
+            ROS_INFO("%s", srv.response.message.c_str());
             break;
         }
         case 'y':
         {
-            rc.executePrimitive(rc.Primitive::Pinch);
-            ROS_INFO("Sent Reflex pinch command.");
+            pinch_client.call(srv);
+            ROS_INFO("%s", srv.response.message.c_str());
+            break;
+        }
+        case 'v':
+        {
+            sph_open_client.call(srv);
+            ROS_INFO("%s", srv.response.message.c_str());
+            break;
+        }
+        case 'b':
+        {
+            sph_close_client.call(srv);
+            ROS_INFO("%s", srv.response.message.c_str());
             break;
         }
         }
