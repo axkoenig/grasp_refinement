@@ -30,19 +30,19 @@ private:
 public:
   ReflexFingerPositionController(ros::NodeHandle *nh, int finger_id)
   {
-    finger_id = finger_id;
+    this->finger_id = finger_id;
 
-    std::string proximal_topic = ns + "/finger_" + std::to_string(finger_id) + "_proximal_position_controller/command";
-    std::string proximal_to_flex_topic = ns + "/finger_" + std::to_string(finger_id) + "_proximal_to_flex_position_controller/command";
-    std::string flex_to_distal_topic = ns + "/finger_" + std::to_string(finger_id) + "_flex_to_distal_position_controller/command";
+    std::string proximal_topic = ns + "/finger_" + std::to_string(this->finger_id) + "_proximal_position_controller/command";
+    std::string proximal_to_flex_topic = ns + "/finger_" + std::to_string(this->finger_id) + "_proximal_to_flex_position_controller/command";
+    std::string flex_to_distal_topic = ns + "/finger_" + std::to_string(this->finger_id) + "_flex_to_distal_position_controller/command";
 
     proximal_pub = nh->advertise<std_msgs::Float64>(proximal_topic, 1);
     proximal_to_flex_pub = nh->advertise<std_msgs::Float64>(proximal_to_flex_topic, 1);
     flex_to_distal_pub = nh->advertise<std_msgs::Float64>(flex_to_distal_topic, 1);
 
-    if (finger_id != 3)
+    if (this->finger_id != 3)
     {
-      std::string preshape_topic = ns + "/finger_" + std::to_string(finger_id) + "_preshape_position_controller/command";
+      std::string preshape_topic = ns + "/finger_" + std::to_string(this->finger_id) + "_preshape_position_controller/command";
       preshape_pub = nh->advertise<std_msgs::Float64>(preshape_topic, 1);
     }
   }
