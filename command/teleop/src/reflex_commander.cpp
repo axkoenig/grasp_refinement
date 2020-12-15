@@ -37,7 +37,7 @@ private:
     std::array<float, 4> open_pos = {0, 0, 0, 0};
     std::array<float, 4> close_pos = {2.5, 2.5, 2.5, 0};
     std::array<float, 4> pinch_pos = {1.7, 1.7, 0, M_PI};
-    std::array<float, 4> sph_open_pos = {0.8, 0.8, 0.8, M_PI / 2};
+    std::array<float, 4> sph_open_pos = {1.2, 1.2, 1.2, M_PI / 2};
     std::array<float, 4> sph_close_pos = {2.5, 2.5, 2.5, M_PI / 2};
     std::array<float, 4> cur_pos = open_pos;
 
