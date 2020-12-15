@@ -45,7 +45,7 @@
 
     <!-- Keyboard teleoperation node -->
     <group if="$(arg run_teleop_node)">
-        <node pkg="teleop" type="teleop_node" name="teleop_node" respawn="true" output="screen"/>
+        <node pkg="teleop" type="teleop_node" name="teleop_node" respawn="false" output="screen"/>
     </group>
 
     <!-- Launch controllers -->
@@ -55,17 +55,17 @@
 
     <!-- Sensors node -->
     <group if="$(arg run_sensors_node)">
-        <node pkg="sensor_listener" type="sensor_listener_node" name="sensor_listener_node" respawn="true" output="screen"/>
+        <node pkg="sensor_listener" type="sensor_listener_node" name="sensor_listener_node" respawn="false" output="screen"/>
     </group>
 
     <!-- Run debug sensors on link (outputs force and penetration depth for each link) -->
     <group if="$(arg run_debug_node)">
-        <node pkg="sensor_listener" type="sensor_listener_debug_node" name="sensor_listener_debug_node" respawn="true" output="screen"/>
+        <node pkg="sensor_listener" type="sensor_listener_debug_node" name="sensor_listener_debug_node" respawn="false" output="screen"/>
     </group>
 
     <!-- Run Reflex commander node (high level grasp primitives) -->
     <group if="$(arg run_reflex_commander_node)">
-        <node pkg="teleop" type="reflex_commander_node" name="reflex_commander_node" respawn="true" output="screen"/>
+        <node pkg="teleop" type="reflex_commander_node" name="reflex_commander_node" respawn="false" output="screen"/>
     </group>
 
     <!-- Wrist controller node -->
