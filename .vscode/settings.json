@@ -74,7 +74,8 @@
         "future": "cpp",
         "*.xacro": "cpp",
         "regex": "cpp",
-        "shared_mutex": "cpp"
+        "shared_mutex": "cpp",
+        "*.ipp": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled",
     "ros.distro": "noetic"
