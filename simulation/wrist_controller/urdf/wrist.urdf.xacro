@@ -3,7 +3,7 @@
 
     <!-- translation properties -->
     <xacro:property name="translation_effort" value="1000"/>
-    <xacro:property name="translation_velocity" value="25"/>
+    <xacro:property name="translation_velocity" value="0.5"/>
     <xacro:property name="translation_up_lim" value="5"/>
     <xacro:property name="translation_low_lim" value="-5"/>
     <xacro:property name="translation_damping" value="60"/>
@@ -11,7 +11,7 @@
 
     <!-- rotation properties -->
     <xacro:property name="rotation_effort" value="1000"/>
-    <xacro:property name="rotation_velocity" value="25"/>
+    <xacro:property name="rotation_velocity" value="0.1"/>
     <xacro:property name="rotation_damping" value="60"/>
     <xacro:property name="rotation_friction" value="0"/>
 
