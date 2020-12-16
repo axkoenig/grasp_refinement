@@ -56,7 +56,7 @@ int main(int argc, char **argv)
     {
         try
         {
-            ts = tfBuffer.lookupTransform(target_frame, source_frame, ros::Time(0));
+            ts = tfBuffer.lookupTransform(source_frame, target_frame, ros::Time(0));
         }
         catch (tf2::TransformException &ex)
         {
