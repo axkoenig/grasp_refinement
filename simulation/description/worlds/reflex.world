@@ -22,7 +22,7 @@
     <!-- cylinder -->
     <model name="cylinder">
       <link name="cylinder_link">
-        <pose>0 0.185 1 0 0 0</pose>
+        <pose>0.03 0.4 1 0 0 0</pose>
         <collision name="cylinder_collision">
           <geometry>
             <!-- <cylinder>
@@ -30,7 +30,7 @@
               <length>0.15</length>
             </cylinder> -->
             <sphere>
-              <radius>0.05</radius>
+              <radius>0.085</radius>
             </sphere>
             <!-- <box>
               <size>0.08 0.08 0.15</size>
@@ -45,7 +45,7 @@
               <length>0.15</length>
             </cylinder> -->
             <sphere>
-              <radius>0.05</radius>
+              <radius>0.085</radius>
             </sphere>
             <!-- <box>
               <size>0.08 0.08 0.15</size>
