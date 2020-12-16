@@ -1,0 +1,3 @@
+[submodule "simulation/wrist_controller"]
+	path = simulation/wrist_controller
+	url = git@github.com:axkoenig/wrist_controller.git
