@@ -8,6 +8,11 @@
     <arg name="run_teleop_node" default="true" />
     <arg name="run_reflex_commander_node" default="true" />
     <arg name="launch_finger_controllers" default="true" />
+    <arg name="base_link_name" default="shell" />
+
+    <!-- load robot_name to parameter server -->
+    <arg name="robot_name" default="reflex" />
+    <param name="robot_name" value="$(arg robot_name)" />
 
     <!-- gazebo arguments  -->
     <arg name="debug" default="false" />
@@ -29,7 +34,7 @@
     <node name="reflex_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param robot_description -model reflex" />
 
     <param name="robot_description" command="
-        $(find xacro)/xacro '$(find description)/robots/reflex.robot.xacro' only_reflex:=true"/>
+        $(find xacro)/xacro '$(find description)/robots/reflex.robot.xacro' only_reflex:=true base_link_name:=$(arg base_link_name)"/>
 
     <!-- robot state publisher uses joint values from joint_state_publisher to publish poses of links to /tf2 -->
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
@@ -45,7 +50,7 @@
 
     <!-- Keyboard teleoperation node -->
     <group if="$(arg run_teleop_node)">
-        <node pkg="teleop" type="teleop_node" name="teleop_node" respawn="false" output="screen"/>
+        <node pkg="teleop" type="teleop_node" name="teleop_node" output="screen"/>
     </group>
 
     <!-- Launch controllers -->
@@ -55,17 +60,17 @@
 
     <!-- Sensors node -->
     <group if="$(arg run_sensors_node)">
-        <node pkg="sensor_listener" type="sensor_listener_node" name="sensor_listener_node" respawn="false" output="screen"/>
+        <node pkg="sensor_listener" type="sensor_listener_node" name="sensor_listener_node" output="screen"/>
     </group>
 
     <!-- Run debug sensors on link (outputs force and penetration depth for each link) -->
     <group if="$(arg run_debug_node)">
-        <node pkg="sensor_listener" type="sensor_listener_debug_node" name="sensor_listener_debug_node" respawn="false" output="screen"/>
+        <node pkg="sensor_listener" type="sensor_listener_debug_node" name="sensor_listener_debug_node" output="screen"/>
     </group>
 
     <!-- Run Reflex commander node (high level grasp primitives) -->
     <group if="$(arg run_reflex_commander_node)">
-        <node pkg="teleop" type="reflex_commander_node" name="reflex_commander_node" respawn="false" output="screen"/>
+        <node pkg="teleop" type="reflex_commander_node" name="reflex_commander_node" output="screen"/>
     </group>
 
     <!-- Wrist controller node -->

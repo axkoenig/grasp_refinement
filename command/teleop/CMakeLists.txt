@@ -137,8 +137,8 @@ add_executable(reflex_commander_node src/reflex_commander.cpp)
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-add_dependencies(${PROJECT_NAME}_node reflex_msgs_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
-add_dependencies(reflex_commander_node reflex_msgs_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME}_node reflex_msgs_generate_messages_cpp ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+add_dependencies(reflex_commander_node reflex_msgs_generate_messages_cpp ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

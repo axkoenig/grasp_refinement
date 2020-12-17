@@ -93,14 +93,14 @@ int getch(void)
     return ch;
 }
 
-tf2::Transform calcReflexInWorld(std::array<float, 6> reflex_pose)
+tf2::Transform calcTransformFromEuler(std::array<float, 6> pose)
 {
-    tf2::Vector3 t = {reflex_pose[0], reflex_pose[1], reflex_pose[2]};
+    tf2::Vector3 t = {pose[0], pose[1], pose[2]};
     tf2::Quaternion q;
-    q.setRPY(reflex_pose[3], reflex_pose[4], reflex_pose[5]);
+    q.setRPY(pose[3], pose[4], pose[5]);
     tf2::Transform transform(q, t);
 
-    return transform.inverse();
+    return transform;
 }
 
 // END CODE FROM https://github.com/methylDragon/teleop_twist_keyboard_cpp/blob/master/src/teleop_twist_keyboard.cpp
@@ -131,7 +131,7 @@ int main(int argc, char **argv)
 
     // populate initial wrist transform
     std::array<float, 6> cur_pose = init_pose; 
-    transform = calcReflexInWorld(init_pose);
+    transform = calcTransformFromEuler(init_pose);
     ts.header.frame_id = source_frame;
     ts.child_frame_id = target_frame;
     ts.transform = tf2::toMsg(transform);
@@ -174,7 +174,7 @@ int main(int argc, char **argv)
             ROS_INFO("Wrist transform reset.");
         }
 
-        transform = calcReflexInWorld(cur_pose);
+        transform = calcTransformFromEuler(cur_pose);
         ts.header.stamp = ros::Time::now();
         ts.transform = tf2::toMsg(transform);
         br.sendTransform(ts);

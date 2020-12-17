@@ -78,5 +78,6 @@
         "*.ipp": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled",
-    "ros.distro": "noetic"
+    "ros.distro": "noetic",
+    "cmake.configureOnOpen": false
 }
