@@ -1,21 +1,22 @@
 <?xml version="1.0"?>
 <launch>
 
-    <!-- NOTE: a Gazebo world must be running already for this launc file to work -->
-
+    <!-- NOTE: a Gazebo world must be running already for this launch file to work -->
     <arg name="origin_x" default="0.0" />
     <arg name="origin_y" default="0.3" />
 
-    <!-- currently supports "sphere" and "box" -->
+    <!-- currently supports "sphere" (TODO: "box") -->
     <arg name="object_name" default="sphere" />
+    <arg name="object_height" default="0.17" />
+    <arg name="origin_z" default="$(eval 0.5 * arg('object_height'))" />
 
     <!-- load object_name to parameter server s.t. we can query it's pose from within the controller node -->
     <param name="object_name" value="$(arg object_name)" />
 
     <!-- upload object description to parameter server-->
     <param name="object_description" command="
-        $(find xacro)/xacro '$(find description)/robots/object.xacro' object_name:=$(arg object_name) "/>
+        $(find xacro)/xacro '$(find description)/robots/object.xacro' object_name:=$(arg object_name) object_height:=$(arg object_height)"/>
 
     <!-- spawn object -->
-    <node name="object_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param object_description -model $(arg object_name) -x $(arg origin_x) -y $(arg origin_y)" />
+    <node name="object_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param object_description -model $(arg object_name) -x $(arg origin_x) -y $(arg origin_y) -z $(arg origin_z)" />
 </launch>

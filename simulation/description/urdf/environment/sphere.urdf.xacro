@@ -1,29 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <robot xmlns:xacro="http://ros.org/wiki/xacro" name="sphere">
 
+    <!-- arguments -->
+    <xacro:arg name="object_height" default="0.17"/>
+    <xacro:arg name="sphere_mass" default="0.2"/>
+    <xacro:arg name="sphere_inertia" default="0.0006"/>
+
     <xacro:property name="link_name" value="sphere_link"/>
-    
-    <xacro:property name="sphere_radius" value="0.085"/>
-    <xacro:property name="sphere_mass" value="0.2"/>
-    <xacro:property name="sphere_inertia" value="0.0002"/>
+    <xacro:property name="sphere_radius" value="${$(arg object_height)/2}"/>
 
     <link name="${link_name}">
         <visual>
-            <origin xyz="0 0 ${sphere_radius}" rpy="0 0 0" />
+            <origin xyz="0 0 0" rpy="0 0 0" />
             <geometry>
                 <sphere radius="${sphere_radius}" />
             </geometry>
         </visual>
         <collision>
-            <origin xyz="0 0 ${sphere_radius}" rpy="0 0 0" />
+            <origin xyz="0 0 0" rpy="0 0 0" />
             <geometry>
                 <sphere radius="${sphere_radius}" />
             </geometry>
         </collision>
         <inertial>
             <origin xyz="0 0 0" rpy="0 0 0"/>
-            <mass value="${sphere_mass}"/>
-            <inertia ixx="${sphere_inertia}" ixy="0" ixz="0" iyy="${sphere_inertia}" iyz="0" izz="${sphere_inertia}" />
+            <mass value="$(arg sphere_mass)"/>
+            <inertia ixx="$(arg sphere_inertia)" ixy="0" ixz="0" iyy="$(arg sphere_inertia)" iyz="0" izz="$(arg sphere_inertia)" />
         </inertial>
     </link>
 
