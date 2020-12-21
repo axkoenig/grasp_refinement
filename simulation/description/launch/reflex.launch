@@ -14,6 +14,10 @@
     <arg name="robot_name" default="reflex" />
     <param name="robot_name" value="$(arg robot_name)" />
 
+    <!-- if running on real robot or in simulation_only (relevant for baseline_commander.cpp) -->
+    <arg name="simulation_only" default="true" />
+    <param name="simulation_only" value="$(arg simulation_only)" />
+
     <!-- gazebo arguments  -->
     <arg name="debug" default="false" />
     <arg name="gui" default="true" />
