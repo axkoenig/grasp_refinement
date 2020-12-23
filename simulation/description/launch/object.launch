@@ -2,20 +2,44 @@
 <launch>
 
     <!-- NOTE: a Gazebo world must be running already for this launch file to work -->
+
+    <!-- object position in world frame (z>0 => object will fall down) -->
     <arg name="origin_x" default="0.0" />
     <arg name="origin_y" default="0.3" />
+    <arg name="origin_z" default="0.5" />
 
-    <!-- currently supports "sphere" (TODO: "box") -->
+    <!-- currently supports "sphere", "box", "cylinder" -->
     <arg name="object_name" default="sphere" />
-    <arg name="object_height" default="0.17" />
-    <arg name="origin_z" default="$(eval 0.5 * arg('object_height'))" />
+
+    <!-- sphere params -->
+    <arg name="sphere_radius" default="0.08" />
+
+    <!-- cylinder params -->
+    <arg name="cylinder_radius" default="0.08" />
+    <arg name="cylinder_length" default="0.08" />
+
+    <!-- box params -->
+    <arg name="box_x" default="0.08" />
+    <arg name="box_y" default="0.08" />
+    <arg name="box_z" default="0.08" />
 
     <!-- load object_name to parameter server s.t. we can query it's pose from within the controller node -->
     <param name="object_name" value="$(arg object_name)" />
 
-    <!-- upload object description to parameter server-->
+    <!-- sphere -->
     <param name="object_description" command="
-        $(find xacro)/xacro '$(find description)/robots/object.xacro' object_name:=$(arg object_name) object_height:=$(arg object_height)"/>
+        $(find xacro)/xacro '$(find description)/urdf/environment/sphere.urdf.xacro' sphere_radius:=$(arg sphere_radius)" 
+        if="$(eval arg('object_name') == 'sphere')"/>
+
+    <!-- cylinder -->
+    <param name="object_description" command="
+        $(find xacro)/xacro '$(find description)/urdf/environment/cylinder.urdf.xacro' cylinder_radius:=$(arg cylinder_radius) cylinder_length:=$(arg cylinder_length)" 
+        if="$(eval arg('object_name') == 'cylinder')"/>
+
+    <!-- box -->
+    <param name="object_description" command="
+        $(find xacro)/xacro '$(find description)/urdf/environment/box.urdf.xacro' box_x:=$(arg box_x) box_y:=$(arg box_y) box_z:=$(arg box_z)" 
+        if="$(eval arg('object_name') == 'box')"/>
 
     <!-- spawn object -->
     <node name="object_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param object_description -model $(arg object_name) -x $(arg origin_x) -y $(arg origin_y) -z $(arg origin_z)" />

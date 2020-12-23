@@ -2,24 +2,23 @@
 <robot xmlns:xacro="http://ros.org/wiki/xacro" name="sphere">
 
     <!-- arguments -->
-    <xacro:arg name="object_height" default="0.17"/>
     <xacro:arg name="sphere_mass" default="0.2"/>
     <xacro:arg name="sphere_inertia" default="0.0006"/>
+    <xacro:arg name="sphere_radius" default="0.08"/>
 
     <xacro:property name="link_name" value="sphere_link"/>
-    <xacro:property name="sphere_radius" value="${$(arg object_height)/2}"/>
 
     <link name="${link_name}">
         <visual>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <geometry>
-                <sphere radius="${sphere_radius}" />
+                <sphere radius="$(arg sphere_radius)" />
             </geometry>
         </visual>
         <collision>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <geometry>
-                <sphere radius="${sphere_radius}" />
+                <sphere radius="$(arg sphere_radius)" />
             </geometry>
         </collision>
         <inertial>
