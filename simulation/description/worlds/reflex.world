@@ -2,6 +2,12 @@
 <sdf version="1.4">
   <world name="default">
 
+    <physics type="dart">
+      <dart>
+         <collision_detector>bullet</collision_detector>
+      </dart>
+    </physics>
+
     <include>
       <uri>model://sun</uri>
     </include>
