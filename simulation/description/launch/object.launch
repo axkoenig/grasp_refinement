@@ -6,7 +6,7 @@
     <!-- object position in world frame (z>0 => object will fall down) -->
     <arg name="origin_x" default="0.0" />
     <arg name="origin_y" default="0.3" />
-    <arg name="origin_z" default="0.5" />
+    <arg name="origin_z" default="0.2" />
 
     <!-- currently supports "sphere", "box", "cylinder" -->
     <arg name="object_name" default="sphere" />
