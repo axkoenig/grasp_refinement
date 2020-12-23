@@ -10,6 +10,10 @@
     <arg name="launch_finger_controllers" default="true" />
     <arg name="base_link_name" default="shell" />
 
+    <!-- currently supports "sphere", "box", "cylinder" -->
+    <arg name="spawn_object" default="true" />
+    <arg name="object_name" default="box" />
+
     <!-- load robot_name to parameter server -->
     <arg name="robot_name" default="reflex" />
     <param name="robot_name" value="$(arg robot_name)" />
@@ -81,5 +85,10 @@
     <group if="$(arg run_wrist_controller_node)">
         <include file="$(find wrist_controller)/launch/wrist_controller.launch" />
     </group>
+
+    <!-- launch an object -->
+    <include file="$(find description)/launch/object.launch" if="$(arg spawn_object)">
+        <arg name="object_name" value="$(arg object_name)"/>
+    </include>
 
 </launch>
