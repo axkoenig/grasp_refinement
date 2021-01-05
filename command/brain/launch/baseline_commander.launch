@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- if running on real robot or in simulation_only -->
+    <arg name="simulation_only" default="true" />
+    <param name="simulation_only" value="$(arg simulation_only)" />
+
+    <!-- run baseline_commander node -->
+    <node pkg="brain" type="baseline_commander_node" name="baseline_commander_node" output="screen"/>
+
+</launch>
