@@ -1,12 +1,13 @@
 #include <math.h>
 
-// TODO check if I need all these imports
 #include <ros/ros.h>
-#include <tf2/LinearMath/Quaternion.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <geometry_msgs/TransformStamped.h>
+#include <geometry_msgs/Point.h>
+#include <geometry_msgs/Quaternion.h>
 #include <tf2/LinearMath/Transform.h>
 #include <tf2/LinearMath/Vector3.h>
+#include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <std_srvs/Trigger.h>
 #include <reflex_msgs/Hand.h>
@@ -154,16 +155,6 @@ public:
     }
 };
 
-tf2::Transform calcTransformFromEuler(array<float, 6> pose)
-{
-    tf2::Vector3 t = {pose[0], pose[1], pose[2]};
-    tf2::Quaternion q;
-    q.setRPY(pose[3], pose[4], pose[5]);
-    tf2::Transform transform(q, t);
-
-    return transform;
-}
-
 class BaselineCommander
 {
 private:
@@ -176,33 +167,35 @@ private:
     tf2_ros::TransformBroadcaster br;
     geometry_msgs::TransformStamped ts;
     tf2::Transform cur_transform;
+    tf2::Transform goal_transform;
 
     float backoff_factor = 1.0;
-    HandState hand_state = HandState();
+    float step_size = 0.001;
     bool grasped = false;
-
-    // TODO calculate this
-    array<float, 6> init_euler = {0, 0, 0.07, -M_PI / 2, 0, 0};
-    array<float, 6> cur_euler = init_euler;
+    HandState hand_state = HandState();
 
 public:
-    BaselineCommander(ros::NodeHandle *nh, tf2::Transform init_pose)
+    BaselineCommander(ros::NodeHandle *nh, tf2::Transform init_wrist_pose, tf2::Transform goal_wrist_pose)
     {
         sph_open_client = nh->serviceClient<std_srvs::Trigger>(sph_open_srv_name);
         sph_close_client = nh->serviceClient<std_srvs::Trigger>(sph_close_srv_name);
         reflex_state_sub = nh->subscribe(state_topic_name, 1, &BaselineCommander::callbackHandState, this);
+        goal_transform = goal_wrist_pose;
 
-        // populate initial wrist transform
-        cur_transform = init_pose;
-        ts.header.stamp = ros::Time::now();
-        ts.header.frame_id = source_frame;
-        ts.child_frame_id = target_frame;
-        ts.transform = tf2::toMsg(cur_transform);
-        br.sendTransform(ts);
+        // TODO find another, more elegant solution for this
+        // wait before publishing first transform to fix warning from wrist_controller_node
+        // ""reflex" passed to lookupTransform argument target_frame does not exist."
+        ros::Duration(1).sleep();
+
+        cur_transform = init_wrist_pose;
+        sendTransform(cur_transform);
 
         // put fingers in spherical open position
         sph_open_client.call(trigger);
         ROS_INFO("%s", trigger.response.message.c_str());
+
+        // wait before first time_step call
+        ros::Duration(0.5).sleep();
     }
 
     void callbackHandState(const reflex_msgs::Hand &msg)
@@ -216,24 +209,24 @@ public:
         }
     }
 
-    array<float, 6> addArrays(array<float, 6> array_1, array<float, 6> array_2)
+    // moves along vector in reflex coordinates
+    // length of vector is step size
+    void moveAlongVector(tf2::Vector3 vector)
     {
-        for (int i = 0; i < 6; i++)
-        {
-            array_1[i] += array_2[i];
-        }
-        return array_1;
+        tf2::Transform increment = tf2::Transform();
+        increment.setIdentity();
+        increment.setOrigin(vector);
+        cur_transform *= increment;
+
+        sendTransform(cur_transform);
     }
 
-    void moveAlongAxis(array<float, 6> axis)
+    void sendTransform(tf2::Transform transform)
     {
-        // approach along reflex z axis
-        cur_euler = addArrays(cur_euler, axis);
-        cur_transform = calcTransformFromEuler(cur_euler);
-
-        // send TransformStamped
+        ts.header.frame_id = source_frame;
+        ts.child_frame_id = target_frame;
         ts.header.stamp = ros::Time::now();
-        ts.transform = tf2::toMsg(cur_transform);
+        ts.transform = tf2::toMsg(transform);
         br.sendTransform(ts);
     }
 
@@ -247,20 +240,16 @@ public:
             case HandState::State::NoContact:
             {
                 ROS_INFO("No contact --> Approach");
-
-                // reflex z axis is vector in world coordinates
-                // vector<float> reflex_z_axis = {};
-
-                array<float, 6> reflex_z_axis = {0, 0.001, 0, 0, 0, 0};
-                moveAlongAxis(reflex_z_axis);
+                tf2::Vector3 reflex_z_increment = {0, 0, step_size};
+                moveAlongVector(reflex_z_increment);
                 break;
             }
             case HandState::State::SingleFingerContact:
             {
                 // TODO update approach direction
                 ROS_INFO("Single contact --> Approach");
-                array<float, 6> updated_axis = {0, 0.001, 0, 0, 0, 0};
-                moveAlongAxis(updated_axis);
+                tf2::Vector3 reflex_z_increment = {0, 0, step_size};
+                moveAlongVector(reflex_z_increment);
                 break;
             }
             case HandState::State::MultipleFingerContact:
@@ -269,54 +258,103 @@ public:
                 ROS_INFO("Multi contact --> Grasping");
                 sph_close_client.call(trigger);
                 grasped = true;
+                ros::Duration(0.5).sleep();
                 break;
             }
             }
         }
         else
         {
-            // we already grasped, now move up
-            ROS_INFO("Grasped object --> Manipulating");
-            array<float, 6> updated_axis = {0, 0, 0.001, 0, 0, 0};
-            moveAlongAxis(updated_axis);
+            // we grasped, move to goal pose
+            ROS_INFO("Grasped object --> Moving to goal pose");
+            sendTransform(goal_transform);
         }
     }
 };
 
-tf2::Transform calcInitPose(ros::NodeHandle *nh)
-{   
-    tf2::Transform transform; 
-    
+tf2::Transform calcInitWristPose(ros::NodeHandle *nh,
+                            tf2::Vector3 pos_error = {0, 0, 0},
+                            float polar = M_PI/4,
+                            float azimuth = 0)
+{
+    ROS_INFO("Calculating initial wrist pose.");
     ///////////////////////////////////////////////////////
     // A) GET GROUND TRUTH OBJECT POSE IN WORLD COORDINATES
     ///////////////////////////////////////////////////////
 
-    // get object name
-    // TODO: make a generic function out of this
-    string object_name; 
+    // get object name from parameter server
+    // TODO: make a generic function out of this -> with template
+    string object_name;
     nh->getParam("object_name", object_name);
 
-    // setup service call
+    // setup service client
     string service_name = "/gazebo/get_model_state";
     ros::service::waitForService(service_name);
     ros::ServiceClient client = nh->serviceClient<gazebo_msgs::GetModelState>(service_name);
+
+    // setup service message
     gazebo_msgs::GetModelState srv;
     srv.request.model_name = object_name;
     srv.request.relative_entity_name = "world";
+
+    // obtain position of object (we don't care about its orientation for now)
     client.call(srv);
+    tf2::Vector3 t = {srv.response.pose.position.x,
+                      srv.response.pose.position.y,
+                      srv.response.pose.position.z};
 
-    // obtain position and orientation
+    ROS_INFO("Obtained object pose in world coordinates.");
+    ROS_INFO_STREAM("Object position: x=" << t[0] << ", y=" << t[1] << ", z=" << t[2]);
 
+    ////////////////////////////////////////////////////////////
+    // B) INTRODUCE ERRORS TO OBJECT POSITION TO TEST ROBUSTNESS
+    ////////////////////////////////////////////////////////////
 
-    // introduce position errors to test robustness
+    // NOTE: for now not introducing orientation errors because we are currently
+    // basing the algorithm only on object position. This is also why we only translate
+    // but do not rotate from world to object frame. 
+    // TODO: get error from param server
+    t += pos_error;
+    tf2::Transform translate_to_object(tf2::Quaternion {0, 0, 0, 1}, t);
 
-    // translate from world frame to object
+    /////////////////////////////////////////////////////////////////////
+    // C) ROTATE AND TRANSLATE IN SPHERICAL COORDINATES TO GET WRIST POSE
+    /////////////////////////////////////////////////////////////////////
 
-    // rotate along spherical coordinates
+    // add M_PI to polar angle, s.t. Reflex z points in opposite direction of 
+    polar += M_PI;
 
-    // translate along negative z axis
+    // rotation with spherical coordinates
+    tf2::Quaternion q;
+    q.setRPY(0, polar, azimuth);
+    tf2::Transform rotate_spherical;
+    rotate_spherical.setRotation(q);
 
-    return transform;
+    // translation to tool center point (TCP) along negative z axis
+    tf2::Vector3 tcp_to_object_offset = tf2::Vector3{0, 0, -0.3};
+    tf2::Transform translate_to_tcp = tf2::Transform();
+    translate_to_tcp.setIdentity();
+    translate_to_tcp.setOrigin(tcp_to_object_offset);
+
+    // translate to flange frame (values taken from Reflex CAD drawing available on website)
+    // z_offset: distance from Reflex origin to palm surface
+    // x_offset: approx. distance along x axis from origin to palm center
+    float reflex_height = -0.09228;
+    float x_offset = -0.015;
+    tf2::Transform translate_to_wrist = tf2::Transform();
+    translate_to_wrist.setIdentity();
+    translate_to_wrist.setOrigin(tf2::Vector3{x_offset, 0, reflex_height});
+
+    tf2::Transform init_wrist_pose = translate_to_object * rotate_spherical * translate_to_tcp * translate_to_wrist;
+
+    // debug information
+    tf2::Vector3 init_t = init_wrist_pose.getOrigin();
+    tf2::Quaternion init_r = init_wrist_pose.getRotation();
+    ROS_INFO("Done calculating initial wrist pose.");
+    ROS_INFO_STREAM("Initial wrist position: x=" << init_t[0] << ", y=" << init_t[1] << ", z=" << init_t[2]);
+    ROS_INFO_STREAM("Initial wrist orientation: x=" << init_r[0] << ", y=" << init_r[1] << ", z=" << init_r[2] << ", w=" << init_r[3]);
+
+    return init_wrist_pose;
 }
 
 int main(int argc, char **argv)
@@ -324,19 +362,19 @@ int main(int argc, char **argv)
     ros::init(argc, argv, node_name);
     ros::NodeHandle nh;
     ros::Rate rate(40);
-    ROS_INFO("Launched %s node.", node_name.c_str());
+    ROS_INFO("Launched %s.", node_name.c_str());
 
-    tf2::Transform init_pose;
+    tf2::Transform init_wrist_pose;
     bool simulation_only;
     string desired_param = "simulation_only";
-    
+
     // wait for simulation_only on parameter server
     while (ros::ok())
     {
         if (nh.hasParam(desired_param))
         {
             nh.getParam(desired_param, simulation_only);
-            ROS_INFO("Obtained %s: '%s' from parameter server.", desired_param.c_str(), simulation_only ? "1": "0");
+            ROS_INFO("Obtained %s: '%s' from parameter server.", desired_param.c_str(), simulation_only ? "1" : "0");
             break;
         }
         else
@@ -349,8 +387,7 @@ int main(int argc, char **argv)
     if (simulation_only == true)
     {
         // calculate initial wrist pose s.t. hand is in good grasping pose
-        ROS_INFO("Calculating initial wrist pose.");
-        init_pose = calcInitPose(&nh);
+        init_wrist_pose = calcInitWristPose(&nh);
     }
     else
     {
@@ -359,7 +396,13 @@ int main(int argc, char **argv)
         ROS_WARN("Not implemented.");
     }
 
-    BaselineCommander bc = BaselineCommander(&nh, init_pose);
+    // goal pose: goal_position and facing downwards.
+    tf2::Vector3 goal_position = tf2::Vector3{0.3, 0, 0.3};
+    tf2::Quaternion goal_rotation;
+    goal_rotation.setRPY(M_PI, 0, 0);
+    tf2::Transform goal_wrist_pose = tf2::Transform(goal_rotation, goal_position);
+
+    BaselineCommander bc = BaselineCommander(&nh, init_wrist_pose, goal_wrist_pose);
 
     ros::Duration(1.0).sleep();
     ROS_INFO("Starting autonomous control.");
