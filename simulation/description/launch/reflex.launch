@@ -12,7 +12,7 @@
 
     <!-- currently supports "sphere", "box", "cylinder" -->
     <arg name="spawn_object" default="true" />
-    <arg name="object_name" default="box" />
+    <arg name="object_name" default="sphere" />
 
     <!-- load robot_name to parameter server -->
     <arg name="robot_name" default="reflex" />

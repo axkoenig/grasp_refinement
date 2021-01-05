@@ -5,7 +5,7 @@
 
     <!-- object position in world frame (z>0 => object will fall down) -->
     <arg name="origin_x" default="0.0" />
-    <arg name="origin_y" default="0.3" />
+    <arg name="origin_y" default="0.4" />
     <arg name="origin_z" default="0.2" />
 
     <!-- currently supports "sphere", "box", "cylinder" -->
@@ -19,9 +19,9 @@
     <arg name="cylinder_length" default="0.08" />
 
     <!-- box params -->
-    <arg name="box_x" default="0.08" />
-    <arg name="box_y" default="0.08" />
-    <arg name="box_z" default="0.08" />
+    <arg name="box_x" default="0.10" />
+    <arg name="box_y" default="0.10" />
+    <arg name="box_z" default="0.10" />
 
     <!-- load object_name to parameter server s.t. we can query it's pose from within the controller node -->
     <param name="object_name" value="$(arg object_name)" />
