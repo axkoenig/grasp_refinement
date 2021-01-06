@@ -5,6 +5,22 @@
     <arg name="simulation_only" default="true" />
     <param name="simulation_only" value="$(arg simulation_only)" />
 
+    <!-- positional error that is added to model position to test robustness of algorithm -->
+    <arg name="pos_error_x" default="0.0" />
+    <arg name="pos_error_y" default="0.0" />
+    <arg name="pos_error_z" default="0.0" />
+    <param name="pos_error_x" value="$(arg pos_error_x)" />
+    <param name="pos_error_y" value="$(arg pos_error_y)" />
+    <param name="pos_error_z" value="$(arg pos_error_z)" />
+
+    <!-- intial tool pose in spherical coordinates. initial wrist pose is calculated from these. -->
+    <arg name="polar" default="0.0" />
+    <arg name="azimuth" default="0.0" />
+    <arg name="offset" default="0.3" />
+    <param name="polar" value="$(arg polar)" />
+    <param name="azimuth" value="$(arg azimuth)" />
+    <param name="offset" value="$(arg offset)" />
+
     <!-- run baseline_commander node -->
     <node pkg="brain" type="baseline_commander_node" name="baseline_commander_node" output="screen"/>
 
