@@ -17,10 +17,6 @@ BaselineController::BaselineController(ros::NodeHandle *nh, tf2::Transform init_
     sph_close_client = nh->serviceClient<std_srvs::Trigger>(sph_close_srv_name);
     reflex_state_sub = nh->subscribe(state_topic_name, 1, &BaselineController::callbackHandState, this);
 
-    // open hand, it may be closed from previous run
-    open_client.call(trigger);
-    ROS_INFO("%s", trigger.response.message.c_str());
-
     // TODO find another, more elegant solution for this
     // wait before publishing first transform to fix warning from wrist_controller_node
     // ""reflex" passed to lookupTransform argument target_frame does not exist."
@@ -44,13 +40,9 @@ void BaselineController::moveToInitPoseSim()
     sendTransform(desired_pose);
     waitUntilReachedPoseSim(desired_pose, "waypoint");
 
-    ROS_INFO("Reached waypoint. Now moving to init_wrist_pose.");
-
     desired_pose = init_wrist_pose;
     sendTransform(desired_pose);
     waitUntilReachedPoseSim(desired_pose, "initial wrist");
-
-    ROS_INFO("Reached init_wrist_pose. Now starting to approach object.");
 }
 
 void BaselineController::moveToInitPoseReal()
@@ -68,6 +60,7 @@ void BaselineController::waitUntilReachedPoseSim(tf2::Transform desired_pose, st
         ROS_INFO_STREAM("Waiting to reach " << name << " pose...");
         ros::Duration(0.1).sleep();
     }
+    ROS_INFO_STREAM("Reached " << name << " pose!");
 }
 
 bool BaselineController::reachedPoseSim(tf2::Transform desired_pose, float position_thresh)
@@ -148,7 +141,7 @@ void BaselineController::timeStep()
             grasped = true;
             ros::Duration(0.5).sleep();
 
-            // lift object by 0.2m
+            // lift object by 0.2m to get some clearance from ground before moving to goal
             tf2::Vector3 origin = desired_pose.getOrigin();
             origin[2] += 0.2;
             desired_pose.setOrigin(origin);
@@ -164,6 +157,11 @@ void BaselineController::timeStep()
         ROS_INFO("Grasped object --> Moving to goal pose.");
         sendTransform(goal_wrist_pose);
         waitUntilReachedPoseSim(desired_pose, "goal");
+
+        ROS_INFO("Dropping object.");
+        open_client.call(trigger);
+        ROS_INFO("%s", trigger.response.message.c_str());
+        
         finished = true;
         ROS_INFO("Finished. Have a nice day.");
     }
