@@ -1,4 +1,4 @@
-#include "hand_state.h"
+#include "hand_state.hpp"
 
 FingerState::FingerState(int finger_id)
 {

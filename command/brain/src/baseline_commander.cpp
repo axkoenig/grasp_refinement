@@ -15,7 +15,7 @@
 #include <gazebo_msgs/GetModelState.h>
 #include <gazebo_msgs/GetLinkState.h>
 
-#include "hand_state.h"
+#include "hand_state.hpp"
 
 using namespace std;
 
