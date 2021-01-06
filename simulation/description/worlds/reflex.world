@@ -4,7 +4,7 @@
 
     <physics type="dart">
       <dart>
-         <collision_detector>bullet</collision_detector>
+         <!-- <collision_detector>bullet</collision_detector> -->
       </dart>
     </physics>
 
