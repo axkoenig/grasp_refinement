@@ -121,14 +121,14 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/brain.cpp
-# )
+add_library(hand_state_lib
+  src/hand_state.cpp
+)
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
@@ -153,6 +153,7 @@ add_dependencies(baseline_commander_node reflex_msgs_generate_messages_cpp ${cat
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(baseline_commander_node
+  hand_state_lib  
   ${catkin_LIBRARIES}
 )
 
