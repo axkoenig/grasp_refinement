@@ -7,17 +7,17 @@ FingerState::FingerState(int finger_id)
     this->finger_id = finger_id;
 }
 
-void FingerState::setProximalAngle(float proximal_angle)
+void FingerState::setProximalAngleFromMsg(float proximal_angle)
 {
     this->proximal_angle = proximal_angle;
 }
 
-void FingerState::setDistalAngle(float distal_angle)
+void FingerState::setDistalAngleFromMsg(float distal_angle)
 {
     this->distal_angle = distal_angle;
 }
 
-void FingerState::setSensorContacts(boost::array<unsigned char, 9> sensor_contacts)
+void FingerState::setSensorContactsFromMsg(boost::array<unsigned char, 9> sensor_contacts)
 {
     for (int i = 0; i < num_sensors; i++)
     {
@@ -25,7 +25,7 @@ void FingerState::setSensorContacts(boost::array<unsigned char, 9> sensor_contac
     }
 }
 
-void FingerState::setSensorPressure(boost::array<float, 9> pressure)
+void FingerState::setSensorPressureFromMsg(boost::array<float, 9> pressure)
 {
     for (int i = 0; i < num_sensors; i++)
     {

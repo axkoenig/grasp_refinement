@@ -98,10 +98,10 @@ void BaselineController::callbackHandState(const reflex_msgs::Hand &msg)
 {
     for (int i = 0; i < hand_state.num_fingers; i++)
     {
-        hand_state.finger_states[i].setProximalAngle(msg.finger[i].proximal);
-        hand_state.finger_states[i].setDistalAngle(msg.finger[i].distal_approx);
-        hand_state.finger_states[i].setSensorContacts(msg.finger[i].contact);
-        hand_state.finger_states[i].setSensorPressure(msg.finger[i].pressure);
+        hand_state.finger_states[i].setProximalAngleFromMsg(msg.finger[i].proximal);
+        hand_state.finger_states[i].setDistalAngleFromMsg(msg.finger[i].distal_approx);
+        hand_state.finger_states[i].setSensorContactsFromMsg(msg.finger[i].contact);
+        hand_state.finger_states[i].setSensorPressureFromMsg(msg.finger[i].pressure);
     }
 }
 

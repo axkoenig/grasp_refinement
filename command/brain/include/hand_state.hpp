@@ -16,10 +16,10 @@ private:
 
 public:
     FingerState(int finger_id);
-    void setProximalAngle(float proximal_angle);
-    void setDistalAngle(float distal_angle);
-    void setSensorContacts(boost::array<unsigned char, 9> sensor_contacts);
-    void setSensorPressure(boost::array<float, 9> pressure);
+    void setProximalAngleFromMsg(float proximal_angle);
+    void setDistalAngleFromMsg(float distal_angle);
+    void setSensorContactsFromMsg(boost::array<unsigned char, 9> sensor_contacts);
+    void setSensorPressureFromMsg(boost::array<float, 9> pressure);
     bool hasContact();
     bool hasProximalContact();
     bool hasDistalContact();
