@@ -3,8 +3,10 @@
   <world name="default">
 
     <physics type="dart">
+      <!-- runs simuation as fast as possible -->
+      <real_time_update_rate>0</real_time_update_rate>
       <dart>
-         <!-- <collision_detector>bullet</collision_detector> -->
+        <!-- <collision_detector>bullet</collision_detector> -->
       </dart>
     </physics>
 
