@@ -22,6 +22,6 @@
     <param name="offset" value="$(arg offset)" />
 
     <!-- run baseline_commander node -->
-    <node pkg="brain" type="baseline_commander_node" name="baseline_commander_node" output="screen"/>
+    <node pkg="brain" type="baseline_controller_node" name="baseline_controller_node" output="screen"/>
 
 </launch>
