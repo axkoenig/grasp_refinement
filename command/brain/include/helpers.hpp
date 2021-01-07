@@ -7,9 +7,11 @@
 
 using namespace std;
 
-tf2::Vector3 getModelPositionSim(ros::NodeHandle *nh, string frame_name, bool verbose = true);
+bool setModelPoseSim(ros::NodeHandle *nh, string model_name, tf2::Transform pose, bool verbose = true);
 
-tf2::Vector3 getReflexPositionSim(ros::NodeHandle *nh, bool verbose = true);
+tf2::Transform getModelPoseSim(ros::NodeHandle *nh, string model_name, bool verbose = true);
+
+tf2::Transform getLinkPoseSim(ros::NodeHandle *nh, string link_name, bool verbose = true);
 
 tf2::Transform getTcpToWristFrame();
 
@@ -21,8 +23,7 @@ tf2::Transform calcInitWristPose(ros::NodeHandle *nh,
                                  float azimuth = 0,
                                  float offset = 0.3);
 
-tf2::Transform calcWristWaypointPose(ros::NodeHandle *nh, float clearance = 0.2);
-
-template <typename T> void getParam(ros::NodeHandle *nh, T *param, const string param_name);
+template <typename T>
+void getParam(ros::NodeHandle *nh, T *param, const string param_name);
 
 #endif

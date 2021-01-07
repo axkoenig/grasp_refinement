@@ -1,4 +1,5 @@
 #include <tf2/LinearMath/Quaternion.h>
+#include <gazebo_msgs/SetModelState.h>
 #include <gazebo_msgs/GetModelState.h>
 #include <gazebo_msgs/GetLinkState.h>
 
@@ -6,7 +7,40 @@
 
 using namespace std;
 
-tf2::Vector3 getModelPositionSim(ros::NodeHandle *nh, string frame_name, bool verbose)
+bool setModelPoseSim(ros::NodeHandle *nh, string model_name, tf2::Transform pose, bool verbose)
+{
+    tf2::Vector3 t = pose.getOrigin();
+    tf2::Quaternion r = pose.getRotation();
+
+    // setup service client
+    string service_name = "/gazebo/set_model_state";
+    ros::service::waitForService(service_name);
+    ros::ServiceClient client = nh->serviceClient<gazebo_msgs::SetModelState>(service_name);
+
+    // setup service message
+    gazebo_msgs::SetModelState srv;
+    srv.request.model_state.model_name = model_name;
+    srv.request.model_state.reference_frame = "world";
+    srv.request.model_state.pose.position.x = t[0];
+    srv.request.model_state.pose.position.y = t[1];
+    srv.request.model_state.pose.position.z = t[2];
+    srv.request.model_state.pose.orientation.x = r[0];
+    srv.request.model_state.pose.orientation.y = r[1];
+    srv.request.model_state.pose.orientation.z = r[2];
+    srv.request.model_state.pose.orientation.w = r[3];
+
+    client.call(srv);
+
+    if (verbose == true)
+    {
+        ROS_INFO_STREAM("Set model position of " << model_name << " to: x=" << t[0] << ", y=" << t[1] << ", z=" << t[2]);
+        ROS_INFO_STREAM("Set model orientation of " << model_name << " to: x=" << r[0] << ", y=" << r[1] << ", z=" << r[2] << ", w=" << r[3]);
+    }
+
+    return srv.response.success;
+}
+
+tf2::Transform getModelPoseSim(ros::NodeHandle *nh, string model_name, bool verbose)
 {
     // setup service client
     string service_name = "/gazebo/get_model_state";
@@ -15,7 +49,7 @@ tf2::Vector3 getModelPositionSim(ros::NodeHandle *nh, string frame_name, bool ve
 
     // setup service message
     gazebo_msgs::GetModelState srv;
-    srv.request.model_name = frame_name;
+    srv.request.model_name = model_name;
     srv.request.relative_entity_name = "world";
 
     // obtain position of object (we don't care about its orientation for now)
@@ -23,17 +57,22 @@ tf2::Vector3 getModelPositionSim(ros::NodeHandle *nh, string frame_name, bool ve
     tf2::Vector3 t = {srv.response.pose.position.x,
                       srv.response.pose.position.y,
                       srv.response.pose.position.z};
+    tf2::Quaternion r = {srv.response.pose.orientation.x,
+                         srv.response.pose.orientation.y,
+                         srv.response.pose.orientation.z,
+                         srv.response.pose.orientation.w};
 
     if (verbose == true)
     {
         ROS_INFO("Obtained object pose in world coordinates.");
-        ROS_INFO_STREAM("Object position: x=" << t[0] << ", y=" << t[1] << ", z=" << t[2]);
+        ROS_INFO_STREAM("Model position of " << model_name << " is: x=" << t[0] << ", y=" << t[1] << ", z=" << t[2]);
+        ROS_INFO_STREAM("Model orientation of " << model_name << " is: x=" << r[0] << ", y=" << r[1] << ", z=" << r[2] << ", w=" << r[3]);
     }
 
-    return t;
+    return tf2::Transform(r,t);
 }
 
-tf2::Vector3 getReflexPositionSim(ros::NodeHandle *nh, bool verbose)
+tf2::Transform getLinkPoseSim(ros::NodeHandle *nh, string link_name, bool verbose)
 {
     // NOTE we can't simply use the getModelPositionSim function because in Gazebo the Reflex model is
     // rooted in the origin (hence position is always in origin). Rather we have to obtain it via the
@@ -46,7 +85,7 @@ tf2::Vector3 getReflexPositionSim(ros::NodeHandle *nh, bool verbose)
 
     // setup service message
     gazebo_msgs::GetLinkState srv;
-    srv.request.link_name = "shell";
+    srv.request.link_name = link_name;
     srv.request.reference_frame = "world";
 
     // obtain position of reflex
@@ -54,14 +93,19 @@ tf2::Vector3 getReflexPositionSim(ros::NodeHandle *nh, bool verbose)
     tf2::Vector3 t = {srv.response.link_state.pose.position.x,
                       srv.response.link_state.pose.position.y,
                       srv.response.link_state.pose.position.z};
+    tf2::Quaternion r = {srv.response.link_state.pose.orientation.x,
+                         srv.response.link_state.pose.orientation.y,
+                         srv.response.link_state.pose.orientation.z,
+                         srv.response.link_state.pose.orientation.w};
 
     if (verbose == true)
     {
         ROS_INFO("Obtained reflex pose in world coordinates.");
-        ROS_INFO_STREAM("Reflex position: x=" << t[0] << ", y=" << t[1] << ", z=" << t[2]);
+        ROS_INFO_STREAM("Link pose of " << link_name << " is: x=" << t[0] << ", y=" << t[1] << ", z=" << t[2]);
+        ROS_INFO_STREAM("Link orientation of " << link_name << " is: x=" << r[0] << ", y=" << r[1] << ", z=" << r[2] << ", w=" << r[3]);
     }
 
-    return t;
+    return tf2::Transform(r, t);
 }
 
 tf2::Transform getTcpToWristFrame()
@@ -108,8 +152,8 @@ tf2::Transform calcInitWristPose(ros::NodeHandle *nh,
     // get object name from parameter server
     // TODO: make a generic function out of this -> with template
     string object_name;
-    nh->getParam("object_name", object_name);
-    tf2::Vector3 t = getModelPositionSim(nh, object_name);
+    getParam(nh, &object_name, "object_name");
+    tf2::Vector3 t = getModelPoseSim(nh, object_name).getOrigin();
 
     // introduce error
     t += tf2::Vector3{pos_error[0], pos_error[1], pos_error[2]};
@@ -140,33 +184,6 @@ tf2::Transform calcInitWristPose(ros::NodeHandle *nh,
     printPose(init_wrist_pose, "wrist");
 
     return init_wrist_pose;
-}
-
-tf2::Transform calcWristWaypointPose(ros::NodeHandle *nh, float clearance)
-{
-    // NOTE: waypoint has to be passed before going into init_wrist_pose s.t. we don't run into the object while we move
-    string object_name;
-    nh->getParam("object_name", object_name);
-    tf2::Vector3 t = getModelPositionSim(nh, object_name, true);
-    tf2::Transform translate_to_object(tf2::Quaternion{0, 0, 0, 1}, t);
-
-    // TODO: check how I can write this as one Transform (same problem above)
-    // rotate s.t. Reflex faces downwards
-    tf2::Quaternion q_down;
-    q_down.setRPY(0, M_PI, 0);
-    tf2::Transform rotate_down;
-    rotate_down.setIdentity();
-    rotate_down.setRotation(q_down);
-
-    // translate s.t. there is enough clearance to move to init pose
-    tf2::Transform translate_to_clearance = tf2::Transform();
-    translate_to_clearance.setIdentity();
-    translate_to_clearance.setOrigin(tf2::Vector3{0, 0, -1.0 * clearance});
-
-    tf2::Transform wrist_waypoint_pose = translate_to_object * rotate_down * translate_to_clearance * getTcpToWristFrame();
-    printPose(wrist_waypoint_pose, "waypoint");
-
-    return wrist_waypoint_pose;
 }
 
 template <typename T>

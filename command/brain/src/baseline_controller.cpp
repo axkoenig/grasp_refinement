@@ -33,16 +33,29 @@ BaselineController::BaselineController(ros::NodeHandle *nh, tf2::Transform init_
 void BaselineController::moveToInitPoseSim()
 {
     ROS_INFO("Running baseline controller in simulation only.");
-    ROS_INFO("Moving to waypoint to avoid collision with object.");
 
-    tf2::Transform waypoint_pose = calcWristWaypointPose(nh);
-    desired_pose = waypoint_pose;
-    sendTransform(desired_pose);
-    waitUntilReachedPoseSim(desired_pose, "waypoint");
+    // remember object pose
+    string object_name;
+    getParam(nh, &object_name, "object_name");
+    tf2::Transform old_object_pose = getModelPoseSim(nh, object_name);
+    
+    // move object somewhere else s.t. we don't collide with it while moving to init pose
+    ROS_INFO_STREAM("Moving object out of the way.");
+    float x_offset = 10;
+    tf2::Transform new_object_pose = old_object_pose;
+    tf2::Vector3 t = new_object_pose.getOrigin();
+    t[0] += x_offset;
+    new_object_pose.setOrigin(t);
+    setModelPoseSim(nh, object_name, new_object_pose);
 
+    // move robot hand to init pose 
     desired_pose = init_wrist_pose;
     sendTransform(desired_pose);
     waitUntilReachedPoseSim(desired_pose, "initial wrist");
+
+    // move object back to old pose
+    ROS_INFO_STREAM("Moving object back to old pose.");
+    setModelPoseSim(nh, object_name, old_object_pose);
 }
 
 void BaselineController::moveToInitPoseReal()
@@ -69,7 +82,7 @@ bool BaselineController::reachedPoseSim(tf2::Transform desired_pose, float posit
     tf2::Vector3 des_pos = desired_pose.getOrigin();
 
     // get current position of reflex origin (i.e. wrist)
-    tf2::Vector3 cur_pos = getReflexPositionSim(nh, false);
+    tf2::Vector3 cur_pos = getLinkPoseSim(nh, "shell", false).getOrigin();
 
     for (int i = 0; i < 3; i++)
     {
@@ -156,7 +169,7 @@ void BaselineController::timeStep()
         // we grasped, move to goal pose
         ROS_INFO("Grasped object --> Moving to goal pose.");
         sendTransform(goal_wrist_pose);
-        waitUntilReachedPoseSim(desired_pose, "goal");
+        waitUntilReachedPoseSim(goal_wrist_pose, "goal");
 
         ROS_INFO("Dropping object.");
         open_client.call(trigger);
