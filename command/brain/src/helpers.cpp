@@ -100,7 +100,6 @@ tf2::Transform getLinkPoseSim(ros::NodeHandle *nh, string link_name, bool verbos
 
     if (verbose == true)
     {
-        ROS_INFO("Obtained reflex pose in world coordinates.");
         ROS_INFO_STREAM("Link pose of " << link_name << " is: x=" << t[0] << ", y=" << t[1] << ", z=" << t[2]);
         ROS_INFO_STREAM("Link orientation of " << link_name << " is: x=" << r[0] << ", y=" << r[1] << ", z=" << r[2] << ", w=" << r[3]);
     }
