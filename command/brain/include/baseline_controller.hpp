@@ -46,11 +46,23 @@ public:
 
     void timeStep();
 
+    enum FinalState
+    {
+        NotGrasped,
+        GraspedButObjectNotLifted,
+        GraspedAndObjectLifted,
+        GraspedAndObjectInGoalPose
+    };
+
+    FinalState getFinalState() { return final_state; }
+
 private:
+    float time_out = 20.0;
     float backoff_factor = 1.0;
     float step_size = 0.001;
     bool grasped = false;
     bool finished = false;
+    FinalState final_state = NotGrasped;
     HandState hand_state = HandState();
 
     ros::NodeHandle *nh;
