@@ -23,6 +23,29 @@ string state_topic_name = "reflex/hand_state";
 
 class BaselineController
 {
+public:
+    BaselineController(ros::NodeHandle *nh, tf2::Transform init_wrist_pose, tf2::Transform goal_wrist_pose, bool simulation_only);
+
+    bool isFinished() { return finished; }
+
+    void moveToInitPoseSim();
+
+    void moveToInitPoseReal();
+
+    void waitUntilReachedPoseSim(tf2::Transform desired_pose, string name);
+
+    bool reachedPoseSim(tf2::Transform desired_pose, float position_thresh = 0.01);
+
+    void callbackHandState(const reflex_msgs::Hand &msg);
+
+    void moveAlongApproachDir();
+
+    void updateApproachDirectionSingleContact();
+
+    void sendTransform(tf2::Transform transform);
+
+    void timeStep();
+
 private:
     float backoff_factor = 1.0;
     float step_size = 0.001;
@@ -41,29 +64,6 @@ private:
     geometry_msgs::TransformStamped ts;
     tf2::Transform desired_pose, init_wrist_pose, goal_wrist_pose;
     tf2::Vector3 approach_direction = tf2::Vector3{0, 0, step_size};
-
-public:
-    BaselineController(ros::NodeHandle *nh, tf2::Transform init_wrist_pose, tf2::Transform goal_wrist_pose, bool simulation_only);
-
-    bool isFinished() { return finished; }
-
-    void moveToInitPoseSim();
-
-    void moveToInitPoseReal();
-
-    void waitUntilReachedPoseSim(tf2::Transform desired_pose, string name);
-
-    bool reachedPoseSim(tf2::Transform desired_pose, float position_thresh = 0.01);
-
-    void callbackHandState(const reflex_msgs::Hand &msg);
-    
-    void moveAlongApproachDir();
-
-    void updateApproachDirectionSingleContact();
-
-    void sendTransform(tf2::Transform transform);
-
-    void timeStep();
 };
 
 #endif
