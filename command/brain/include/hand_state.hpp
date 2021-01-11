@@ -48,14 +48,13 @@ public:
     ContactState getContactState();
     int countFingersInContact();
     void setFingerStateFromMsg(const reflex_msgs::Hand &msg);
+    FingerState finger_states[3] = {FingerState(1), FingerState(2), FingerState(3)};
 
 private:
     ContactState cur_state;
     void updateState();
     const int num_fingers = 3;
     const int num_motors = 4;
-    FingerState finger_states[3] = {FingerState(1), FingerState(2), FingerState(3)};
-
 };
 
 #endif
