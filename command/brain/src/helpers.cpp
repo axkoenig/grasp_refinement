@@ -175,7 +175,7 @@ tf2::Transform calcInitWristPose(ros::NodeHandle *nh,
     rotate_spherical.setRotation(q);
 
     // translation to tool center point (TCP) along negative z axis
-    tf2::Vector3 tcp_to_object_offset = tf2::Vector3{0, 0, -1.0 * offset};
+    tf2::Vector3 tcp_to_object_offset = tf2::Vector3{0, 0, -offset};
     tf2::Transform translate_to_tcp = tf2::Transform();
     translate_to_tcp.setIdentity();
     translate_to_tcp.setOrigin(tcp_to_object_offset);
