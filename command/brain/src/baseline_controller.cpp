@@ -38,7 +38,7 @@ void BaselineController::moveToInitPoseSim()
     string object_name;
     getParam(nh, &object_name, "object_name");
     tf2::Transform old_object_pose = getModelPoseSim(nh, object_name);
-    
+
     // move object somewhere else s.t. we don't collide with it while moving to init pose
     ROS_INFO_STREAM("Moving object out of the way.");
     float x_offset = 10;
@@ -48,7 +48,7 @@ void BaselineController::moveToInitPoseSim()
     new_object_pose.setOrigin(t);
     setModelPoseSim(nh, object_name, new_object_pose);
 
-    // move robot hand to init pose 
+    // move robot hand to init pose
     desired_pose = init_wrist_pose;
     sendTransform(desired_pose);
     waitUntilReachedPoseSim(desired_pose, "initial wrist");
@@ -96,20 +96,14 @@ bool BaselineController::reachedPoseSim(tf2::Transform desired_pose, float posit
 
 void BaselineController::callbackHandState(const reflex_msgs::Hand &msg)
 {
-    for (int i = 0; i < hand_state.num_fingers; i++)
-    {
-        hand_state.finger_states[i].setProximalAngleFromMsg(msg.finger[i].proximal);
-        hand_state.finger_states[i].setDistalAngleFromMsg(msg.finger[i].distal_approx);
-        hand_state.finger_states[i].setSensorContactsFromMsg(msg.finger[i].contact);
-        hand_state.finger_states[i].setSensorPressureFromMsg(msg.finger[i].pressure);
-    }
+    hand_state.setFingerStateFromMsg(msg);
 }
 
-void BaselineController::moveAlongVector(tf2::Vector3 vector)
+void BaselineController::moveAlongApproachDir()
 {
     tf2::Transform increment = tf2::Transform();
     increment.setIdentity();
-    increment.setOrigin(vector);
+    increment.setOrigin(approach_direction);
     desired_pose *= increment;
 
     sendTransform(desired_pose);
@@ -124,29 +118,32 @@ void BaselineController::sendTransform(tf2::Transform transform)
     br.sendTransform(ts);
 }
 
+void BaselineController::updateApproachDirectionSingleContact()
+{
+    // TODO implement
+}
+
 void BaselineController::timeStep()
 {
     if (grasped == false)
     {
         // check if we can make grasping attempt
-        switch (hand_state.getCurrentState())
+        switch (hand_state.getContactState())
         {
-        case HandState::State::NoContact:
+        case HandState::ContactState::NoContact:
         {
             ROS_INFO("No contact --> Approach");
-            tf2::Vector3 reflex_z_increment = {0, 0, step_size};
-            moveAlongVector(reflex_z_increment);
+            moveAlongApproachDir();
             break;
         }
-        case HandState::State::SingleFingerContact:
+        case HandState::ContactState::SingleFingerContact:
         {
-            // TODO update approach direction
-            ROS_INFO("Single contact --> Approach.");
-            tf2::Vector3 reflex_z_increment = {0, 0, step_size};
-            moveAlongVector(reflex_z_increment);
+            ROS_INFO("Single contact --> Update Approach Vector.");
+            updateApproachDirectionSingleContact();
+            moveAlongApproachDir();
             break;
         }
-        case HandState::State::MultipleFingerContact:
+        case HandState::ContactState::MultipleFingerContact:
         {
             // do spherical grasp
             ROS_INFO("Multi contact --> Grasping, then lifting.");
@@ -174,7 +171,7 @@ void BaselineController::timeStep()
         ROS_INFO("Dropping object.");
         open_client.call(trigger);
         ROS_INFO("%s", trigger.response.message.c_str());
-        
+
         finished = true;
         ROS_INFO("Finished. Have a nice day.");
     }

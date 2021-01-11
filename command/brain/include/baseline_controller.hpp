@@ -24,6 +24,12 @@ string state_topic_name = "reflex/hand_state";
 class BaselineController
 {
 private:
+    float backoff_factor = 1.0;
+    float step_size = 0.001;
+    bool grasped = false;
+    bool finished = false;
+    HandState hand_state = HandState();
+
     ros::NodeHandle *nh;
     std_srvs::Trigger trigger;
     ros::ServiceClient open_client;
@@ -33,13 +39,8 @@ private:
 
     tf2_ros::TransformBroadcaster br;
     geometry_msgs::TransformStamped ts;
-    tf2::Transform desired_pose, init_wrist_pose, waypoint, goal_wrist_pose;
-
-    float backoff_factor = 1.0;
-    float step_size = 0.001;
-    bool grasped = false;
-    bool finished = false;
-    HandState hand_state = HandState();
+    tf2::Transform desired_pose, init_wrist_pose, goal_wrist_pose;
+    tf2::Vector3 approach_direction = tf2::Vector3{0, 0, step_size};
 
 public:
     BaselineController(ros::NodeHandle *nh, tf2::Transform init_wrist_pose, tf2::Transform goal_wrist_pose, bool simulation_only);
@@ -56,7 +57,9 @@ public:
 
     void callbackHandState(const reflex_msgs::Hand &msg);
     
-    void moveAlongVector(tf2::Vector3 vector);
+    void moveAlongApproachDir();
+
+    void updateApproachDirectionSingleContact();
 
     void sendTransform(tf2::Transform transform);
 
