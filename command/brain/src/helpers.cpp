@@ -230,7 +230,7 @@ void logExperiment(ros::NodeHandle *nh,
     fstream fout;
     fout.open(log_name, ios::out | ios::app);
 
-    if (fout.good())
+    if (!fout.good())
     {
         std::ostringstream header;
         header << "time_stamp,"
