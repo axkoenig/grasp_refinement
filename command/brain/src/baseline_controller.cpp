@@ -182,8 +182,9 @@ void BaselineController::timeStep()
             desired_pose.setOrigin(origin);
             sendTransform(desired_pose);
             waitUntilReachedPoseSim(desired_pose, "goal waypoint");
-            // TODO implement this
-            state = GraspedAndLifted;
+
+            // update state
+            objectTouchesGround() ? state = GraspedButNotLifted : state = GraspedAndLifted;
             break;
         }
         }
@@ -195,8 +196,8 @@ void BaselineController::timeStep()
         sendTransform(goal_wrist_pose);
         waitUntilReachedPoseSim(goal_wrist_pose, "goal");
 
-        // TODO implement this
-        state = GraspedAndInGoalPose;
+        // update state
+        if (!objectTouchesGround()) state = GraspedAndInGoalPose;
 
         ROS_INFO("Dropping object.");
         open_client.call(trigger);
