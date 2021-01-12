@@ -30,7 +30,5 @@
         </inertial>
     </link>
 
-    <gazebo reference="${link_name}">
-        <material>Gazebo/Green</material>
-    </gazebo>
+    <xacro:include filename="$(find description)/urdf/environment/object.gazebo.xacro"/>
 </robot>
