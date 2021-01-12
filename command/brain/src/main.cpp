@@ -22,9 +22,10 @@ int main(int argc, char **argv)
 
     tf2::Transform init_wrist_pose;
     bool simulation_only;
-    float polar, azimuthal, offset;
+    float polar, azimuthal, offset, time_out;
     float pos_error[3];
     getParam(&nh, &simulation_only, "simulation_only");
+    getParam(&nh, &time_out, "time_out");
 
     if (simulation_only == true)
     {
@@ -51,7 +52,7 @@ int main(int argc, char **argv)
     goal_rotation.setRPY(M_PI, 0, 0);
     tf2::Transform goal_wrist_pose = tf2::Transform(goal_rotation, goal_position);
 
-    BaselineController bc = BaselineController(&nh, init_wrist_pose, goal_wrist_pose, simulation_only);
+    BaselineController bc = BaselineController(&nh, init_wrist_pose, goal_wrist_pose, simulation_only, time_out);
 
     ROS_INFO("Starting autonomous control.");
 

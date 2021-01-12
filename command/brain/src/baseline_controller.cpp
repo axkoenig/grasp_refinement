@@ -6,11 +6,12 @@
 
 using namespace std;
 
-BaselineController::BaselineController(ros::NodeHandle *nh, tf2::Transform init_wrist_pose, tf2::Transform goal_wrist_pose, bool simulation_only)
+BaselineController::BaselineController(ros::NodeHandle *nh, tf2::Transform init_wrist_pose, tf2::Transform goal_wrist_pose, bool simulation_only, float time_out)
 {
     this->nh = nh;
     this->init_wrist_pose = init_wrist_pose;
     this->goal_wrist_pose = goal_wrist_pose;
+    this->time_out = time_out;
 
     open_client = nh->serviceClient<std_srvs::Trigger>(open_srv_name);
     sph_open_client = nh->serviceClient<std_srvs::Trigger>(sph_open_srv_name);

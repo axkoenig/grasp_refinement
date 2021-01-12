@@ -24,7 +24,7 @@ string state_topic_name = "reflex/hand_state";
 class BaselineController
 {
 public:
-    BaselineController(ros::NodeHandle *nh, tf2::Transform init_wrist_pose, tf2::Transform goal_wrist_pose, bool simulation_only);
+    BaselineController(ros::NodeHandle *nh, tf2::Transform init_wrist_pose, tf2::Transform goal_wrist_pose, bool simulation_only, float time_out);
 
     bool isFinished() const { return finished; }
 
@@ -60,7 +60,7 @@ public:
 private:
     float backoff_factor = 1.0;
     float step_size = 0.001;
-    float time_out = 5;
+    float time_out;
     bool grasped = false;
     bool finished = false;
     State state = NotGrasped;
