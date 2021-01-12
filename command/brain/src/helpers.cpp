@@ -1,3 +1,8 @@
+#include <iostream>
+#include <fstream>
+#include <ctime>
+#include <sstream>
+
 #include <tf2/LinearMath/Quaternion.h>
 #include <gazebo_msgs/SetModelState.h>
 #include <gazebo_msgs/GetModelState.h>
@@ -69,7 +74,7 @@ tf2::Transform getModelPoseSim(ros::NodeHandle *nh, string model_name, bool verb
         ROS_INFO_STREAM("Model orientation of " << model_name << " is: x=" << r[0] << ", y=" << r[1] << ", z=" << r[2] << ", w=" << r[3]);
     }
 
-    return tf2::Transform(r,t);
+    return tf2::Transform(r, t);
 }
 
 tf2::Transform getLinkPoseSim(ros::NodeHandle *nh, string link_name, bool verbose)
@@ -135,7 +140,7 @@ void printPose(tf2::Transform pose, string name)
 tf2::Transform calcInitWristPose(ros::NodeHandle *nh,
                                  float pos_error[3],
                                  float polar,
-                                 float azimuth,
+                                 float azimuthal,
                                  float offset)
 {
     ROS_INFO("Calculating initial wrist pose.");
@@ -168,7 +173,7 @@ tf2::Transform calcInitWristPose(ros::NodeHandle *nh,
 
     // rotation with spherical coordinates
     tf2::Quaternion q;
-    q.setRPY(0, polar, azimuth);
+    q.setRPY(0, polar, azimuthal);
     tf2::Transform rotate_spherical;
     rotate_spherical.setIdentity();
     rotate_spherical.setRotation(q);
@@ -202,4 +207,64 @@ void getParam(ros::NodeHandle *nh, T *param, const string param_name)
             ros::Duration(1.0).sleep();
         }
     }
+}
+
+void logExperiment(ros::NodeHandle *nh,
+                   int final_state,
+                   float duration,
+                   float pos_error[3],
+                   float polar,
+                   float azimuthal,
+                   float offset)
+{
+    // get relevant variables from parameter server
+    std::string log_name;
+    std::string object_name;
+    getParam(nh, &log_name, "log_name");
+    getParam(nh, &object_name, "object_name");
+
+    // to create time and date info
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
+
+    fstream fout;
+    fout.open(log_name, ios::out | ios::app);
+
+    if (fout.good())
+    {
+        std::ostringstream header;
+        header << "time_stamp,"
+               << "object_name,"
+               << "final_state,"
+               << "duration,"
+               << "pos_error_x,"
+               << "pos_error_y,"
+               << "pos_error_z,"
+               << "polar,"
+               << "azimuthal,"
+               << "offset"
+               << "\n";
+
+        ROS_INFO_STREAM("Creating file '" << log_name << "' with header '" << header.str() << "'.");
+        fout << header.str();
+    }
+    else
+    {
+        ROS_INFO_STREAM("Adding results to existing file'" << log_name << "'.");
+    }
+
+    ROS_INFO_STREAM("Writing experiment data to file.");
+    fout << std::put_time(&tm, "%d-%m-%Y %H-%M-%S") << ", "
+         << object_name << ","
+         << final_state << ","
+         << duration << ","
+         << pos_error[0] << ","
+         << pos_error[1] << ","
+         << pos_error[2] << ","
+         << polar << ","
+         << azimuthal << ","
+         << offset << ","
+         << "\n";
+
+    fout.close();
 }

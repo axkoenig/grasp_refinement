@@ -15,11 +15,15 @@
 
     <!-- intial tool pose in spherical coordinates. initial wrist pose is calculated from these. -->
     <arg name="polar" default="0.0" />
-    <arg name="azimuth" default="0.0" />
+    <arg name="azimuthal" default="0.0" />
     <arg name="offset" default="0.3" />
     <param name="polar" value="$(arg polar)" />
-    <param name="azimuth" value="$(arg azimuth)" />
+    <param name="azimuthal" value="$(arg azimuthal)" />
     <param name="offset" value="$(arg offset)" />
+
+    <!-- name of log file where experimental results get added -->
+    <arg name="log_name" default="experiments.csv" />
+    <param name="log_name" value="$(arg log_name)" />
 
     <!-- run baseline_commander node -->
     <node pkg="brain" type="baseline_controller_node" name="baseline_controller_node" output="screen"/>

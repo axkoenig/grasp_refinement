@@ -9,21 +9,29 @@ using namespace std;
 
 bool setModelPoseSim(ros::NodeHandle *nh, string model_name, tf2::Transform pose, bool verbose = true);
 
+void printPose(tf2::Transform pose, string name);
+
+template <typename T>
+void getParam(ros::NodeHandle *nh, T *param, const string param_name);
+
+void logExperiment(ros::NodeHandle *nh,
+                   int final_state,
+                   float duration,
+                   float pos_error[3],
+                   float polar,
+                   float azimuthal,
+                   float offset);
+
 tf2::Transform getModelPoseSim(ros::NodeHandle *nh, string model_name, bool verbose = true);
 
 tf2::Transform getLinkPoseSim(ros::NodeHandle *nh, string link_name, bool verbose = true);
 
 tf2::Transform getTcpToWristFrame();
 
-void printPose(tf2::Transform pose, string name);
-
 tf2::Transform calcInitWristPose(ros::NodeHandle *nh,
                                  float pos_error[3] = {},
                                  float polar = 0,
-                                 float azimuth = 0,
+                                 float azimuthal = 0,
                                  float offset = 0.3);
-
-template <typename T>
-void getParam(ros::NodeHandle *nh, T *param, const string param_name);
 
 #endif

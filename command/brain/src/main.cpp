@@ -22,21 +22,21 @@ int main(int argc, char **argv)
 
     tf2::Transform init_wrist_pose;
     bool simulation_only;
+    float polar, azimuthal, offset;
+    float pos_error[3];
     getParam(&nh, &simulation_only, "simulation_only");
 
     if (simulation_only == true)
     {
-        // caluclate pre-grasp pose from spherical coordinates
-        float polar, azimuth, offset;
-        float pos_error[3];
         getParam(&nh, &polar, "polar");
-        getParam(&nh, &azimuth, "azimuth");
+        getParam(&nh, &azimuthal, "azimuthal");
         getParam(&nh, &offset, "offset");
         getParam(&nh, &pos_error[0], "pos_error_x");
         getParam(&nh, &pos_error[1], "pos_error_y");
         getParam(&nh, &pos_error[2], "pos_error_z");
 
-        init_wrist_pose = calcInitWristPose(&nh, pos_error, polar, azimuth, offset);
+        // caluclate pre-grasp pose from spherical coordinates
+        init_wrist_pose = calcInitWristPose(&nh, pos_error, polar, azimuthal, offset);
     }
     else
     {
@@ -55,10 +55,18 @@ int main(int argc, char **argv)
 
     ROS_INFO("Starting autonomous control.");
 
-    while (ros::ok() && !bc.isFinished())
+    while (ros::ok())
     {
         bc.timeStep();
         ros::spinOnce();
         rate.sleep();
+
+        if (bc.isFinished())
+        {
+            // TODO implement duration
+            float duration = 10;
+            logExperiment(&nh, bc.getFinalState(), duration, pos_error, polar, azimuthal, offset);
+            break;
+        }
     }
 }
