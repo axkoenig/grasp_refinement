@@ -120,7 +120,9 @@ void BaselineController::sendTransform(tf2::Transform transform)
 
 void BaselineController::updateApproachDirectionSingleContact()
 {
-    // TODO implement
+    tf2::Vector3 vec = hand_state.finger_states[0].getProximalNormal();
+    tf2::Vector3 vec2 = hand_state.finger_states[1].getProximalNormal();
+    tf2::Vector3 vec3 = hand_state.finger_states[2].getProximalNormal();
 }
 
 void BaselineController::timeStep()
@@ -133,6 +135,7 @@ void BaselineController::timeStep()
         case HandState::ContactState::NoContact:
         {
             ROS_INFO("No contact --> Approach");
+            updateApproachDirectionSingleContact();
             moveAlongApproachDir();
             break;
         }
