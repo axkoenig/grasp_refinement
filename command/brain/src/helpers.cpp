@@ -52,7 +52,7 @@ bool objectTouchesGround()
     float time_out = 0.1;
     gazebo_msgs::ContactsState cs;
     gazebo_msgs::ContactsStateConstPtr msg = ros::topic::waitForMessage<gazebo_msgs::ContactsState>(topic, ros::Duration(time_out));
-    
+
     if (!msg)
     {
         ROS_INFO_STREAM("No message on '" << topic << "' received! Returning false.");
@@ -301,4 +301,18 @@ void logExperiment(ros::NodeHandle *nh,
          << "\n";
 
     fout.close();
+}
+
+void moveObjectOutOfWay(ros::NodeHandle* nh, std::string &object_name, tf2::Transform &old_pose)
+{
+    ROS_INFO("Moving object out of the way.");
+
+    // it doesn't matter exactly where we move the object, as long as it's far enough away from
+    // wrist, s.t. the two won't be able to collide. Here we simply place it 10m away from old_pose
+    float x_offset = 10;
+    tf2::Transform new_object_pose = old_pose;
+    tf2::Vector3 t = new_object_pose.getOrigin();
+    t[0] += x_offset;
+    new_object_pose.setOrigin(t);
+    setModelPoseSim(nh, object_name, new_object_pose);
 }

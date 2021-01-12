@@ -32,7 +32,7 @@ public:
 
     void moveToInitPoseReal();
 
-    void waitUntilReachedPoseSim(tf2::Transform desired_pose, string name);
+    void waitUntilWristReachedPoseSim(tf2::Transform desired_pose, string name);
 
     bool reachedPoseSim(tf2::Transform desired_pose, float position_thresh = 0.01, float rotation_thresh = 0.01);
 
@@ -42,16 +42,16 @@ public:
 
     void updateApproachDirectionSingleContact();
 
-    void sendTransform(tf2::Transform transform);
+    void sendWristTransform(tf2::Transform transform);
 
     void timeStep();
 
     enum State
     {
-        NotGrasped,             // did not make grasping attempt yet
-        GraspedButNotLifted,    // made grasping attempt
-        GraspedAndLifted,       // made grasping attempt and lifted object from floor
-        GraspedAndInGoalPose    // made grasping attempt, moved wrist to goal pose and object in hand 
+        NotGrasped,          // did not make grasping attempt yet
+        GraspedButNotLifted, // made grasping attempt
+        GraspedAndLifted,    // made grasping attempt and lifted object from floor
+        GraspedAndInGoalPose // made grasping attempt, moved wrist to goal pose and object in hand
     };
 
     State getState() const { return state; }
@@ -76,10 +76,11 @@ private:
 
     tf2_ros::TransformBroadcaster br;
     geometry_msgs::TransformStamped ts;
-    tf2::Transform desired_pose, init_wrist_pose, goal_wrist_pose;
+    tf2::Transform desired_pose, init_wrist_pose, goal_wrist_pose, init_object_pose;
     tf2::Vector3 approach_direction = tf2::Vector3{0, 0, step_size};
 
     void checkTimeOut();
+    void resetWorldSim();
 };
 
 #endif

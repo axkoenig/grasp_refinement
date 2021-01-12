@@ -41,6 +41,7 @@ void BaselineController::checkTimeOut()
     if (duration > allowed_duration && state == NotGrasped)
     {
         ROS_INFO("Time-out occured. Stopping experiment as we did not make grasp attempt yet.");
+        resetWorldSim();
         finished = true;
     }
 }
@@ -52,43 +53,37 @@ void BaselineController::moveToInitPoseSim()
     // remember object pose
     string object_name;
     getParam(nh, &object_name, "object_name");
-    tf2::Transform old_object_pose = getModelPoseSim(nh, object_name);
+    init_object_pose = getModelPoseSim(nh, object_name);
 
-    // move object somewhere else s.t. we don't collide with it while moving to init pose
-    ROS_INFO_STREAM("Moving object out of the way.");
-    float x_offset = 10;
-    tf2::Transform new_object_pose = old_object_pose;
-    tf2::Vector3 t = new_object_pose.getOrigin();
-    t[0] += x_offset;
-    new_object_pose.setOrigin(t);
-    setModelPoseSim(nh, object_name, new_object_pose);
+    // move object s.t. it doesn't accidentally collide with robotic hand
+    moveObjectOutOfWay(nh, object_name, init_object_pose);
 
     // move robot hand to init pose
     desired_pose = init_wrist_pose;
-    sendTransform(desired_pose);
-    waitUntilReachedPoseSim(desired_pose, "initial wrist");
+    sendWristTransform(desired_pose);
+    waitUntilWristReachedPoseSim(desired_pose, "initial");
 
     // move object back to old pose
     ROS_INFO_STREAM("Moving object back to old pose.");
-    setModelPoseSim(nh, object_name, old_object_pose);
+    setModelPoseSim(nh, object_name, init_object_pose);
 }
 
 void BaselineController::moveToInitPoseReal()
 {
     ROS_INFO("Running baseline controller on real robot, sending init_wrist_pose directly.");
     desired_pose = init_wrist_pose;
-    sendTransform(desired_pose);
+    sendWristTransform(desired_pose);
     // TODO: wait until real robot actually reached the init pose
 }
 
-void BaselineController::waitUntilReachedPoseSim(tf2::Transform desired_pose, string name)
+void BaselineController::waitUntilWristReachedPoseSim(tf2::Transform desired_pose, string name)
 {
     while (!reachedPoseSim(desired_pose))
     {
-        ROS_INFO_STREAM("Waiting to reach " << name << " pose...");
+        ROS_INFO_STREAM("Waiting to reach " << name << " wrist pose...");
         ros::Duration(0.1).sleep();
     }
-    ROS_INFO_STREAM("Reached " << name << " pose!");
+    ROS_INFO_STREAM("Reached " << name << "wrist pose!");
 }
 
 bool BaselineController::reachedPoseSim(tf2::Transform desired_pose, float position_thresh, float rotation_thresh)
@@ -128,10 +123,10 @@ void BaselineController::moveAlongApproachDir()
     increment.setOrigin(approach_direction);
     desired_pose *= increment;
 
-    sendTransform(desired_pose);
+    sendWristTransform(desired_pose);
 }
 
-void BaselineController::sendTransform(tf2::Transform transform)
+void BaselineController::sendWristTransform(tf2::Transform transform)
 {
     ts.header.frame_id = source_frame;
     ts.child_frame_id = target_frame;
@@ -180,8 +175,8 @@ void BaselineController::timeStep()
             tf2::Vector3 origin = desired_pose.getOrigin();
             origin[2] += 0.2;
             desired_pose.setOrigin(origin);
-            sendTransform(desired_pose);
-            waitUntilReachedPoseSim(desired_pose, "goal waypoint");
+            sendWristTransform(desired_pose);
+            waitUntilWristReachedPoseSim(desired_pose, "lifted");
 
             // update state
             objectTouchesGround() ? state = GraspedButNotLifted : state = GraspedAndLifted;
@@ -193,18 +188,40 @@ void BaselineController::timeStep()
     {
         // we grasped, move to goal pose
         ROS_INFO("Grasped object --> Moving to goal pose.");
-        sendTransform(goal_wrist_pose);
-        waitUntilReachedPoseSim(goal_wrist_pose, "goal");
+        sendWristTransform(goal_wrist_pose);
+        waitUntilWristReachedPoseSim(goal_wrist_pose, "goal");
 
         // update state
-        if (!objectTouchesGround()) state = GraspedAndInGoalPose;
+        if (!objectTouchesGround())
+        {
+            state = GraspedAndInGoalPose;
+        }
 
         ROS_INFO("Dropping object.");
         open_client.call(trigger);
         ROS_INFO("%s", trigger.response.message.c_str());
 
+        resetWorldSim();
         finished = true;
         ROS_INFO("Finished. Have a nice day.");
     }
     checkTimeOut();
+}
+
+void BaselineController::resetWorldSim()
+{
+    ROS_INFO("Resetting simulated world to ensure repeatable experiments.");
+    tf2::Transform world_frame;
+    world_frame.setIdentity();
+
+    string object_name;
+    getParam(nh, &object_name, "object_name");
+
+    moveObjectOutOfWay(nh, object_name, init_object_pose);
+    sendWristTransform(world_frame);
+    waitUntilWristReachedPoseSim(world_frame, "origin");
+
+    // move object back to old pose
+    ROS_INFO_STREAM("Moving object back to initial pose.");
+    setModelPoseSim(nh, object_name, init_object_pose);
 }
