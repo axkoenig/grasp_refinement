@@ -26,7 +26,7 @@ class BaselineController
 public:
     BaselineController(ros::NodeHandle *nh, tf2::Transform init_wrist_pose, tf2::Transform goal_wrist_pose, bool simulation_only);
 
-    bool isFinished() { return finished; }
+    bool isFinished() const { return finished; }
 
     void moveToInitPoseSim();
 
@@ -46,23 +46,24 @@ public:
 
     void timeStep();
 
-    enum FinalState
+    enum State
     {
-        NotGrasped,
-        GraspedButObjectNotLifted,
-        GraspedAndObjectLifted,
-        GraspedAndObjectInGoalPose
+        NotGrasped,             // did not make grasping attempt yet
+        GraspedButNotLifted,    // made grasping attempt
+        GraspedAndLifted,       // made grasping attempt and lifted object from floor
+        GraspedAndInGoalPose    // made grasping attempt, moved wrist to goal pose and object in hand 
     };
 
-    FinalState getFinalState() { return final_state; }
+    State getState() const { return state; }
+    ros::Time getStartTime() const { return start_time; }
 
 private:
-    float time_out = 20.0;
     float backoff_factor = 1.0;
     float step_size = 0.001;
+    float time_out = 5;
     bool grasped = false;
     bool finished = false;
-    FinalState final_state = NotGrasped;
+    State state = NotGrasped;
     HandState hand_state = HandState();
 
     ros::NodeHandle *nh;
@@ -71,11 +72,14 @@ private:
     ros::ServiceClient sph_open_client;
     ros::ServiceClient sph_close_client;
     ros::Subscriber reflex_state_sub;
+    ros::Time start_time;
 
     tf2_ros::TransformBroadcaster br;
     geometry_msgs::TransformStamped ts;
     tf2::Transform desired_pose, init_wrist_pose, goal_wrist_pose;
     tf2::Vector3 approach_direction = tf2::Vector3{0, 0, step_size};
+
+    void checkTimeOut();
 };
 
 #endif

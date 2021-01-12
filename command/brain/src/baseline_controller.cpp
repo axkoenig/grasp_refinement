@@ -21,6 +21,7 @@ BaselineController::BaselineController(ros::NodeHandle *nh, tf2::Transform init_
     // wait before publishing first transform to fix warning from wrist_controller_node
     // ""reflex" passed to lookupTransform argument target_frame does not exist."
     ros::Duration(0.2).sleep();
+    start_time = ros::Time::now();
 
     // move to init wrist pose
     simulation_only ? moveToInitPoseSim() : moveToInitPoseReal();
@@ -28,6 +29,18 @@ BaselineController::BaselineController(ros::NodeHandle *nh, tf2::Transform init_
     // put fingers in spherical open position
     sph_open_client.call(trigger);
     ROS_INFO("%s", trigger.response.message.c_str());
+}
+
+void BaselineController::checkTimeOut()
+{
+    ros::Duration allowed_duration(time_out);
+    ros::Duration duration = ros::Time::now() - start_time;
+
+    if (duration > allowed_duration && state == NotGrasped)
+    {
+        ROS_INFO("Time-out occured. Stopping experiment as we did not make grasp attempt yet.");
+        finished = true;
+    }
 }
 
 void BaselineController::moveToInitPoseSim()
@@ -127,7 +140,7 @@ void BaselineController::updateApproachDirectionSingleContact()
 
 void BaselineController::timeStep()
 {
-    if (grasped == false)
+    if (state == NotGrasped)
     {
         // check if we can make grasping attempt
         switch (hand_state.getContactState())
@@ -151,7 +164,7 @@ void BaselineController::timeStep()
             // do spherical grasp
             ROS_INFO("Multi contact --> Grasping, then lifting.");
             sph_close_client.call(trigger);
-            grasped = true;
+            state = GraspedButNotLifted;
             ros::Duration(0.5).sleep();
 
             // lift object by 0.2m to get some clearance from ground before moving to goal
@@ -160,6 +173,8 @@ void BaselineController::timeStep()
             desired_pose.setOrigin(origin);
             sendTransform(desired_pose);
             waitUntilReachedPoseSim(desired_pose, "goal waypoint");
+            // TODO implement this
+            state = GraspedAndLifted;
             break;
         }
         }
@@ -171,6 +186,9 @@ void BaselineController::timeStep()
         sendTransform(goal_wrist_pose);
         waitUntilReachedPoseSim(goal_wrist_pose, "goal");
 
+        // TODO implement this
+        state = GraspedAndInGoalPose;
+
         ROS_INFO("Dropping object.");
         open_client.call(trigger);
         ROS_INFO("%s", trigger.response.message.c_str());
@@ -178,4 +196,5 @@ void BaselineController::timeStep()
         finished = true;
         ROS_INFO("Finished. Have a nice day.");
     }
+    checkTimeOut();
 }

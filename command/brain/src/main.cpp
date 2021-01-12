@@ -64,8 +64,8 @@ int main(int argc, char **argv)
         if (bc.isFinished())
         {
             // TODO implement duration
-            float duration = 10;
-            logExperiment(&nh, bc.getFinalState(), duration, pos_error, polar, azimuthal, offset);
+            ros::Duration duration = ros::Time::now() - bc.getStartTime();
+            logExperiment(&nh, bc.getState(), duration.toSec(), pos_error, polar, azimuthal, offset);
             break;
         }
     }
