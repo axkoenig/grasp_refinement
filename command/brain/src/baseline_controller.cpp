@@ -197,7 +197,7 @@ void BaselineController::timeStep()
             state = GraspedAndInGoalPose;
         }
 
-        ROS_INFO("Dropping object.");
+        ROS_INFO("Opening hand.");
         open_client.call(trigger);
         ROS_INFO("%s", trigger.response.message.c_str());
 
