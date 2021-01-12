@@ -83,7 +83,7 @@ void BaselineController::waitUntilWristReachedPoseSim(tf2::Transform desired_pos
         ROS_INFO_STREAM("Waiting to reach " << name << " wrist pose...");
         ros::Duration(0.1).sleep();
     }
-    ROS_INFO_STREAM("Reached " << name << "wrist pose!");
+    ROS_INFO_STREAM("Reached " << name << " wrist pose!");
 }
 
 bool BaselineController::reachedPoseSim(tf2::Transform desired_pose, float position_thresh, float rotation_thresh)
