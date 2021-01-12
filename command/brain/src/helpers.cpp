@@ -7,6 +7,7 @@
 #include <gazebo_msgs/SetModelState.h>
 #include <gazebo_msgs/GetModelState.h>
 #include <gazebo_msgs/GetLinkState.h>
+#include <gazebo_msgs/ContactsState.h>
 
 #include "helpers.hpp"
 
@@ -43,6 +44,39 @@ bool setModelPoseSim(ros::NodeHandle *nh, string model_name, tf2::Transform pose
     }
 
     return srv.response.success;
+}
+
+bool objectTouchesGround()
+{
+    std::string topic = "/gazebo/object_sensor_bumper";
+    float time_out = 0.1;
+    gazebo_msgs::ContactsState cs;
+    gazebo_msgs::ContactsStateConstPtr msg = ros::topic::waitForMessage<gazebo_msgs::ContactsState>(topic, ros::Duration(time_out));
+    
+    if (!msg)
+    {
+        ROS_INFO_STREAM("No message on '" << topic << "' received! Returning false.");
+        return false;
+    }
+
+    cs = *msg;
+
+    // num_states is number of pairs in contact
+    int num_states = cs.states.size();
+    const std::string collision_name = "ground_plane::link::collision";
+
+    // iterate over pairs in contact and look for collisions with ground plane
+    for (int i = 0; i < num_states; i++)
+    {
+        if (cs.states[i].collision1_name == collision_name ||
+            cs.states[i].collision2_name == collision_name)
+        {
+            ROS_INFO("Object touches ground.");
+            return true;
+        }
+    }
+    ROS_INFO("Object does not touch ground.");
+    return false;
 }
 
 tf2::Transform getModelPoseSim(ros::NodeHandle *nh, string model_name, bool verbose)

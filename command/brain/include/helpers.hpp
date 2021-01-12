@@ -22,6 +22,9 @@ void logExperiment(ros::NodeHandle *nh,
                    float azimuthal,
                    float offset);
 
+
+bool objectTouchesGround();
+
 tf2::Transform getModelPoseSim(ros::NodeHandle *nh, string model_name, bool verbose = true);
 
 tf2::Transform getLinkPoseSim(ros::NodeHandle *nh, string link_name, bool verbose = true);
