@@ -55,8 +55,8 @@ bool objectTouchesGround()
 
     if (!msg)
     {
-        ROS_INFO_STREAM("No message on '" << topic << "' received! Returning false.");
-        return false;
+        ROS_INFO_STREAM("No message on '" << topic << "' received! Assuming that object touches ground.");
+        return true;
     }
 
     cs = *msg;
