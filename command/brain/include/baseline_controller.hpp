@@ -34,7 +34,7 @@ public:
 
     void waitUntilReachedPoseSim(tf2::Transform desired_pose, string name);
 
-    bool reachedPoseSim(tf2::Transform desired_pose, float position_thresh = 0.01);
+    bool reachedPoseSim(tf2::Transform desired_pose, float position_thresh = 0.01, float rotation_thresh = 0.01);
 
     void callbackHandState(const reflex_msgs::Hand &msg);
 

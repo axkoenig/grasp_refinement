@@ -1,4 +1,5 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2/LinearMath/Quaternion.h>
 
 #include "hand_state.hpp"
 #include "baseline_controller.hpp"
@@ -90,13 +91,20 @@ void BaselineController::waitUntilReachedPoseSim(tf2::Transform desired_pose, st
     ROS_INFO_STREAM("Reached " << name << " pose!");
 }
 
-bool BaselineController::reachedPoseSim(tf2::Transform desired_pose, float position_thresh)
+bool BaselineController::reachedPoseSim(tf2::Transform desired_pose, float position_thresh, float rotation_thresh)
 {
     // checks whether current wrist pose is within positional threshold of a desired wrist pose
     tf2::Vector3 des_pos = desired_pose.getOrigin();
+    tf2::Quaternion des_rot = desired_pose.getRotation();
 
     // get current position of reflex origin (i.e. wrist)
     tf2::Vector3 cur_pos = getLinkPoseSim(nh, "shell", false).getOrigin();
+    tf2::Quaternion cur_rot = getLinkPoseSim(nh, "shell", false).getRotation();
+
+    if ((des_rot - cur_rot).length() > rotation_thresh)
+    {
+        return false;
+    }
 
     for (int i = 0; i < 3; i++)
     {
