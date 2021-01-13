@@ -16,7 +16,7 @@
     <!-- intial tool pose in spherical coordinates. initial wrist pose is calculated from these. -->
     <arg name="polar" default="0.0" />
     <arg name="azimuthal" default="0.0" />
-    <arg name="offset" default="0.3" />
+    <arg name="offset" default="0.2" />
     <param name="polar" value="$(arg polar)" />
     <param name="azimuthal" value="$(arg azimuthal)" />
     <param name="offset" value="$(arg offset)" />
