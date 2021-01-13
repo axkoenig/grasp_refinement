@@ -48,10 +48,11 @@ public:
 
     enum State
     {
-        NotGrasped,          // did not make grasping attempt yet
-        GraspedButNotLifted, // made grasping attempt
-        GraspedAndLifted,    // made grasping attempt and lifted object from floor
-        GraspedAndInGoalPose // made grasping attempt, moved wrist to goal pose and object in hand
+        Failure = -1,            // something went wrong
+        NotGrasped = 0,          // did not make grasping attempt yet
+        GraspedButNotLifted = 1, // made grasping attempt
+        GraspedAndLifted = 2,    // made grasping attempt and lifted object from floor
+        GraspedAndInGoalPose = 3 // made grasping attempt, moved wrist to goal pose and object in hand
     };
 
     State getState() const { return state; }
@@ -81,6 +82,7 @@ private:
 
     void checkTimeOut();
     void resetWorldSim();
+    void stopExperiment();
 };
 
 #endif

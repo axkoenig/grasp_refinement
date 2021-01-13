@@ -41,8 +41,7 @@ void BaselineController::checkTimeOut()
     if (duration > allowed_duration && state == NotGrasped)
     {
         ROS_INFO("Time-out occured. Stopping experiment as we did not make grasp attempt yet.");
-        resetWorldSim();
-        finished = true;
+        stopExperiment();
     }
 }
 
@@ -78,10 +77,22 @@ void BaselineController::moveToInitPoseReal()
 
 void BaselineController::waitUntilWristReachedPoseSim(tf2::Transform desired_pose, string name)
 {
+    float time_increment = 0.1;
+    float time_sum = 0;
+    float stop_thresh = 30; // if we dont reach pose within 30s something is wrong, stop experiment
     while (!reachedPoseSim(desired_pose))
     {
         ROS_INFO_STREAM("Waiting to reach " << name << " wrist pose...");
-        ros::Duration(0.1).sleep();
+        ros::Duration(time_increment).sleep();
+        time_sum += time_increment;
+        if (time_sum >= stop_thresh)
+        {
+            ROS_INFO_STREAM("Did not reach " << name << " within " << stop_thresh << " seconds. Something is wrong.");
+            ROS_WARN("Setting state to 'Failure'");
+            state = Failure; 
+            stopExperiment();
+            return;
+        }
     }
     ROS_INFO_STREAM("Reached " << name << " wrist pose!");
 }
@@ -152,14 +163,14 @@ void BaselineController::timeStep()
         case HandState::ContactState::NoContact:
         {
             ROS_INFO("No contact --> Approach");
-            updateApproachDirectionSingleContact();
+            // updateApproachDirectionSingleContact();
             moveAlongApproachDir();
             break;
         }
         case HandState::ContactState::SingleFingerContact:
         {
             ROS_INFO("Single contact --> Update Approach Vector.");
-            updateApproachDirectionSingleContact();
+            // updateApproachDirectionSingleContact();
             moveAlongApproachDir();
             break;
         }
@@ -201,9 +212,7 @@ void BaselineController::timeStep()
         open_client.call(trigger);
         ROS_INFO("%s", trigger.response.message.c_str());
 
-        resetWorldSim();
-        finished = true;
-        ROS_INFO("Finished. Have a nice day.");
+        stopExperiment();
     }
     checkTimeOut();
 }
@@ -214,14 +223,29 @@ void BaselineController::resetWorldSim()
     tf2::Transform world_frame;
     world_frame.setIdentity();
 
+    // we need waypoint above origin because otherwise hand will sometimes
+    // not reach origin due to friction with ground plane
+    tf2::Transform waypoint_frame = world_frame;
+    waypoint_frame.setOrigin(tf2::Vector3{0, 0, 0.1});
+
     string object_name;
     getParam(nh, &object_name, "object_name");
 
     moveObjectOutOfWay(nh, object_name, init_object_pose);
+    sendWristTransform(waypoint_frame);
+    waitUntilWristReachedPoseSim(waypoint_frame, "waypoint origin");
     sendWristTransform(world_frame);
     waitUntilWristReachedPoseSim(world_frame, "origin");
 
     // move object back to old pose
     ROS_INFO_STREAM("Moving object back to initial pose.");
     setModelPoseSim(nh, object_name, init_object_pose);
+}
+
+void BaselineController::stopExperiment()
+{
+    ROS_INFO("Stopping experiment.");
+    resetWorldSim();
+    finished = true;
+    ROS_INFO("Finished. Have a nice day.");
 }
