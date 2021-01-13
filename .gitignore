@@ -1,5 +1,6 @@
-# ignore data folder of experiments
+# ignore experimental outcomes
 command/brain/experiments/data/*
+command/brain/experiments/figures/*
 
 devel/
 logs/
