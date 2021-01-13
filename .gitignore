@@ -1,3 +1,6 @@
+# ignore data folder of experiments
+command/brain/experiments/data/*
+
 devel/
 logs/
 build/
