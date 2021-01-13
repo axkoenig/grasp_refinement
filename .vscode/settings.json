@@ -79,5 +79,6 @@
     },
     "C_Cpp.errorSquiggles": "Disabled",
     "ros.distro": "noetic",
-    "cmake.configureOnOpen": false
+    "cmake.configureOnOpen": false,
+    "python.formatting.provider": "black"
 }
