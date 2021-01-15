@@ -22,7 +22,7 @@
     <param name="offset" value="$(arg offset)" />
 
     <!-- name of log file where experimental results get added -->
-    <arg name="log_name" default="experiments.csv" />
+    <arg name="log_name" default="test.csv" />
     <param name="log_name" value="$(arg log_name)" />
 
     <!-- if the hand doesn't make a grasp attempt until 'time_out' seconds, then stop experiment -->
