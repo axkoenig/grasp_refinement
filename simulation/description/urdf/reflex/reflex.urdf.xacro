@@ -325,6 +325,7 @@
 
   <!-- ===================================== Joint Macros ===================================== -->
 
+  <!-- FIXED JOINTS -->
   <xacro:macro name="distal_to_pad" params="finger_id">
     <joint name="distal_${finger_id}_to_pad" type="fixed">
       <origin xyz="0 0 0" rpy="${pi/2} 0 -${pi/2}"/>
@@ -341,32 +342,6 @@
     </joint>
   </xacro:macro>
 
-  <xacro:macro name="flex_to_distal" params="finger_id">
-    <joint name="flex_to_distal_${finger_id}" type="revolute">
-      <origin xyz="${flex_link_box_x} 0 0" rpy="0 0 0"/>
-      <parent link="finger_${finger_id}_flex_link"/>
-      <child link="distal_${finger_id}"/>
-      <axis xyz="0 -1 0"/>
-      <!-- note: I estimate the remaining damping/effort/velocity is half of the proximal links -->
-      <dynamics damping="0.05" friction="0"/>
-      <limit effort="1" lower="0.0" upper="${pi/6}" velocity="0.5"/>
-    </joint>
-  </xacro:macro>
-
-  <xacro:property name="flex_z_offset" value="-0.002"/>
-
-  <xacro:macro name="proximal_to_flex" params="finger_id">
-    <joint name="proximal_${finger_id}_to_flex" type="revolute">
-      <origin xyz="${0.0705-flex_link_box_x/2} 0 ${flex_z_offset}" rpy="0 0 0"/>
-      <parent link="proximal_${finger_id}"/>
-      <child link="finger_${finger_id}_flex_link"/>
-      <axis xyz="0 -1 0"/>
-      <!-- note: I estimate the remaining damping/effort/velocity is half of the proximal links -->
-      <dynamics damping="0.05" friction="0"/>
-      <limit effort="1" lower="0.0" upper="${pi/6}" velocity="0.5"/>
-    </joint>
-  </xacro:macro>
-
   <xacro:macro name="shell_to_pad">
     <joint name="shell_to_pad" type="fixed">
       <origin xyz="0.02 0 0.063" rpy="${pi/2} 0 -${pi/2}"/>
@@ -376,14 +351,26 @@
     </joint>
   </xacro:macro>
 
+  <!-- REVOLUTE JOINTS -->
+
+  <!-- note: the dynamixel motors can apply roughly 2Nm (see datasheet) -->
+  <xacro:property name="proximal_joints_effort" value="2"/>
+  <xacro:property name="proximal_joints_velocity" value="0.5"/>
+  <xacro:property name="proximal_joints_damping" value="0.1"/>
+  <xacro:property name="proximal_joints_friction" value="0.0"/>
+
+  <!-- note: I estimate the flexure damping/effort/velocity is half of the proximal links -->
+  <xacro:property name="flex_joints_effort" value="${proximal_joints_effort/2}"/>
+  <xacro:property name="flex_joints_velocity" value="${proximal_joints_velocity/2}"/>
+  <xacro:property name="flex_joints_damping" value="${proximal_joints_damping/2}"/>
+  <xacro:property name="flex_joints_friction" value="${proximal_joints_friction/2}"/>
+
   <xacro:macro name="preshape" params="finger_id">
     <joint name="preshape_${finger_id}" type="revolute">
       <parent link="shell"/>
       <child link="swivel_${finger_id}"/>
-      <!-- damping factor of 0.1 makes the joint move smoother -->
-      <dynamics damping="0.1" friction="0"/>
-      <!-- note: the dynamixel motors can apply roughly 2Nm (see datasheet) -->
-      <limit effort="2" lower="0.0" upper="${pi/2}" velocity="1"/>
+      <dynamics damping="${proximal_joints_damping}" friction="${proximal_joints_friction}"/>
+      <limit effort="${proximal_joints_effort}" lower="0.0" upper="${pi/2}" velocity="${proximal_joints_velocity}"/>
       <xacro:if value="${finger_id == 1}">
         <origin xyz="0.0503973683071414 -0.026 0.063" rpy="0 0 0"/>
         <axis xyz="0 0 -1"/>
@@ -399,10 +386,8 @@
     <joint name="proximal_joint_${finger_id}" type="revolute">
       <child link="proximal_${finger_id}"/>
       <axis xyz="0 -1 0"/>
-      <!-- damping factor of 0.1 makes the joint move smoother -->
-      <dynamics damping="0.1" friction="0"/>
-      <!-- note: the dynamixel motors can apply roughly 2Nm (see datasheet) -->
-      <limit effort="2" lower="0.0" upper="${pi}" velocity="1"/>
+      <dynamics damping="${proximal_joints_damping}" friction="${proximal_joints_friction}"/>
+      <limit effort="${proximal_joints_effort}" lower="0.0" upper="${pi}" velocity="${proximal_joints_velocity}"/>
       <xacro:if value="${finger_id == 3}">
         <origin xyz="-0.03 0 0.0816" rpy="0 0.28 ${pi}"/>
         <parent link="shell"/>
@@ -411,6 +396,30 @@
         <origin xyz="0.01 0 0.0186" rpy="0 0.28 0"/>
         <parent link="swivel_${finger_id}"/>
       </xacro:unless>
+    </joint>
+  </xacro:macro>
+
+  <xacro:macro name="flex_to_distal" params="finger_id">
+    <joint name="flex_to_distal_${finger_id}" type="revolute">
+      <origin xyz="${flex_link_box_x} 0 0" rpy="0 0 0"/>
+      <parent link="finger_${finger_id}_flex_link"/>
+      <child link="distal_${finger_id}"/>
+      <axis xyz="0 -1 0"/>
+      <dynamics damping="${flex_joints_damping}" friction="${flex_joints_friction}"/>
+      <limit effort="${flex_joints_effort}" lower="0.0" upper="${pi/6}" velocity="${flex_joints_velocity}"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:property name="flex_z_offset" value="-0.002"/>
+
+  <xacro:macro name="proximal_to_flex" params="finger_id">
+    <joint name="proximal_${finger_id}_to_flex" type="revolute">
+      <origin xyz="${0.0705-flex_link_box_x/2} 0 ${flex_z_offset}" rpy="0 0 0"/>
+      <parent link="proximal_${finger_id}"/>
+      <child link="finger_${finger_id}_flex_link"/>
+      <axis xyz="0 -1 0"/>
+      <dynamics damping="${flex_joints_damping}" friction="${flex_joints_friction}"/>
+      <limit effort="${flex_joints_effort}" lower="0.0" upper="${pi/6}" velocity="${flex_joints_velocity}"/>
     </joint>
   </xacro:macro>
 
