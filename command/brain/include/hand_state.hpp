@@ -17,6 +17,7 @@ public:
     
     ContactState getContactState();
     int countFingersInContact();
+    int getFingerIdSingleContact();
     void setFingerStateFromMsg(const reflex_msgs::Hand &msg);
     FingerState finger_states[3] = {FingerState(1), FingerState(2), FingerState(3)};
 

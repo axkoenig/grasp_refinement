@@ -37,6 +37,18 @@ int HandState::countFingersInContact()
     return count;
 }
 
+int HandState::getFingerIdSingleContact()
+{
+    for (int i = 0; i < num_fingers; i++)
+    {
+        if (finger_states[i].hasContact() == true)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
 void HandState::setFingerStateFromMsg(const reflex_msgs::Hand &msg)
 {
     for (int i = 0; i < num_fingers; i++)
