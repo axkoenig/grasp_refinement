@@ -22,14 +22,13 @@ void logExperiment(ros::NodeHandle *nh,
                    float azimuthal,
                    float offset);
 
-
 bool objectTouchesGround();
 
-void moveObjectOutOfWay(ros::NodeHandle* nh, std::string &object_name, tf2::Transform &old_pose);
+void moveObjectOutOfWay(ros::NodeHandle *nh, std::string &object_name, tf2::Transform &old_pose);
 
-tf2::Transform getModelPoseSim(ros::NodeHandle *nh, string model_name, bool verbose = true);
+tf2::Transform getModelPoseSim(ros::NodeHandle *nh, string model_name, string relative_entity_name = "world", bool verbose = true);
 
-tf2::Transform getLinkPoseSim(ros::NodeHandle *nh, string link_name, bool verbose = true);
+tf2::Transform getLinkPoseSim(ros::NodeHandle *nh, string link_name, string reference_frame = "world", bool verbose = true);
 
 tf2::Transform getTcpToWristFrame();
 

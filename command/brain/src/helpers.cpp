@@ -79,7 +79,7 @@ bool objectTouchesGround()
     return false;
 }
 
-tf2::Transform getModelPoseSim(ros::NodeHandle *nh, string model_name, bool verbose)
+tf2::Transform getModelPoseSim(ros::NodeHandle *nh, string model_name, string relative_entity_name, bool verbose)
 {
     // setup service client
     string service_name = "/gazebo/get_model_state";
@@ -89,7 +89,7 @@ tf2::Transform getModelPoseSim(ros::NodeHandle *nh, string model_name, bool verb
     // setup service message
     gazebo_msgs::GetModelState srv;
     srv.request.model_name = model_name;
-    srv.request.relative_entity_name = "world";
+    srv.request.relative_entity_name = relative_entity_name;
 
     // obtain position of object (we don't care about its orientation for now)
     client.call(srv);
@@ -111,7 +111,7 @@ tf2::Transform getModelPoseSim(ros::NodeHandle *nh, string model_name, bool verb
     return tf2::Transform(r, t);
 }
 
-tf2::Transform getLinkPoseSim(ros::NodeHandle *nh, string link_name, bool verbose)
+tf2::Transform getLinkPoseSim(ros::NodeHandle *nh, string link_name, string reference_frame, bool verbose)
 {
     // NOTE we can't simply use the getModelPositionSim function because in Gazebo the Reflex model is
     // rooted in the origin (hence position is always in origin). Rather we have to obtain it via the
@@ -125,7 +125,7 @@ tf2::Transform getLinkPoseSim(ros::NodeHandle *nh, string link_name, bool verbos
     // setup service message
     gazebo_msgs::GetLinkState srv;
     srv.request.link_name = link_name;
-    srv.request.reference_frame = "world";
+    srv.request.reference_frame = reference_frame;
 
     // obtain position of reflex
     client.call(srv);
@@ -264,8 +264,9 @@ void logExperiment(ros::NodeHandle *nh,
     fstream fout;
     fout.open(log_name, ios::out | ios::app);
 
-    if (!fout.good())
+    if (fout.fail())
     {
+        ROS_INFO("Log file does not exist yet.");
         std::ostringstream header;
         header << "time_stamp,"
                << "object_name,"
@@ -276,19 +277,18 @@ void logExperiment(ros::NodeHandle *nh,
                << "pos_error_z,"
                << "polar,"
                << "azimuthal,"
-               << "offset"
-               << "\n";
+               << "offset\n";
 
         ROS_INFO_STREAM("Creating file '" << log_name << "' with header '" << header.str() << "'.");
         fout << header.str();
     }
     else
     {
-        ROS_INFO_STREAM("Adding results to existing file'" << log_name << "'.");
+        ROS_INFO_STREAM("Adding results to existing file '" << log_name << "'.");
     }
 
     ROS_INFO_STREAM("Writing experiment data to file.");
-    fout << std::put_time(&tm, "%d-%m-%Y %H-%M-%S") << ", "
+    fout << std::put_time(&tm, "%d-%m-%Y %H-%M-%S") << ","
          << object_name << ","
          << final_state << ","
          << duration << ","
@@ -297,13 +297,12 @@ void logExperiment(ros::NodeHandle *nh,
          << pos_error[2] << ","
          << polar << ","
          << azimuthal << ","
-         << offset << ","
-         << "\n";
+         << offset << "\n";
 
     fout.close();
 }
 
-void moveObjectOutOfWay(ros::NodeHandle* nh, std::string &object_name, tf2::Transform &old_pose)
+void moveObjectOutOfWay(ros::NodeHandle *nh, std::string &object_name, tf2::Transform &old_pose)
 {
     ROS_INFO("Moving object out of the way.");
 
