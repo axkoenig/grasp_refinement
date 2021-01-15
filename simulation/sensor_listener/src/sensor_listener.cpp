@@ -246,7 +246,7 @@ public:
     ReflexPreshapeMotor()
     {
         std::string preshape_f1_topic = ns + "/finger_1_preshape_position_controller/state";
-        std::string preshape_f2_topic = ns + "/finger_2_proximal_to_flex_position_controller/state";
+        std::string preshape_f2_topic = ns + "/finger_2_preshape_position_controller/state";
 
         preshape_f1_sub = nh.subscribe(preshape_f1_topic, 1, &ReflexPreshapeMotor::preshape_1_callback, this);
         preshape_f2_sub = nh.subscribe(preshape_f2_topic, 1, &ReflexPreshapeMotor::preshape_2_callback, this);
