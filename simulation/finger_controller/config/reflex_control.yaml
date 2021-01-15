@@ -1,54 +1,56 @@
 gazebo:
-  # Publish all joint states -----------------------------------
+  # publish all joint states -----------------------------------
   joint_state_controller:
     type: joint_state_controller/JointStateController
     publish_rate: 500
 
-  # Finger Position Controllers ---------------------------------------
+  # finger position controllers ---------------------------------------
   finger_1_preshape_position_controller:
     type: effort_controllers/JointPositionController
     joint: preshape_1
-    pid: {p: 0.8, i: 0.0, d: 0.0}
+    pid: {p: 5.0, i: 0.0, d: 0.1}
   finger_2_preshape_position_controller:
     type: effort_controllers/JointPositionController
     joint: preshape_2
-    pid: {p: 0.8, i: 0.0, d: 0.0}
+    pid: {p: 5.0, i: 0.0, d: 0.1}
   finger_1_proximal_position_controller:
     type: effort_controllers/JointPositionController
     joint: proximal_joint_1
-    pid: {p: 0.8, i: 0.0, d: 0.0}
+    pid: {p: 5.0, i: 0.0, d: 0.2}
   finger_2_proximal_position_controller:
     type: effort_controllers/JointPositionController
     joint: proximal_joint_2
-    pid: {p: 0.8, i: 0.0, d: 0.0}
+    pid: {p: 5.0, i: 0.0, d: 0.2}
   finger_3_proximal_position_controller:
     type: effort_controllers/JointPositionController
     joint: proximal_joint_3
-    pid: {p: 0.8, i: 0.0, d: 0.0}
+    pid: {p: 5.0, i: 0.0, d: 0.2}
 
-  # Flexure position Controllers ---------------------------------------
+  # flexure position Controllers ---------------------------------------
+  # NOTE: I am not introducing damping terms here as it made the whole 
+  # finger unstable. It works best with only a P controller
   finger_1_proximal_to_flex_position_controller:
     type: effort_controllers/JointPositionController
     joint: proximal_1_to_flex
-    pid: {p: 0.5, i: 0.0, d: 0.0}
+    pid: {p: 5.0, i: 0.0, d: 0.0}
   finger_2_proximal_to_flex_position_controller:
     type: effort_controllers/JointPositionController
     joint: proximal_2_to_flex
-    pid: {p: 0.5, i: 0.0, d: 0.0}
+    pid: {p: 5.0, i: 0.0, d: 0.0}
   finger_3_proximal_to_flex_position_controller:
     type: effort_controllers/JointPositionController
     joint: proximal_3_to_flex
-    pid: {p: 0.5, i: 0.0, d: 0.0}
+    pid: {p: 5.0, i: 0.0, d: 0.0}
 
   finger_1_flex_to_distal_position_controller:
     type: effort_controllers/JointPositionController
     joint: flex_to_distal_1
-    pid: {p: 0.5, i: 0.0, d: 0.0}
+    pid: {p: 5.0, i: 0.0, d: 0.0}
   finger_2_flex_to_distal_position_controller:
     type: effort_controllers/JointPositionController
     joint: flex_to_distal_2
-    pid: {p: 0.5, i: 0.0, d: 0.0}
+    pid: {p: 5.0, i: 0.0, d: 0.0}
   finger_3_flex_to_distal_position_controller:
     type: effort_controllers/JointPositionController
     joint: flex_to_distal_3
-    pid: {p: 0.5, i: 0.0, d: 0.0}
+    pid: {p: 5.0, i: 0.0, d: 0.0}
