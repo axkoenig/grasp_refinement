@@ -90,9 +90,9 @@ tf2::Transform getModelPoseSim(ros::NodeHandle *nh, string model_name, string re
     gazebo_msgs::GetModelState srv;
     srv.request.model_name = model_name;
     srv.request.relative_entity_name = relative_entity_name;
-
-    // obtain position of object (we don't care about its orientation for now)
+    
     client.call(srv);
+
     tf2::Vector3 t = {srv.response.pose.position.x,
                       srv.response.pose.position.y,
                       srv.response.pose.position.z};
@@ -150,9 +150,10 @@ tf2::Transform getTcpToWristFrame()
 {
     // translate from TCP to wrist frame (values taken from Reflex CAD drawing available on website)
     // z_offset: distance from Reflex origin to palm surface
-    // x_offset: approx. distance along x axis from origin to palm center
+    // x_offset: x coordinate of "palm center" (defined as half way between x-coordinates of 
+    //           proximal_1 and proximal_3 frame)
     float z_offset = -0.09228;
-    float x_offset = -0.015;
+    float x_offset = -0.0151985;    // = -((0.060397+0.03)/2-0.03)
 
     tf2::Transform translate_to_wrist = tf2::Transform();
     translate_to_wrist.setIdentity();
