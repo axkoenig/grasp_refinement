@@ -1,32 +1,50 @@
 #!/bin/bash
+log_name="closeHandWhenReachingInit_relaxThreshs.csv"
 
-log_name="morning_fixed.csv"
+# experiment parameters 
+num_steps=12
+polar_start=-1.5
+polar_end=1.5
+azimuthal_start=0
+azimuthal_end=3
+
+# calculations for intermediate steps
+polar_range=$(bc <<< "scale=4;($polar_end)-($polar_start)")
+azimuthal_range=$(bc <<< "scale=4;($azimuthal_end)-($azimuthal_start)")
+polar_step=$(bc <<< "scale=4;($polar_range)/($num_steps)")
+azimuthal_step=$(bc <<< "scale=4;($azimuthal_range)/($num_steps)")
+
+# estimations about 
+num_exp=$(bc <<< "scale=4;($num_steps+1)^2")
+exp_duration=30
+all_exp_duration=$(bc <<< "scale=4;$num_exp*$exp_duration")
+date=$(date --date="+$all_exp_duration seconds" '+%Y-%m-%d %T')
+
+GREEN='\033[0;32m'
+NC='\033[0m'
+echo "You selected $num_steps intermediate steps."
+echo "Final number of experiments will be $num_exp."
+echo -e "${GREEN}Estimated finish: $date ${NC}"
 
 echo "Starting simulation in headless mode."
-gnome-terminal -- roslaunch description reflex.launch run_teleop_node:=false gui:=false
+gnome-terminal -- roslaunch description reflex.launch gui:=false
 
-echo "Sleeping until simulation is launched."
-sleep 10s
+sleep=10
+echo "Sleeping for $sleep seconds until simulation is launched."
+sleep ${sleep}s
+
+# setup sequence over which we iterate
+polar_vals=($(seq $polar_start $polar_step $polar_end))
+azimuthal_vals=($(seq $azimuthal_start $azimuthal_step $azimuthal_end))
 
 # ensures that we exit shell script upon Ctrl+c
 trap "exit" INT
-
-for polar in 0 0.25 0.5 0.75 1.0 1.25 1.5 -0.25 -0.5 -0.75 -1.0 -1.25 -1.5
+for polar in ${polar_vals[@]}
 do  
-    for azimuthal in 0 0.25 0.5 0.75 1.0 1.25 1.5 1.75 2 2.25 2.5 2.75 3
+    for azimuthal in ${azimuthal_vals[@]}
     do
-        echo "Starting baseline controller in new terminal"
         roslaunch brain baseline_commander.launch log_name:=$log_name polar:=$polar azimuthal:=$azimuthal
     done 
 done
-
-# for polar in -1.5 -1.4 -1.3 -1.2 -1.1 -1.0 -0.9 -0.8 -0.7 -0.6 -0.5 -0.4 -0.3 -0.2 -0.1 0 1.5 1.4 1.3 1.2 1.1 1.0 0.9 0.8 0.7 0.6 0.5 0.4 0.3 0.2 0.1
-# do  
-#     for azimuthal in 3.0 2.9 2.8 2.7 2.6 2.5 2.4 2.3 2.2 2.1 2.0 1.9 1.8 1.7 1.6 1.5 1.4 1.3 1.2 1.1 1.0 0.9 0.8 0.7 0.6 0.5 0.4 0.3 0.2 0.1
-#     do
-#         echo "Starting baseline controller in new terminal"
-#         roslaunch brain baseline_commander.launch log_name:=$log_name polar:=$polar azimuthal:=$azimuthal
-#     done 
-# done
 
 echo "Done! Have a nice day."
