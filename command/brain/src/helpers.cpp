@@ -148,12 +148,13 @@ tf2::Transform getLinkPoseSim(ros::NodeHandle *nh, string link_name, string refe
 
 tf2::Transform getTcpToWristFrame()
 {
-    // translate from TCP to wrist frame (values taken from Reflex CAD drawing available on website)
-    // z_offset: distance from Reflex origin to palm surface
-    // x_offset: x coordinate of "palm center" (defined as half way between x-coordinates of 
-    //           proximal_1 and proximal_3 frame)
+    // translate from TCP (i.e. the palm center) to wrist frame
+    // z_offset: distance from Reflex origin to palm surface (taken from CAD drawing)
+    // x_offset: x coordinate of "palm center" (palm center is defined as the origin of the circle that 
+    //           intersects origin of swivel_1, swivel_2 and what would be swivel_3 (swivel_3 doesn't 
+    //           exist in SDF because it is part of base_link.stl))
     float z_offset = -0.09228;
-    float x_offset = -0.0151985;    // = -((0.060397+0.03)/2-0.03)
+    float x_offset = -0.02;
 
     tf2::Transform translate_to_wrist = tf2::Transform();
     translate_to_wrist.setIdentity();
