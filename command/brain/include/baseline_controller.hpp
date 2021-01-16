@@ -57,6 +57,7 @@ public:
 
     State getState() const { return state; }
     ros::Time getStartTime() const { return start_time; }
+    std::string getStatusMsg() const { return status_msg; }
 
 private:
     float backoff_factor = 1.0;
@@ -64,6 +65,7 @@ private:
     float time_out;
     bool grasped = false;
     bool finished = false;
+    std::string status_msg = "All good.";
     State state = NotGrasped;
     HandState hand_state = HandState();
 

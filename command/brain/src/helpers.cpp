@@ -251,7 +251,8 @@ void logExperiment(ros::NodeHandle *nh,
                    float pos_error[3],
                    float polar,
                    float azimuthal,
-                   float offset)
+                   float offset,
+                   std::string status_msg)
 {
     // get relevant variables from parameter server
     std::string log_name;
@@ -279,7 +280,8 @@ void logExperiment(ros::NodeHandle *nh,
                << "pos_error_z,"
                << "polar,"
                << "azimuthal,"
-               << "offset\n";
+               << "offset,"
+               << "status_msg\n";
 
         ROS_INFO_STREAM("Creating file '" << log_name << "' with header '" << header.str() << "'.");
         fout << header.str();
@@ -299,7 +301,8 @@ void logExperiment(ros::NodeHandle *nh,
          << pos_error[2] << ","
          << polar << ","
          << azimuthal << ","
-         << offset << "\n";
+         << offset << ","
+         << status_msg << "\n";
 
     fout.close();
 }

@@ -91,9 +91,10 @@ void BaselineController::waitUntilWristReachedPoseSim(tf2::Transform desired_pos
         time_sum += time_increment;
         if (time_sum >= stop_thresh)
         {
-            ROS_INFO_STREAM("Did not reach " << name << " within " << stop_thresh << " seconds. Something is wrong.");
+            ROS_INFO_STREAM("Did not reach " << name << " wrist pose within " << stop_thresh << " seconds. Something is wrong.");
             ROS_WARN("Setting state to 'Failure'");
             state = Failure;
+            status_msg = "Got stuck when moving to " + name + " wrist pose."; 
             stopExperiment();
             return;
         }

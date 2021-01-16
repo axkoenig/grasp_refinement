@@ -20,7 +20,8 @@ void logExperiment(ros::NodeHandle *nh,
                    float pos_error[3],
                    float polar,
                    float azimuthal,
-                   float offset);
+                   float offset,
+                   std::string status_msg);
 
 bool objectTouchesGround();
 
