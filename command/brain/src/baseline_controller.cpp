@@ -22,7 +22,7 @@ BaselineController::BaselineController(ros::NodeHandle *nh, tf2::Transform init_
     // TODO find another, more elegant solution for this
     // wait before publishing first transform to fix warning from wrist_controller_node
     // ""reflex" passed to lookupTransform argument target_frame does not exist."
-    ros::Duration(0.2).sleep();
+    ros::Duration(2).sleep();
     start_time = ros::Time::now();
 
     // move to init wrist pose
@@ -57,6 +57,10 @@ void BaselineController::moveToInitPoseSim()
     // move object s.t. it doesn't accidentally collide with robotic hand
     moveObjectOutOfWay(nh, object_name, init_object_pose);
 
+    // close fingers s.t. they do not collide with ground_plane upon moving to init_wrist_pose
+    sph_close_client.call(trigger);
+    ROS_INFO("%s", trigger.response.message.c_str());
+
     // move robot hand to init pose
     desired_pose = init_wrist_pose;
     sendWristTransform(desired_pose);
@@ -89,7 +93,7 @@ void BaselineController::waitUntilWristReachedPoseSim(tf2::Transform desired_pos
         {
             ROS_INFO_STREAM("Did not reach " << name << " within " << stop_thresh << " seconds. Something is wrong.");
             ROS_WARN("Setting state to 'Failure'");
-            state = Failure; 
+            state = Failure;
             stopExperiment();
             return;
         }
@@ -104,8 +108,9 @@ bool BaselineController::reachedPoseSim(tf2::Transform desired_pose, float posit
     tf2::Quaternion des_rot = desired_pose.getRotation();
 
     // get current position of reflex origin (i.e. wrist)
-    tf2::Vector3 cur_pos = getLinkPoseSim(nh, "shell", false).getOrigin();
-    tf2::Quaternion cur_rot = getLinkPoseSim(nh, "shell", false).getRotation();
+    tf2::Transform transform = getLinkPoseSim(nh, "shell", "world", false);
+    tf2::Vector3 cur_pos = transform.getOrigin();
+    tf2::Quaternion cur_rot = transform.getRotation();
 
     if ((des_rot - cur_rot).length() > rotation_thresh)
     {
@@ -148,9 +153,19 @@ void BaselineController::sendWristTransform(tf2::Transform transform)
 
 void BaselineController::updateApproachDirectionSingleContact()
 {
-    tf2::Vector3 vec = hand_state.finger_states[0].getProximalNormal();
-    tf2::Vector3 vec2 = hand_state.finger_states[1].getProximalNormal();
-    tf2::Vector3 vec3 = hand_state.finger_states[2].getProximalNormal();
+    int finger_id = hand_state.getFingerIdSingleContact();
+
+    // check if it's a proximal contact (if false, we know it is a distal contact)
+    bool prox;
+    hand_state.finger_states[finger_id].hasProximalContact() ? prox = true : false;
+
+    tf2::Vector3 normal;
+    prox
+        ? normal = hand_state.finger_states[finger_id].getProximalNormal()
+        : normal = hand_state.finger_states[finger_id].getDistalNormal();
+
+    // subtract normal vector from current approach direction to back-off a little
+    approach_direction -= (normal * 0.01);
 }
 
 void BaselineController::timeStep()
@@ -163,7 +178,6 @@ void BaselineController::timeStep()
         case HandState::ContactState::NoContact:
         {
             ROS_INFO("No contact --> Approach");
-            // updateApproachDirectionSingleContact();
             moveAlongApproachDir();
             break;
         }
