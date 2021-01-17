@@ -94,7 +94,7 @@ void BaselineController::waitUntilWristReachedPoseSim(tf2::Transform desired_pos
             ROS_INFO_STREAM("Did not reach " << name << " wrist pose within " << stop_thresh << " seconds. Something is wrong.");
             ROS_WARN("Setting state to 'Failure'");
             state = Failure;
-            status_msg = "Got stuck when moving to " + name + " wrist pose."; 
+            status_msg = "Got stuck when moving to " + name + " wrist pose.";
             stopExperiment();
             return;
         }
@@ -241,16 +241,23 @@ void BaselineController::resetWorldSim()
     // we need waypoint above origin because otherwise hand will sometimes
     // not reach origin due to friction with ground plane
     tf2::Transform waypoint_frame = world_frame;
-    waypoint_frame.setOrigin(tf2::Vector3{0, 0, 0.1});
+    waypoint_frame.setOrigin(tf2::Vector3{0, 0, 0.3});
 
     string object_name;
     getParam(nh, &object_name, "object_name");
-
     moveObjectOutOfWay(nh, object_name, init_object_pose);
+
+    // close fingers s.t. they do not collide with ground_plane upon moving to waypoint_frame
+    sph_close_client.call(trigger);
+    ROS_INFO("%s", trigger.response.message.c_str());
     sendWristTransform(waypoint_frame);
     waitUntilWristReachedPoseSim(waypoint_frame, "waypoint origin");
     sendWristTransform(world_frame);
     waitUntilWristReachedPoseSim(world_frame, "origin");
+
+    // open fingers to neural position
+    open_client.call(trigger);
+    ROS_INFO("%s", trigger.response.message.c_str());
 
     // move object back to old pose
     ROS_INFO_STREAM("Moving object back to initial pose.");
@@ -262,5 +269,5 @@ void BaselineController::stopExperiment()
     ROS_INFO("Stopping experiment.");
     resetWorldSim();
     finished = true;
-    ROS_INFO("Finished. Have a nice day.");
+    ROS_INFO("Done! Have a nice day.");
 }
