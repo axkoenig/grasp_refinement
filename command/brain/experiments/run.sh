@@ -1,8 +1,8 @@
 #!/bin/bash
-log_name="closeHandWhenReachingInit_relaxThreshs.csv"
+log_name="closeBeforeResetting_higherWaypoint.csv"
 
 # experiment parameters 
-num_steps=12
+num_steps=25
 polar_start=-1.5
 polar_end=1.5
 azimuthal_start=0
@@ -25,6 +25,9 @@ NC='\033[0m'
 echo "You selected $num_steps intermediate steps."
 echo "Final number of experiments will be $num_exp."
 echo -e "${GREEN}Estimated finish: $date ${NC}"
+
+# wait for confirmation (user checks if estimated finish is fine)
+read -p "Press enter to continue."
 
 echo "Starting simulation in headless mode."
 gnome-terminal -- roslaunch description reflex.launch gui:=false
