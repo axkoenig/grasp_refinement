@@ -126,16 +126,10 @@ include_directories(
 )
 
 ## Declare a C++ library
-add_library(hand_state_lib
+add_library(${PROJECT_NAME}_lib
   src/hand_state.cpp
-)
-add_library(finger_state_lib
   src/finger_state.cpp
-)
-add_library(baseline_controller_lib
   src/baseline_controller.cpp
-)
-add_library(helpers_lib
   src/helpers.cpp
 )
 
@@ -162,10 +156,7 @@ add_dependencies(baseline_controller_node reflex_msgs_generate_messages_cpp ${ca
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(baseline_controller_node
-  hand_state_lib  
-  finger_state_lib
-  baseline_controller_lib
-  helpers_lib
+  ${PROJECT_NAME}_lib
   ${catkin_LIBRARIES}
 )
 
