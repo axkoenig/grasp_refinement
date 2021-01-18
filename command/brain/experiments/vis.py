@@ -26,6 +26,7 @@ def plot(csv_name):
         "polar",
         "azimuthal",
         "offset",
+        "status_msg"
     ]
 
     dataframe = pd.read_csv("data/" + csv_name + ".csv", names=headers)
