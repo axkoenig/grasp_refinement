@@ -6,6 +6,4 @@
     <xacro:property name="urdf_path" value="$(find description)/urdf"/>
     <xacro:include filename="${urdf_path}/reflex/reflex.urdf.xacro"/>
     <xacro:include filename="${urdf_path}/reflex/reflex.gazebo.xacro"/>
-
-    <!-- TODO maybe add Optoforce back onto Reflex (wait what Rob says) -->
 </robot>
