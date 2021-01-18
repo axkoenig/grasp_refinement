@@ -11,9 +11,6 @@ bool setModelPoseSim(ros::NodeHandle *nh, string model_name, tf2::Transform pose
 
 void printPose(tf2::Transform pose, string name);
 
-template <typename T>
-void getParam(ros::NodeHandle *nh, T *param, const string param_name);
-
 void logExperiment(ros::NodeHandle *nh,
                    int final_state,
                    float duration,
@@ -38,5 +35,25 @@ tf2::Transform calcInitWristPose(ros::NodeHandle *nh,
                                  float polar = 0,
                                  float azimuthal = 0,
                                  float offset = 0.3);
+
+
+template <typename T>
+void getParam(ros::NodeHandle *nh, T *param, const string param_name)
+{
+    // wait for param_name on parameter server
+    while (ros::ok())
+    {
+        if (nh->getParam(param_name, *param))
+        {
+            ROS_INFO_STREAM("Obtained " << param_name << ": " << *param << " from parameter server.");
+            return;
+        }
+        else
+        {
+            ROS_WARN("Could not find parameter '%s' on parameter server.", param_name.c_str());
+            ros::Duration(1.0).sleep();
+        }
+    }
+}
 
 #endif

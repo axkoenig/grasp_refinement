@@ -226,25 +226,6 @@ tf2::Transform calcInitWristPose(ros::NodeHandle *nh,
     return init_wrist_pose;
 }
 
-template <typename T>
-void getParam(ros::NodeHandle *nh, T *param, const string param_name)
-{
-    // wait for simulation_only on parameter server
-    while (ros::ok())
-    {
-        if (nh->getParam(param_name, *param))
-        {
-            ROS_INFO_STREAM("Obtained " << param_name << ": " << *param << " from parameter server.");
-            return;
-        }
-        else
-        {
-            ROS_WARN("Could not find parameter '%s' on parameter server.", param_name.c_str());
-            ros::Duration(1.0).sleep();
-        }
-    }
-}
-
 void logExperiment(ros::NodeHandle *nh,
                    int final_state,
                    float duration,
