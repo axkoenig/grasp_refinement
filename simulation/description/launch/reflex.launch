@@ -39,12 +39,12 @@
         <arg name="verbose" value="true" />
     </include>
 
-    <node name="reflex_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param robot_description -model reflex" />
+    <node name="reflex_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param robot_description -model $(arg robot_name)" />
 
     <param name="robot_description" command="
         $(find xacro)/xacro '$(find description)/robots/reflex.robot.xacro' only_reflex:=true base_link_name:=$(arg base_link_name)"/>
 
-    <!-- robot state publisher uses joint values from joint_state_publisher to publish poses of links to /tf2 -->
+    <!-- robot state publisher uses joint values from joint_state_publisher to publish poses of links to /tf tree -->
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
         <remap from="/joint_states" to="/reflex/joint_states"/>
     </node>
