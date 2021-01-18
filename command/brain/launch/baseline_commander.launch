@@ -17,9 +17,11 @@
     <arg name="polar" default="0.0" />
     <arg name="azimuthal" default="0.0" />
     <arg name="offset" default="0.2" />
+    <arg name="z_rot" default="1.57075" /> 
     <param name="polar" value="$(arg polar)" />
     <param name="azimuthal" value="$(arg azimuthal)" />
     <param name="offset" value="$(arg offset)" />
+    <param name="z_rot" value="$(arg z_rot)" />
 
     <!-- name of log file where experimental results get added -->
     <arg name="log_name" default="test.csv" />

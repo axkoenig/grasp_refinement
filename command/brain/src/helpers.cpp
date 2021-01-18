@@ -90,7 +90,7 @@ tf2::Transform getModelPoseSim(ros::NodeHandle *nh, string model_name, string re
     gazebo_msgs::GetModelState srv;
     srv.request.model_name = model_name;
     srv.request.relative_entity_name = relative_entity_name;
-    
+
     client.call(srv);
 
     tf2::Vector3 t = {srv.response.pose.position.x,
@@ -150,8 +150,8 @@ tf2::Transform getTcpToWristFrame()
 {
     // translate from TCP (i.e. the palm center) to wrist frame
     // z_offset: distance from Reflex origin to palm surface (taken from CAD drawing)
-    // x_offset: x coordinate of "palm center" (palm center is defined as the origin of the circle that 
-    //           intersects origin of swivel_1, swivel_2 and what would be swivel_3 (swivel_3 doesn't 
+    // x_offset: x coordinate of "palm center" (palm center is defined as the origin of the circle that
+    //           intersects origin of swivel_1, swivel_2 and what would be swivel_3 (swivel_3 doesn't
     //           exist in SDF because it is part of base_link.stl))
     float z_offset = -0.09228;
     float x_offset = -0.02;
@@ -177,7 +177,8 @@ tf2::Transform calcInitWristPose(ros::NodeHandle *nh,
                                  float pos_error[3],
                                  float polar,
                                  float azimuthal,
-                                 float offset)
+                                 float offset,
+                                 float z_rot)
 {
     ROS_INFO("Calculating initial wrist pose.");
 
@@ -220,7 +221,13 @@ tf2::Transform calcInitWristPose(ros::NodeHandle *nh,
     translate_to_tcp.setIdentity();
     translate_to_tcp.setOrigin(tcp_to_object_offset);
 
-    tf2::Transform init_wrist_pose = translate_to_object * rotate_spherical * translate_to_tcp * getTcpToWristFrame();
+    // rotate along reflex z
+    q.setRPY(0, 0, z_rot);
+    tf2::Transform rotate_around_z;
+    rotate_around_z.setIdentity();
+    rotate_around_z.setRotation(q);
+
+    tf2::Transform init_wrist_pose = translate_to_object * rotate_spherical * translate_to_tcp * rotate_around_z * getTcpToWristFrame();
     printPose(init_wrist_pose, "wrist");
 
     return init_wrist_pose;

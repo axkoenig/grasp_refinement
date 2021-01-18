@@ -34,7 +34,8 @@ tf2::Transform calcInitWristPose(ros::NodeHandle *nh,
                                  float pos_error[3] = {},
                                  float polar = 0,
                                  float azimuthal = 0,
-                                 float offset = 0.3);
+                                 float offset = 0.3,
+                                 float z_rot = 0);
 
 
 template <typename T>
