@@ -48,7 +48,7 @@ std::map<char, std::vector<float>> wrist_bindings{
     {'L', {0, 0, 0, 0, 0, -1}},
 };
 
-// keys for wrist teleoperation (note this is for my german keyboard)
+// keys for reflex finger teleoperation (note this is for my german keyboard)
 std::map<char, std::vector<float>> finger_bindings{
 
     // format: {f1, f2, f3, preshape}
@@ -93,6 +93,8 @@ int getch(void)
     return ch;
 }
 
+// END CODE FROM https://github.com/methylDragon/teleop_twist_keyboard_cpp/blob/master/src/teleop_twist_keyboard.cpp
+
 tf2::Transform calcTransformFromEuler(std::array<float, 6> pose)
 {
     tf2::Vector3 t = {pose[0], pose[1], pose[2]};
@@ -102,8 +104,6 @@ tf2::Transform calcTransformFromEuler(std::array<float, 6> pose)
 
     return transform;
 }
-
-// END CODE FROM https://github.com/methylDragon/teleop_twist_keyboard_cpp/blob/master/src/teleop_twist_keyboard.cpp
 
 int main(int argc, char **argv)
 {
