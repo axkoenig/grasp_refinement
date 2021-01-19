@@ -1,8 +1,8 @@
 #!/bin/bash
-log_name="closeBeforeResetting_higherWaypoint.csv"
+log_name="lowerSphereMass_wristDamping100.csv"
 
 # experiment parameters 
-num_steps=25
+num_steps=12
 polar_start=-1.5
 polar_end=1.5
 azimuthal_start=0
