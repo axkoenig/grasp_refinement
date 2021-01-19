@@ -243,10 +243,11 @@ void logExperiment(ros::NodeHandle *nh,
                    std::string status_msg)
 {
     // get relevant variables from parameter server
-    std::string log_name;
-    std::string object_name;
+    std::string log_name, object_name;
+    float object_mass;
     getParam(nh, &log_name, "log_name");
     getParam(nh, &object_name, "object_name");
+    getParam(nh, &object_mass, "object_mass");
 
     // to create time and date info
     auto t = std::time(nullptr);
@@ -261,6 +262,7 @@ void logExperiment(ros::NodeHandle *nh,
         std::ostringstream header;
         header << "time_stamp,"
                << "object_name,"
+               << "object_mass,"
                << "final_state,"
                << "duration,"
                << "pos_error_x,"
@@ -282,6 +284,7 @@ void logExperiment(ros::NodeHandle *nh,
     ROS_INFO_STREAM("Writing experiment data to file.");
     fout << std::put_time(&tm, "%d-%m-%Y %H-%M-%S") << ","
          << object_name << ","
+         << object_mass << ","
          << final_state << ","
          << duration << ","
          << pos_error[0] << ","

@@ -18,6 +18,7 @@ def plot(csv_name):
     headers = [
         "time_stamp",
         "object_name",
+        "object_mass",
         "final_state",
         "duration",
         "pos_error_x",
