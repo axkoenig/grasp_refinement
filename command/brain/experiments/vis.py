@@ -18,7 +18,7 @@ def plot(csv_name):
     headers = [
         "time_stamp",
         "object_name",
-        "object_mass",
+        # "object_mass",
         "final_state",
         "duration",
         "pos_error_x",
@@ -67,12 +67,19 @@ def plot(csv_name):
             else:
                 # access final state at this row_id and assign to z
                 z[r, c] = final_state[row_id].values
+    
+    # assumes step size is uniform across one axis
+    step_size_x = abs(x[0,0]-x[0,1])
+    step_size_y = abs(y[0,0]-y[1,0])
+
+    # transform x and y to boundaries of x and y
+    x2,y2 = np.meshgrid(np.arange(x.min()-step_size_x/2,x.max()+step_size_x,step_size_x),np.arange(y.min()-step_size_y/2,y.max()+step_size_y,step_size_y))
 
     fig = plt.figure(constrained_layout=True, figsize=(8, 5))
-    plot = plt.contourf(x, y, z, levels=3, cmap=plt.cm.Greens)
+    plot = plt.pcolormesh(x2,y2,z, cmap=plt.cm.Greens, vmin=-1,vmax=3)
     plt.xlabel("Polar angle (rad)")
     plt.ylabel("Azimuthal angle (rad)")
-    plt.axis("scaled")
+    plt.grid(True, color="grey", lw=0.5)
     cbar = fig.colorbar(plot, ticks=[-1, 0, 1, 2, 3])
     cbar.set_label("Final state")
     cbar.ax.set_yticklabels(
