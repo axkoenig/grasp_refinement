@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(teleop)
+project(interface)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -107,7 +107,7 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES teleop
+#  LIBRARIES interface
 CATKIN_DEPENDS message_runtime
 #  DEPENDS system_lib
 )
@@ -125,19 +125,19 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/teleop.cpp
+#   src/${PROJECT_NAME}/interface.cpp
 # )
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node src/keyboard_teleop.cpp)
+add_executable(finger_teleop_node src/keyboard_teleop.cpp)
 add_executable(reflex_commander_node src/reflex_commander.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-add_dependencies(${PROJECT_NAME}_node reflex_msgs_generate_messages_cpp ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+add_dependencies(finger_teleop_node reflex_msgs_generate_messages_cpp ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 add_dependencies(reflex_commander_node reflex_msgs_generate_messages_cpp ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
 ## Rename C++ executable without prefix
@@ -151,7 +151,7 @@ add_dependencies(reflex_commander_node reflex_msgs_generate_messages_cpp ${PROJE
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}_node
+target_link_libraries(finger_teleop_node
   ${catkin_LIBRARIES}
 )
 target_link_libraries(reflex_commander_node
@@ -205,7 +205,7 @@ target_link_libraries(reflex_commander_node
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_teleop.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_interface.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

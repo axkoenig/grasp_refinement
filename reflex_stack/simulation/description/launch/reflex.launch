@@ -5,7 +5,7 @@
     <arg name="run_sensors_node" default="true" />
     <arg name="run_debug_node" default="true" />
     <arg name="run_wrist_controller_node" default="true" />
-    <arg name="run_teleop_node" default="false" />
+    <arg name="run_keyboard_teleop_nodes" default="false" />
     <arg name="run_reflex_commander_node" default="true" />
     <arg name="launch_finger_controllers" default="true" />
     <arg name="base_link_name" default="shell" />
@@ -57,8 +57,8 @@
     </node>
 
     <!-- Keyboard teleoperation node -->
-    <group if="$(arg run_teleop_node)">
-        <node pkg="teleop" type="teleop_node" name="teleop_node" output="screen"/>
+    <group if="$(arg run_keyboard_teleop_nodes)">
+        <node pkg="interface" type="finger_teleop_node" name="finger_teleop_node" output="screen"/>
     </group>
 
     <!-- Launch controllers -->
@@ -78,7 +78,7 @@
 
     <!-- Run Reflex commander node (high level grasp primitives) -->
     <group if="$(arg run_reflex_commander_node)">
-        <node pkg="teleop" type="reflex_commander_node" name="reflex_commander_node" output="screen"/>
+        <node pkg="interface" type="reflex_commander_node" name="reflex_commander_node" output="screen"/>
     </group>
 
     <!-- Wrist controller node -->
