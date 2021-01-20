@@ -127,8 +127,6 @@ include_directories(
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME}_lib
-  src/hand_state.cpp
-  src/finger_state.cpp
   src/baseline_controller.cpp
   src/helpers.cpp
 )
