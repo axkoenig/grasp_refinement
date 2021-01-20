@@ -217,7 +217,7 @@ tf2::Transform calcInitWristPose(ros::NodeHandle *nh,
     rotate_spherical.setRotation(q);
 
     // translation to tool center point (TCP) along negative z axis and introduce positional error
-    tf2::Vector3 tcp_to_object_offset = tf2::Vector3{reflex_error[0], reflex_error[1], reflex_error[2] - offset};
+    tf2::Vector3 tcp_to_object_offset = tf2::Vector3{0, 0, -offset};
     tf2::Transform translate_to_tcp = tf2::Transform();
     translate_to_tcp.setIdentity();
     translate_to_tcp.setOrigin(tcp_to_object_offset);
@@ -228,7 +228,13 @@ tf2::Transform calcInitWristPose(ros::NodeHandle *nh,
     rotate_around_z.setIdentity();
     rotate_around_z.setRotation(q);
 
-    tf2::Transform init_wrist_pose = translate_to_object * rotate_spherical * translate_to_tcp * rotate_around_z * getTcpToWristFrame();
+    // introduce position error in final wrist frame (corresponds to inaccuracies introduced by the robot arm)
+    tf2::Vector3 error_origin = tf2::Vector3{reflex_error[0], reflex_error[1], reflex_error[2]};
+    tf2::Transform translate_error;
+    translate_error.setIdentity();
+    translate_error.setOrigin(error_origin);
+
+    tf2::Transform init_wrist_pose = translate_to_object * rotate_spherical * translate_to_tcp * rotate_around_z * getTcpToWristFrame() * translate_error;
     printPose(init_wrist_pose, "wrist");
 
     return init_wrist_pose;
