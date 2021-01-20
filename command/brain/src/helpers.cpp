@@ -175,6 +175,7 @@ void printPose(tf2::Transform pose, string name)
 
 tf2::Transform calcInitWristPose(ros::NodeHandle *nh,
                                  float obj_error[3],
+                                 float reflex_error[3],
                                  float polar,
                                  float azimuthal,
                                  float offset,
@@ -215,8 +216,8 @@ tf2::Transform calcInitWristPose(ros::NodeHandle *nh,
     rotate_spherical.setIdentity();
     rotate_spherical.setRotation(q);
 
-    // translation to tool center point (TCP) along negative z axis
-    tf2::Vector3 tcp_to_object_offset = tf2::Vector3{0, 0, -offset};
+    // translation to tool center point (TCP) along negative z axis and introduce positional error
+    tf2::Vector3 tcp_to_object_offset = tf2::Vector3{reflex_error[0], reflex_error[1], reflex_error[2] - offset};
     tf2::Transform translate_to_tcp = tf2::Transform();
     translate_to_tcp.setIdentity();
     translate_to_tcp.setOrigin(tcp_to_object_offset);
@@ -237,6 +238,7 @@ void logExperiment(ros::NodeHandle *nh,
                    int final_state,
                    float duration,
                    float obj_error[3],
+                   float reflex_error[3],
                    float polar,
                    float azimuthal,
                    float offset,
@@ -268,6 +270,9 @@ void logExperiment(ros::NodeHandle *nh,
                << "obj_error_x,"
                << "obj_error_y,"
                << "obj_error_z,"
+               << "reflex_error_x,"
+               << "reflex_error_y,"
+               << "reflex_error_z,"
                << "polar,"
                << "azimuthal,"
                << "offset,"
@@ -290,6 +295,9 @@ void logExperiment(ros::NodeHandle *nh,
          << obj_error[0] << ","
          << obj_error[1] << ","
          << obj_error[2] << ","
+         << reflex_error[0] << ","
+         << reflex_error[1] << ","
+         << reflex_error[2] << ","
          << polar << ","
          << azimuthal << ","
          << offset << ","
