@@ -119,26 +119,26 @@ CATKIN_DEPENDS message_runtime
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/interface.cpp
-# )
+add_library(${PROJECT_NAME}_lib
+  src/hand_command.cpp
+)
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(finger_teleop_node src/keyboard_teleop.cpp)
-add_executable(hand_command_node src/hand_command.cpp)
+add_executable(interface_node src/main.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
 add_dependencies(finger_teleop_node reflex_msgs_generate_messages_cpp ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
-add_dependencies(hand_command_node reflex_msgs_generate_messages_cpp ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+add_dependencies(interface_node reflex_msgs_generate_messages_cpp ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -154,7 +154,8 @@ add_dependencies(hand_command_node reflex_msgs_generate_messages_cpp ${PROJECT_N
 target_link_libraries(finger_teleop_node
   ${catkin_LIBRARIES}
 )
-target_link_libraries(hand_command_node
+target_link_libraries(interface_node
+  ${PROJECT_NAME}_lib
   ${catkin_LIBRARIES}
 )
 
