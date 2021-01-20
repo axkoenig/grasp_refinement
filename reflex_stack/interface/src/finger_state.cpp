@@ -5,7 +5,7 @@
 #include <gazebo_msgs/GetLinkState.h>
 
 #include "finger_state.hpp"
-#include "helpers.hpp"
+// #include "helpers.hpp"
 
 FingerState::FingerState(int finger_id)
 {
@@ -113,16 +113,16 @@ void FingerState::updateNormalsExactSim()
 
     // TODO when I create ReflexInterface class, pass its NodeHandle in here. Currently this creates a NodeHandle every
     // time the method is called.
-    ROS_WARN("THIS METHOD IS VERY INEFFICIENT.");
-    ros::NodeHandle nh;
+    // ROS_WARN("THIS METHOD IS VERY INEFFICIENT.");
+    // ros::NodeHandle nh;
 
-    std::string link_name = "proximal_" + std::to_string(finger_id);
-    tf2::Transform transform = getLinkPoseSim(&nh, link_name, "shell");
-    proximal_normal = transform * tf2::Vector3{0, 0, 1};
+    // std::string link_name = "proximal_" + std::to_string(finger_id);
+    // tf2::Transform transform = getLinkPoseSim(&nh, link_name, "shell");
+    // proximal_normal = transform * tf2::Vector3{0, 0, 1};
 
-    link_name = "distal_" + std::to_string(finger_id);
-    transform = getLinkPoseSim(&nh, link_name, "shell");
-    distal_normal = transform * tf2::Vector3{0, 0, 1};
+    // link_name = "distal_" + std::to_string(finger_id);
+    // transform = getLinkPoseSim(&nh, link_name, "shell");
+    // distal_normal = transform * tf2::Vector3{0, 0, 1};
 }
 
 void FingerState::updateNormalsFromMeasuredJointAngles()
