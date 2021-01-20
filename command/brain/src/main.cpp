@@ -33,9 +33,9 @@ int main(int argc, char **argv)
         getParam(&nh, &azimuthal, "azimuthal");
         getParam(&nh, &offset, "offset");
         getParam(&nh, &z_rot, "z_rot");
-        getParam(&nh, &pos_error[0], "pos_error_x");
-        getParam(&nh, &pos_error[1], "pos_error_y");
-        getParam(&nh, &pos_error[2], "pos_error_z");
+        getParam(&nh, &pos_error[0], "obj_error_x");
+        getParam(&nh, &pos_error[1], "obj_error_y");
+        getParam(&nh, &pos_error[2], "obj_error_z");
 
         // caluclate pre-grasp pose from spherical coordinates
         init_wrist_pose = calcInitWristPose(&nh, pos_error, polar, azimuthal, offset, z_rot);

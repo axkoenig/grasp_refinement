@@ -6,12 +6,12 @@
     <param name="simulation_only" value="$(arg simulation_only)" />
 
     <!-- positional error that is added to model position to test robustness of algorithm -->
-    <arg name="pos_error_x" default="0.0" />
-    <arg name="pos_error_y" default="0.0" />
-    <arg name="pos_error_z" default="0.0" />
-    <param name="pos_error_x" value="$(arg pos_error_x)" />
-    <param name="pos_error_y" value="$(arg pos_error_y)" />
-    <param name="pos_error_z" value="$(arg pos_error_z)" />
+    <arg name="obj_error_x" default="0.0" />
+    <arg name="obj_error_y" default="0.0" />
+    <arg name="obj_error_z" default="0.0" />
+    <param name="obj_error_x" value="$(arg obj_error_x)" />
+    <param name="obj_error_y" value="$(arg obj_error_y)" />
+    <param name="obj_error_z" value="$(arg obj_error_z)" />
 
     <!-- intial tool pose in spherical coordinates. initial wrist pose is calculated from these. -->
     <arg name="polar" default="0.0" />
