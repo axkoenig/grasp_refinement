@@ -174,7 +174,7 @@ void printPose(tf2::Transform pose, string name)
 }
 
 tf2::Transform calcInitWristPose(ros::NodeHandle *nh,
-                                 float pos_error[3],
+                                 float obj_error[3],
                                  float polar,
                                  float azimuthal,
                                  float offset,
@@ -197,9 +197,9 @@ tf2::Transform calcInitWristPose(ros::NodeHandle *nh,
     tf2::Vector3 t = getModelPoseSim(nh, object_name).getOrigin();
 
     // introduce error
-    t += tf2::Vector3{pos_error[0], pos_error[1], pos_error[2]};
+    t += tf2::Vector3{obj_error[0], obj_error[1], obj_error[2]};
     tf2::Transform translate_to_object(tf2::Quaternion{0, 0, 0, 1}, t);
-    ROS_INFO_STREAM("Introduced positional error " << pos_error << " to model position.");
+    ROS_INFO_STREAM("Introduced positional error " << obj_error << " to model position.");
 
     /////////////////////////////////////////////////////////////////////
     // B) ROTATE AND TRANSLATE IN SPHERICAL COORDINATES TO GET WRIST POSE
@@ -236,7 +236,7 @@ tf2::Transform calcInitWristPose(ros::NodeHandle *nh,
 void logExperiment(ros::NodeHandle *nh,
                    int final_state,
                    float duration,
-                   float pos_error[3],
+                   float obj_error[3],
                    float polar,
                    float azimuthal,
                    float offset,
@@ -287,9 +287,9 @@ void logExperiment(ros::NodeHandle *nh,
          << object_mass << ","
          << final_state << ","
          << duration << ","
-         << pos_error[0] << ","
-         << pos_error[1] << ","
-         << pos_error[2] << ","
+         << obj_error[0] << ","
+         << obj_error[1] << ","
+         << obj_error[2] << ","
          << polar << ","
          << azimuthal << ","
          << offset << ","

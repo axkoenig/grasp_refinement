@@ -23,7 +23,7 @@ int main(int argc, char **argv)
     tf2::Transform init_wrist_pose;
     bool simulation_only;
     float polar, azimuthal, offset, z_rot, time_out;
-    float pos_error[3];
+    float obj_error[3];
     getParam(&nh, &simulation_only, "simulation_only");
     getParam(&nh, &time_out, "time_out");
 
@@ -33,12 +33,12 @@ int main(int argc, char **argv)
         getParam(&nh, &azimuthal, "azimuthal");
         getParam(&nh, &offset, "offset");
         getParam(&nh, &z_rot, "z_rot");
-        getParam(&nh, &pos_error[0], "obj_error_x");
-        getParam(&nh, &pos_error[1], "obj_error_y");
-        getParam(&nh, &pos_error[2], "obj_error_z");
+        getParam(&nh, &obj_error[0], "obj_error_x");
+        getParam(&nh, &obj_error[1], "obj_error_y");
+        getParam(&nh, &obj_error[2], "obj_error_z");
 
         // caluclate pre-grasp pose from spherical coordinates
-        init_wrist_pose = calcInitWristPose(&nh, pos_error, polar, azimuthal, offset, z_rot);
+        init_wrist_pose = calcInitWristPose(&nh, obj_error, polar, azimuthal, offset, z_rot);
     }
     else
     {
@@ -66,7 +66,7 @@ int main(int argc, char **argv)
         if (bc.isFinished())
         {
             ros::Duration duration = ros::Time::now() - bc.getStartTime();
-            logExperiment(&nh, bc.getState(), duration.toSec(), pos_error, polar, azimuthal, offset, bc.getStatusMsg());
+            logExperiment(&nh, bc.getState(), duration.toSec(), obj_error, polar, azimuthal, offset, bc.getStatusMsg());
             break;
         }
     }
