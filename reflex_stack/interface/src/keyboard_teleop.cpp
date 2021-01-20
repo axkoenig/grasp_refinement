@@ -112,7 +112,7 @@ int main(int argc, char **argv)
     ros::Rate rate(100);
     ROS_INFO("Launched %s node.", node_name.c_str());
 
-    // service clients for reflex_commander_node
+    // service clients for hand_command_node
     ros::ServiceClient open_client = nh.serviceClient<std_srvs::Trigger>(open_srv_name);
     ros::ServiceClient close_client = nh.serviceClient<std_srvs::Trigger>(close_srv_name);
     ros::ServiceClient pinch_client = nh.serviceClient<std_srvs::Trigger>(pinch_srv_name);

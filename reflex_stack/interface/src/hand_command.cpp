@@ -5,7 +5,7 @@
 #include <teleop/PosIncrement.h>
 #include <math.h>
 
-std::string node_name = "reflex_commander_node";
+std::string node_name = "hand_command_node";
 std::string open_srv_name = "reflex/open";
 std::string close_srv_name = "reflex/close";
 std::string pinch_srv_name = "reflex/pinch";
@@ -19,7 +19,7 @@ std::string pos_cmd_topic = "reflex/pos_cmd";
 // - store internal state of reflex
 // - offer ROS API via ROS services
 // - position increment control mode
-class ReflexCommander
+class HandCommand
 {
 private:
     ros::Publisher pub;
@@ -175,15 +175,15 @@ private:
     }
 
 public:
-    ReflexCommander(ros::NodeHandle *nh)
+    HandCommand(ros::NodeHandle *nh)
     {
         pub = nh->advertise<reflex_msgs::PoseCommand>(pos_cmd_topic, 1);
-        open_service = nh->advertiseService(open_srv_name, &ReflexCommander::callbackOpen, this);
-        close_service = nh->advertiseService(close_srv_name, &ReflexCommander::callbackClose, this);
-        pinch_service = nh->advertiseService(pinch_srv_name, &ReflexCommander::callbackPinch, this);
-        sph_open_service = nh->advertiseService(sph_open_srv_name, &ReflexCommander::callbackSphOpen, this);
-        sph_close_service = nh->advertiseService(sph_close_srv_name, &ReflexCommander::callbackSphClose, this);
-        pos_incr_service = nh->advertiseService(pos_incr_srv_name, &ReflexCommander::callbackPosIncr, this);
+        open_service = nh->advertiseService(open_srv_name, &HandCommand::callbackOpen, this);
+        close_service = nh->advertiseService(close_srv_name, &HandCommand::callbackClose, this);
+        pinch_service = nh->advertiseService(pinch_srv_name, &HandCommand::callbackPinch, this);
+        sph_open_service = nh->advertiseService(sph_open_srv_name, &HandCommand::callbackSphOpen, this);
+        sph_close_service = nh->advertiseService(sph_close_srv_name, &HandCommand::callbackSphClose, this);
+        pos_incr_service = nh->advertiseService(pos_incr_srv_name, &HandCommand::callbackPosIncr, this);
     }
 };
 
@@ -191,8 +191,8 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, node_name);
     ros::NodeHandle nh;
-    ReflexCommander rc = ReflexCommander(&nh);
-    ROS_INFO("Launched %s node.", node_name.c_str());
+    HandCommand hc = HandCommand(&nh);
+    ROS_INFO("Launched %s.", node_name.c_str());
 
     ros::spin();
 }
