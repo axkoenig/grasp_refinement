@@ -1,6 +1,6 @@
 # ignore experimental outcomes
-command/brain/experiments/data/*
-command/brain/experiments/figures/*
+brain/experiments/data/*
+brain/experiments/figures/*
 
 devel/
 logs/
