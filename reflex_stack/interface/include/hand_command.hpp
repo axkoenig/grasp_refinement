@@ -1,5 +1,5 @@
-#ifndef HAND_STATE_H
-#define HAND_STATE_H
+#ifndef HAND_COMMAND_H
+#define HAND_COMMAND_H
 
 #include <math.h>
 
