@@ -38,9 +38,9 @@ public:
 
     void callbackHandState(const reflex_msgs::Hand &msg);
 
-    void moveAlongApproachDir();
+    void moveAlongVector(tf2::Vector3 vec);
 
-    void updateApproachDirectionSingleContact();
+    tf2::Vector3 getApproachDirectionSingleContact();
 
     void sendWristTransform(tf2::Transform transform);
 
@@ -80,7 +80,7 @@ private:
     tf2_ros::TransformBroadcaster br;
     geometry_msgs::TransformStamped ts;
     tf2::Transform desired_pose, init_wrist_pose, goal_wrist_pose, init_object_pose;
-    tf2::Vector3 approach_direction = tf2::Vector3{0, 0, step_size};
+    tf2::Vector3 step_reflex_z = tf2::Vector3{0, 0, step_size};
 
     void checkTimeOut();
     void resetWorldSim();

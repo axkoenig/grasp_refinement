@@ -133,11 +133,11 @@ void BaselineController::callbackHandState(const reflex_msgs::Hand &msg)
     hand_state.setFingerStateFromMsg(msg);
 }
 
-void BaselineController::moveAlongApproachDir()
+void BaselineController::moveAlongVector(tf2::Vector3 vec)
 {
     tf2::Transform increment = tf2::Transform();
     increment.setIdentity();
-    increment.setOrigin(approach_direction);
+    increment.setOrigin(vec);
     desired_pose *= increment;
 
     sendWristTransform(desired_pose);
@@ -152,7 +152,7 @@ void BaselineController::sendWristTransform(tf2::Transform transform)
     br.sendTransform(ts);
 }
 
-void BaselineController::updateApproachDirectionSingleContact()
+tf2::Vector3 BaselineController::getApproachDirectionSingleContact()
 {
     int finger_id = hand_state.getFingerIdSingleContact();
 
@@ -165,8 +165,11 @@ void BaselineController::updateApproachDirectionSingleContact()
         ? normal = hand_state.finger_states[finger_id].getProximalNormal()
         : normal = hand_state.finger_states[finger_id].getDistalNormal();
 
+    // backoff should be 1/10 the size of a step_size
+    float scaling_factor = 0.9 * step_size;
+
     // subtract normal vector from current approach direction to back-off a little
-    approach_direction -= (normal * 0.01);
+    return step_reflex_z - (normal * scaling_factor);
 }
 
 void BaselineController::timeStep()
@@ -179,14 +182,13 @@ void BaselineController::timeStep()
         case HandState::ContactState::NoContact:
         {
             ROS_INFO("No contact --> Approach");
-            moveAlongApproachDir();
+            moveAlongVector(step_reflex_z);
             break;
         }
         case HandState::ContactState::SingleFingerContact:
         {
             ROS_INFO("Single contact --> Update Approach Vector.");
-            // updateApproachDirectionSingleContact();
-            moveAlongApproachDir();
+            moveAlongVector(getApproachDirectionSingleContact());
             break;
         }
         case HandState::ContactState::MultipleFingerContact:
