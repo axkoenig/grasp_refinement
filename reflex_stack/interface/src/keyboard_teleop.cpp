@@ -12,7 +12,7 @@
 #include <map>
 #include <termios.h>
 
-std::string node_name = "teleop_node";
+std::string node_name = "finger_teleop_node";
 std::string source_frame = "world";
 std::string target_frame = "reflex";
 
