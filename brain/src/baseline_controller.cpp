@@ -1,7 +1,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2/LinearMath/Quaternion.h>
 
-#include "hand_state.hpp"
+#include "reflex_interface/hand_command.hpp"
 #include "baseline_controller.hpp"
 #include "helpers.hpp"
 
@@ -14,11 +14,6 @@ BaselineController::BaselineController(ros::NodeHandle *nh, tf2::Transform init_
     this->goal_wrist_pose = goal_wrist_pose;
     this->time_out = time_out;
 
-    open_client = nh->serviceClient<std_srvs::Trigger>(open_srv_name);
-    sph_open_client = nh->serviceClient<std_srvs::Trigger>(sph_open_srv_name);
-    sph_close_client = nh->serviceClient<std_srvs::Trigger>(sph_close_srv_name);
-    reflex_state_sub = nh->subscribe(state_topic_name, 1, &BaselineController::callbackHandState, this);
-
     // TODO find another, more elegant solution for this
     // wait before publishing first transform to fix warning from wrist_controller_node
     // ""reflex" passed to lookupTransform argument target_frame does not exist."
@@ -29,8 +24,7 @@ BaselineController::BaselineController(ros::NodeHandle *nh, tf2::Transform init_
     simulation_only ? moveToInitPoseSim() : moveToInitPoseReal();
 
     // put fingers in spherical open position
-    sph_open_client.call(trigger);
-    ROS_INFO("%s", trigger.response.message.c_str());
+    ri.command.executePrimitive(HandCommand::Primitive::SphericalOpen);
 }
 
 void BaselineController::checkTimeOut()
@@ -58,8 +52,7 @@ void BaselineController::moveToInitPoseSim()
     moveObjectOutOfWay(nh, object_name, init_object_pose);
 
     // close fingers s.t. they do not collide with ground_plane upon moving to init_wrist_pose
-    sph_close_client.call(trigger);
-    ROS_INFO("%s", trigger.response.message.c_str());
+    ri.command.executePrimitive(HandCommand::Primitive::SphericalClose);
 
     // move robot hand to init pose
     desired_pose = init_wrist_pose;
@@ -195,7 +188,7 @@ void BaselineController::timeStep()
         {
             // do spherical grasp
             ROS_INFO("Multi contact --> Grasping, then lifting.");
-            sph_close_client.call(trigger);
+            ri.command.executePrimitive(HandCommand::Primitive::SphericalClose);
             state = GraspedButNotLifted;
             ros::Duration(0.5).sleep();
 
@@ -226,8 +219,7 @@ void BaselineController::timeStep()
         }
 
         ROS_INFO("Opening hand.");
-        open_client.call(trigger);
-        ROS_INFO("%s", trigger.response.message.c_str());
+        ri.command.executePrimitive(HandCommand::Primitive::Open);
 
         stopExperiment();
     }
@@ -250,16 +242,14 @@ void BaselineController::resetWorldSim()
     moveObjectOutOfWay(nh, object_name, init_object_pose);
 
     // close fingers s.t. they do not collide with ground_plane upon moving to waypoint_frame
-    sph_close_client.call(trigger);
-    ROS_INFO("%s", trigger.response.message.c_str());
+    ri.command.executePrimitive(HandCommand::Primitive::SphericalClose);
     sendWristTransform(waypoint_frame);
     waitUntilWristReachedPoseSim(waypoint_frame, "waypoint origin");
     sendWristTransform(world_frame);
     waitUntilWristReachedPoseSim(world_frame, "origin");
 
     // open fingers to neural position
-    open_client.call(trigger);
-    ROS_INFO("%s", trigger.response.message.c_str());
+    ri.command.executePrimitive(HandCommand::Primitive::Open);
 
     // move object back to old pose
     ROS_INFO_STREAM("Moving object back to initial pose.");

@@ -60,7 +60,7 @@ private:
     bool callbackSphOpen(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
     bool callbackSphClose(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
     bool callbackPosIncr(reflex_interface::PosIncrement::Request &req, reflex_interface::PosIncrement::Response &res);
-    void executePosIncrement(float increment[4]);
+    void executePosIncrement(float increment[4], bool verbose = true);
     void sendCommands();
 };
 

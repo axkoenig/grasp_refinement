@@ -9,17 +9,12 @@
 #include <tf2/LinearMath/Vector3.h>
 #include <reflex_msgs/Hand.h>
 
-#include "hand_state.hpp"
+#include "reflex_interface/interface.hpp"
 
 using namespace std;
 
 string source_frame = "world";
 string target_frame = "reflex";
-
-string open_srv_name = "reflex/open";
-string sph_open_srv_name = "reflex/spherical_open";
-string sph_close_srv_name = "reflex/spherical_close";
-string state_topic_name = "reflex/hand_state";
 
 class BaselineController
 {
@@ -67,7 +62,7 @@ private:
     bool finished = false;
     std::string status_msg = "All good.";
     State state = NotGrasped;
-    HandState hand_state = HandState();
+    ReflexInterface ri = ReflexInterface();
 
     ros::NodeHandle *nh;
     std_srvs::Trigger trigger;

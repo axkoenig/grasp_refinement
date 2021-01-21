@@ -34,7 +34,7 @@ std::string HandCommand::getServiceResponse()
     return msg;
 }
 
-void HandCommand::executePrimitive(HandCommand::Primitive primitive)
+void HandCommand::executePrimitive(HandCommand::Primitive primitive, bool verbose)
 {
     switch (primitive)
     {
@@ -65,6 +65,10 @@ void HandCommand::executePrimitive(HandCommand::Primitive primitive)
     }
     }
     this->sendCommands();
+    if (verbose)
+    {
+        ROS_INFO(getServiceResponse().c_str());
+    }
 }
 
 bool HandCommand::callbackOpen(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
