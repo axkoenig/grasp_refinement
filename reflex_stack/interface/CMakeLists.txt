@@ -107,9 +107,9 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package( 
   INCLUDE_DIRS include
-  LIBRARIES ${PROJECT_NAME}_lib
+  LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS message_runtime
-#  DEPENDS system_lib
+# DEPENDS system_lib
 )
 
 ###########
@@ -124,7 +124,7 @@ include_directories(
 )
 
 ## Declare a C++ library
-add_library(${PROJECT_NAME}_lib
+add_library(${PROJECT_NAME}
   src/hand_command.cpp
   src/hand_state.cpp
   src/finger_state.cpp
@@ -141,6 +141,7 @@ add_executable(interface_node src/main.cpp)
 ## either from message generation or dynamic reconfigure
 add_dependencies(finger_teleop_node reflex_msgs_generate_messages_cpp ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 add_dependencies(interface_node reflex_msgs_generate_messages_cpp ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME} reflex_msgs_generate_messages_cpp ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -157,10 +158,10 @@ target_link_libraries(finger_teleop_node
   ${catkin_LIBRARIES}
 )
 target_link_libraries(interface_node
-  ${PROJECT_NAME}_lib
+  ${PROJECT_NAME}
   ${catkin_LIBRARIES}
 )
-target_link_libraries(${PROJECT_NAME}_lib
+target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
 )
 
@@ -186,14 +187,16 @@ target_link_libraries(${PROJECT_NAME}_lib
 
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
-install(TARGETS ${PROJECT_NAME}_lib
+install(
+  TARGETS ${PROJECT_NAME}
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
 )
 
 ## Mark cpp header files for installation
-install(DIRECTORY include/
+install(
+  DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
 #   FILES_MATCHING PATTERN "*.h"
 #   PATTERN ".svn" EXCLUDE
