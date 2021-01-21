@@ -1,5 +1,5 @@
 
-#include "hand_state.hpp"
+#include "interface/hand_state.hpp"
 
 void HandState::updateState()
 {

@@ -1,16 +1,17 @@
+#include <iostream>
+#include <map>
+#include <termios.h>
+#include <math.h>
+
 #include <ros/ros.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <tf2/LinearMath/Transform.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <math.h>
 #include <std_srvs/Trigger.h>
-#include <teleop/PosIncrement.h>
 
-#include <iostream>
-#include <map>
-#include <termios.h>
+#include "interface/PosIncrement.h"
 
 std::string node_name = "finger_teleop_node";
 std::string source_frame = "world";
@@ -118,11 +119,11 @@ int main(int argc, char **argv)
     ros::ServiceClient pinch_client = nh.serviceClient<std_srvs::Trigger>(pinch_srv_name);
     ros::ServiceClient sph_open_client = nh.serviceClient<std_srvs::Trigger>(sph_open_srv_name);
     ros::ServiceClient sph_close_client = nh.serviceClient<std_srvs::Trigger>(sph_close_srv_name);
-    ros::ServiceClient pos_incr_client = nh.serviceClient<teleop::PosIncrement>(pos_incr_srv_name);
+    ros::ServiceClient pos_incr_client = nh.serviceClient<interface::PosIncrement>(pos_incr_srv_name);
 
     // service messages
     std_srvs::Trigger trigger;
-    teleop::PosIncrement pos_incr;
+    interface::PosIncrement pos_incr;
 
     // init transform broadcaster
     static tf2_ros::TransformBroadcaster br;

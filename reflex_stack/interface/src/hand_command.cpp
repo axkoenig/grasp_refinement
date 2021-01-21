@@ -2,10 +2,10 @@
 #include <std_msgs/Float64.h>
 #include <std_srvs/Trigger.h>
 #include <reflex_msgs/PoseCommand.h>
-#include <teleop/PosIncrement.h>
 #include <math.h>
 
-#include "hand_command.hpp"
+#include "interface/PosIncrement.h"
+#include "interface/hand_command.hpp"
 
 HandCommand::HandCommand(ros::NodeHandle *nh)
 {
@@ -107,7 +107,7 @@ bool HandCommand::callbackSphClose(std_srvs::Trigger::Request &req, std_srvs::Tr
     return true;
 }
 
-bool HandCommand::callbackPosIncr(teleop::PosIncrement::Request &req, teleop::PosIncrement::Response &res)
+bool HandCommand::callbackPosIncr(interface::PosIncrement::Request &req, interface::PosIncrement::Response &res)
 {
     float increment[4] = {(float)req.f1,
                           (float)req.f2,

@@ -1,7 +1,7 @@
 
 #include <ros/ros.h>
 
-#include "interface.hpp"
+#include "interface/interface.hpp"
 
 std::string node_name = "interface_node";
 
