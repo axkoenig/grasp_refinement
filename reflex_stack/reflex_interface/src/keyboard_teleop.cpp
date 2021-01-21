@@ -11,7 +11,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <std_srvs/Trigger.h>
 
-#include "interface/PosIncrement.h"
+#include "reflex_interface/PosIncrement.h"
 
 std::string node_name = "finger_teleop_node";
 std::string source_frame = "world";
@@ -119,11 +119,11 @@ int main(int argc, char **argv)
     ros::ServiceClient pinch_client = nh.serviceClient<std_srvs::Trigger>(pinch_srv_name);
     ros::ServiceClient sph_open_client = nh.serviceClient<std_srvs::Trigger>(sph_open_srv_name);
     ros::ServiceClient sph_close_client = nh.serviceClient<std_srvs::Trigger>(sph_close_srv_name);
-    ros::ServiceClient pos_incr_client = nh.serviceClient<interface::PosIncrement>(pos_incr_srv_name);
+    ros::ServiceClient pos_incr_client = nh.serviceClient<reflex_interface::PosIncrement>(pos_incr_srv_name);
 
     // service messages
     std_srvs::Trigger trigger;
-    interface::PosIncrement pos_incr;
+    reflex_interface::PosIncrement pos_incr;
 
     // init transform broadcaster
     static tf2_ros::TransformBroadcaster br;

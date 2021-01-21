@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(interface)
+project(reflex_interface)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -134,13 +134,13 @@ add_library(${PROJECT_NAME}
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(finger_teleop_node src/keyboard_teleop.cpp)
-add_executable(interface_node src/main.cpp)
+add_executable(reflex_interface_node src/main.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
 add_dependencies(finger_teleop_node reflex_msgs_generate_messages_cpp ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
-add_dependencies(interface_node reflex_msgs_generate_messages_cpp ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+add_dependencies(reflex_interface_node reflex_msgs_generate_messages_cpp ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 add_dependencies(${PROJECT_NAME} reflex_msgs_generate_messages_cpp ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
 ## Rename C++ executable without prefix
@@ -157,7 +157,7 @@ add_dependencies(${PROJECT_NAME} reflex_msgs_generate_messages_cpp ${PROJECT_NAM
 target_link_libraries(finger_teleop_node
   ${catkin_LIBRARIES}
 )
-target_link_libraries(interface_node
+target_link_libraries(reflex_interface_node
   ${PROJECT_NAME}
   ${catkin_LIBRARIES}
 )

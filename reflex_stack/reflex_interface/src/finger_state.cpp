@@ -4,7 +4,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <gazebo_msgs/GetLinkState.h>
 
-#include "interface/finger_state.hpp"
+#include "reflex_interface/finger_state.hpp"
 // #include "helpers.hpp"
 
 FingerState::FingerState(int finger_id)

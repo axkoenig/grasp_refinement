@@ -8,7 +8,7 @@
 #include <std_srvs/Trigger.h>
 #include <reflex_msgs/PoseCommand.h>
 
-#include "interface/PosIncrement.h"
+#include "reflex_interface/PosIncrement.h"
 
 class HandCommand
 {
@@ -59,7 +59,7 @@ private:
     bool callbackPinch(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
     bool callbackSphOpen(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
     bool callbackSphClose(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-    bool callbackPosIncr(interface::PosIncrement::Request &req, interface::PosIncrement::Response &res);
+    bool callbackPosIncr(reflex_interface::PosIncrement::Request &req, reflex_interface::PosIncrement::Response &res);
     void executePosIncrement(float increment[4]);
     void sendCommands();
 };

@@ -58,7 +58,7 @@
 
     <!-- Keyboard teleoperation node for wrist and fingers-->
     <group if="$(arg run_keyboard_teleop_nodes)">
-        <node pkg="interface" type="finger_teleop_node" name="finger_teleop_node" output="screen"/>
+        <node pkg="reflex_interface" type="finger_teleop_node" name="finger_teleop_node" output="screen"/>
         <!-- TODO: I would like to split functionality (into a wrist teleop node and a finger teleop node and run both at once, but 
         keyboard input doesn't work smoothly if both nodes are run, presumably because two nodes are reading from the keyboard and 
         they interfere. Leaving wrist + finger controller combined in finger_teleop_node for now, because it works better. -->
@@ -82,7 +82,7 @@
 
     <!-- Run reflex interface node -->
     <group if="$(arg run_reflex_interface_node)">
-        <node pkg="interface" type="interface_node" name="interface_node" output="screen"/>
+        <node pkg="reflex_interface" type="reflex_interface_node" name="reflex_interface_node" output="screen"/>
     </group>
 
     <!-- Wrist controller node -->

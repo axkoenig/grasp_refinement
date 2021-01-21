@@ -4,8 +4,8 @@
 #include <reflex_msgs/PoseCommand.h>
 #include <math.h>
 
-#include "interface/PosIncrement.h"
-#include "interface/hand_command.hpp"
+#include "reflex_interface/PosIncrement.h"
+#include "reflex_interface/hand_command.hpp"
 
 HandCommand::HandCommand(ros::NodeHandle *nh)
 {
@@ -107,7 +107,7 @@ bool HandCommand::callbackSphClose(std_srvs::Trigger::Request &req, std_srvs::Tr
     return true;
 }
 
-bool HandCommand::callbackPosIncr(interface::PosIncrement::Request &req, interface::PosIncrement::Response &res)
+bool HandCommand::callbackPosIncr(reflex_interface::PosIncrement::Request &req, reflex_interface::PosIncrement::Response &res)
 {
     float increment[4] = {(float)req.f1,
                           (float)req.f2,

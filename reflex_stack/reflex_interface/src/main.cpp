@@ -1,9 +1,9 @@
 
 #include <ros/ros.h>
 
-#include "interface/interface.hpp"
+#include "reflex_interface/interface.hpp"
 
-std::string node_name = "interface_node";
+std::string node_name = "reflex_interface_node";
 
 int main(int argc, char **argv)
 {
