@@ -55,7 +55,7 @@ public:
     std::string getStatusMsg() const { return status_msg; }
 
 private:
-    float backoff_factor = 1.0;
+    float backoff_factor = 0.9;
     float step_size = 0.001;
     float time_out;
     bool grasped = false;

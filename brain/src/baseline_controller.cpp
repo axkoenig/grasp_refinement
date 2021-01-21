@@ -158,8 +158,7 @@ tf2::Vector3 BaselineController::getApproachDirectionSingleContact()
         ? normal = hand_state.finger_states[finger_id].getProximalNormal()
         : normal = hand_state.finger_states[finger_id].getDistalNormal();
 
-    // backoff should be 9/10 the size of a step_size
-    float scaling_factor = 0.9 * step_size;
+    float scaling_factor = backoff_factor * step_size;
 
     // subtract normal vector from current approach direction to back-off a little
     return step_reflex_z - (normal * scaling_factor);
