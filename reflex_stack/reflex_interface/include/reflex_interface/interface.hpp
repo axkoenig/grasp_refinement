@@ -10,7 +10,7 @@ private:
     ros::NodeHandle nh;
 
 public:
-    HandState state = HandState();
+    HandState state = HandState(&nh);
     HandCommand command = HandCommand(&nh);
 };
 #endif
