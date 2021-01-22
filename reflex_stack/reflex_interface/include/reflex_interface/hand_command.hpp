@@ -15,6 +15,16 @@ class HandCommand
 public:
     HandCommand(ros::NodeHandle *nh);
 
+    enum Primitive
+    {
+        Open,
+        Close,
+        Pinch,
+        SphericalOpen,
+        SphericalClose
+    };
+    void executePrimitive(Primitive primitive, bool verbose = true);
+
 private:
     std::string open_srv_name = "reflex/open";
     std::string close_srv_name = "reflex/close";
@@ -43,24 +53,14 @@ private:
     std::array<float, 4> sph_close_pos = {2.5, 2.5, 2.5, M_PI / 2};
     std::array<float, 4> cur_pos = open_pos;
 
-    enum Primitive
-    {
-        Open,
-        Close,
-        Pinch,
-        SphericalOpen,
-        SphericalClose
-    };
-
-    std::string getServiceResponse();
-    void executePrimitive(Primitive primitive);
+    std::string getStatusMsg();
     bool callbackOpen(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
     bool callbackClose(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
     bool callbackPinch(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
     bool callbackSphOpen(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
     bool callbackSphClose(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
     bool callbackPosIncr(reflex_interface::PosIncrement::Request &req, reflex_interface::PosIncrement::Response &res);
-    void executePosIncrement(float increment[4], bool verbose = true);
+    void executePosIncrement(float increment[4]);
     void sendCommands();
 };
 

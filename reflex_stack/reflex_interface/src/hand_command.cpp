@@ -18,7 +18,7 @@ HandCommand::HandCommand(ros::NodeHandle *nh)
     pos_incr_service = nh->advertiseService(pos_incr_srv_name, &HandCommand::callbackPosIncr, this);
 }
 
-std::string HandCommand::getServiceResponse()
+std::string HandCommand::getStatusMsg()
 {
     std::string str;
     int size = cur_pos.size();
@@ -67,7 +67,7 @@ void HandCommand::executePrimitive(HandCommand::Primitive primitive, bool verbos
     this->sendCommands();
     if (verbose)
     {
-        ROS_INFO(getServiceResponse().c_str());
+        ROS_INFO_STREAM(getStatusMsg());
     }
 }
 
@@ -75,7 +75,7 @@ bool HandCommand::callbackOpen(std_srvs::Trigger::Request &req, std_srvs::Trigge
 {
     this->executePrimitive(Open);
     res.success = true;
-    res.message = this->getServiceResponse();
+    res.message = this->getStatusMsg();
     return true;
 }
 
@@ -83,7 +83,7 @@ bool HandCommand::callbackClose(std_srvs::Trigger::Request &req, std_srvs::Trigg
 {
     this->executePrimitive(Close);
     res.success = true;
-    res.message = this->getServiceResponse();
+    res.message = this->getStatusMsg();
     return true;
 }
 
@@ -91,7 +91,7 @@ bool HandCommand::callbackPinch(std_srvs::Trigger::Request &req, std_srvs::Trigg
 {
     this->executePrimitive(Pinch);
     res.success = true;
-    res.message = this->getServiceResponse();
+    res.message = this->getStatusMsg();
     return true;
 }
 
@@ -99,7 +99,7 @@ bool HandCommand::callbackSphOpen(std_srvs::Trigger::Request &req, std_srvs::Tri
 {
     this->executePrimitive(SphericalOpen);
     res.success = true;
-    res.message = this->getServiceResponse();
+    res.message = this->getStatusMsg();
     return true;
 }
 
@@ -107,7 +107,7 @@ bool HandCommand::callbackSphClose(std_srvs::Trigger::Request &req, std_srvs::Tr
 {
     this->executePrimitive(SphericalClose);
     res.success = true;
-    res.message = this->getServiceResponse();
+    res.message = this->getStatusMsg();
     return true;
 }
 
@@ -119,7 +119,7 @@ bool HandCommand::callbackPosIncr(reflex_interface::PosIncrement::Request &req, 
                           (float)req.preshape};
     this->executePosIncrement(increment);
     res.success = true;
-    res.message = this->getServiceResponse();
+    res.message = this->getStatusMsg();
     return true;
 }
 
