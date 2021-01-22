@@ -2,6 +2,7 @@
 #include <tf2/LinearMath/Quaternion.h>
 
 #include "reflex_interface/hand_command.hpp"
+#include "reflex_interface/hand_state.hpp"
 #include "baseline_controller.hpp"
 #include "helpers.hpp"
 
@@ -121,11 +122,6 @@ bool BaselineController::reachedPoseSim(tf2::Transform desired_pose, float posit
     return true;
 }
 
-void BaselineController::callbackHandState(const reflex_msgs::Hand &msg)
-{
-    hand_state.setFingerStateFromMsg(msg);
-}
-
 void BaselineController::moveAlongVector(tf2::Vector3 vec)
 {
     tf2::Transform increment = tf2::Transform();
@@ -147,16 +143,16 @@ void BaselineController::sendWristTransform(tf2::Transform transform)
 
 tf2::Vector3 BaselineController::getApproachDirectionSingleContact()
 {
-    int finger_id = hand_state.getFingerIdSingleContact();
+    int finger_id = ri.state.getFingerIdSingleContact();
 
     // check if it's a proximal contact (if false, we know it is a distal contact)
     bool prox;
-    hand_state.finger_states[finger_id].hasProximalContact() ? prox = true : false;
+    ri.state.finger_states[finger_id].hasProximalContact() ? prox = true : false;
 
     tf2::Vector3 normal;
     prox
-        ? normal = hand_state.finger_states[finger_id].getProximalNormal()
-        : normal = hand_state.finger_states[finger_id].getDistalNormal();
+        ? normal = ri.state.finger_states[finger_id].getProximalNormal()
+        : normal = ri.state.finger_states[finger_id].getDistalNormal();
 
     float scaling_factor = backoff_factor * step_size;
 
@@ -169,7 +165,7 @@ void BaselineController::timeStep()
     if (state == NotGrasped)
     {
         // check if we can make grasping attempt
-        switch (hand_state.getContactState())
+        switch (ri.state.getContactState())
         {
         case HandState::ContactState::NoContact:
         {

@@ -3,11 +3,9 @@
 
 #include <ros/ros.h>
 #include <tf2_ros/transform_broadcaster.h>
-#include <std_srvs/Trigger.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <tf2/LinearMath/Transform.h>
 #include <tf2/LinearMath/Vector3.h>
-#include <reflex_msgs/Hand.h>
 
 #include "reflex_interface/interface.hpp"
 
@@ -30,8 +28,6 @@ public:
     void waitUntilWristReachedPoseSim(tf2::Transform desired_pose, string name);
 
     bool reachedPoseSim(tf2::Transform desired_pose, float position_thresh = 0.02, float rotation_thresh = 0.03);
-
-    void callbackHandState(const reflex_msgs::Hand &msg);
 
     void moveAlongVector(tf2::Vector3 vec);
 
@@ -65,13 +61,7 @@ private:
     ReflexInterface ri = ReflexInterface();
 
     ros::NodeHandle *nh;
-    std_srvs::Trigger trigger;
-    ros::ServiceClient open_client;
-    ros::ServiceClient sph_open_client;
-    ros::ServiceClient sph_close_client;
-    ros::Subscriber reflex_state_sub;
     ros::Time start_time;
-
     tf2_ros::TransformBroadcaster br;
     geometry_msgs::TransformStamped ts;
     tf2::Transform desired_pose, init_wrist_pose, goal_wrist_pose, init_object_pose;
