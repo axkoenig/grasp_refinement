@@ -5,7 +5,6 @@
 #include <tf2/LinearMath/Vector3.h>
 #include <tf2/LinearMath/Quaternion.h>
 
-#include "hand_state.hpp"
 #include "baseline_controller.hpp"
 #include "helpers.hpp"
 
