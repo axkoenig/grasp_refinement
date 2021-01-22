@@ -1,27 +1,9 @@
 
 #include "reflex_interface/hand_state.hpp"
 
-void HandState::updateState()
+HandState::HandState(ros::NodeHandle *nh)
 {
-    int contact_count = countFingersInContact();
-    switch (contact_count)
-    {
-    case 0:
-        cur_state = NoContact;
-        break;
-    case 1:
-        cur_state = SingleFingerContact;
-        break;
-    default:
-        cur_state = MultipleFingerContact;
-        break;
-    }
-}
-
-HandState::ContactState HandState::getContactState()
-{
-    updateState();
-    return cur_state;
+    state_sub = nh->subscribe("reflex/hand_state", 1, &HandState::callback, this);
 }
 
 int HandState::countFingersInContact()
@@ -49,8 +31,9 @@ int HandState::getFingerIdSingleContact()
     return -1;
 }
 
-void HandState::setFingerStateFromMsg(const reflex_msgs::Hand &msg)
+void HandState::callback(const reflex_msgs::Hand &msg)
 {
+    // A) update finger state
     for (int i = 0; i < num_fingers; i++)
     {
         finger_states[i].setProximalAngleFromMsg(msg.finger[i].proximal);
@@ -63,5 +46,19 @@ void HandState::setFingerStateFromMsg(const reflex_msgs::Hand &msg)
             // set preshape angle for fingers 1 and 2 (finger 3 doesn't have a preshape angle)
             finger_states[i].setPreshapeAngleFromMsg(msg.motor[3].joint_angle / 2);
         }
+    }
+    // B) update hand state
+    int contact_count = countFingersInContact();
+    switch (contact_count)
+    {
+    case 0:
+        cur_state = NoContact;
+        break;
+    case 1:
+        cur_state = SingleFingerContact;
+        break;
+    default:
+        cur_state = MultipleFingerContact;
+        break;
     }
 }
