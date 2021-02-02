@@ -1,2 +1,0 @@
-PoseCommand pose
-VelocityCommand velocity
