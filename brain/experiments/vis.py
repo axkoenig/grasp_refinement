@@ -18,12 +18,15 @@ def plot(csv_name):
     headers = [
         "time_stamp",
         "object_name",
-        # "object_mass",
+        "object_mass",
         "final_state",
         "duration",
         "obj_error_x",
         "obj_error_y",
         "obj_error_z",
+        "reflex_error_x",
+        "reflex_error_y",
+        "reflex_error_z",
         "polar",
         "azimuthal",
         "offset",
@@ -79,7 +82,15 @@ def plot(csv_name):
     plot = plt.pcolormesh(x2,y2,z, cmap=plt.cm.Greens, vmin=-1,vmax=3)
     plt.xlabel("Polar angle (rad)")
     plt.ylabel("Azimuthal angle (rad)")
-    plt.grid(True, color="grey", lw=0.5)
+    intervals_x = 2* step_size_x
+    intervals_y = 2* step_size_y
+    import matplotlib.ticker as plticker
+    loc_x = plticker.MultipleLocator(base=intervals_x)
+    loc_y = plticker.MultipleLocator(base=intervals_y)
+    ax = plt.subplot(1, 1, 1)
+    ax.xaxis.set_major_locator(loc_x)
+    ax.yaxis.set_major_locator(loc_y)
+    plt.grid(True, color="grey", lw=0.5, which="major")
     cbar = fig.colorbar(plot, ticks=[-1, 0, 1, 2, 3])
     cbar.set_label("Final state")
     cbar.ax.set_yticklabels(
