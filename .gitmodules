@@ -1,3 +1,6 @@
 [submodule "reflex_stack/simulation/wrist_controller"]
 	path = reflex_stack/simulation/wrist_controller
 	url = git@github.com:axkoenig/wrist_controller.git
+[submodule "reflex_stack/simulation/driver"]
+	path = reflex_stack/simulation/driver
+	url = https://github.com/axkoenig/reflex-ros-pkg.git
