@@ -10,16 +10,6 @@ std::string node_name = "sensor";
 std::string ns = "gazebo";
 std::string topic_name = "reflex/hand_state";
 
-double calcDotProduct(double vec_1[], double vec_2[], int dim)
-{
-    double result = 0.0;
-    for (int i = 0; i < dim; i++)
-    {
-        result += vec_1[i] * vec_2[i];
-    }
-    return result;
-}
-
 class ReflexSensor
 {
 private:
@@ -27,7 +17,7 @@ private:
     ros::Subscriber sensor_sub;
     double pressure = 0.0;
     bool contact = false;
-    int num_states = 0;
+    int num_contacts = 0;
 
     // TODO: find real scaling factor (for now pressure magnitudes don't matter)
     double scaling_factor = 1.0;
@@ -35,7 +25,7 @@ private:
 public:
     double getPressure()
     {
-        return pressure * scaling_factor;
+        return pressure;
     }
 
     bool getContact()
@@ -51,37 +41,36 @@ public:
     void callback(const gazebo_msgs::ContactsState &msg)
     {
         std::string sensor_name = msg.header.frame_id;
-        num_states = msg.states.size();
+        num_contacts = msg.states.size();
 
         // reset variables
         pressure = 0.0;
         contact = false;
 
-        if (num_states > 0)
+        if (num_contacts > 0)
         {
             contact = true;
+            double f[3] = {0, 0, 0};
 
-            for (int i = 0; i < num_states; i++)
+            // get sum of all contact forces on sensor (NOTE: since the real reflex hand
+            // has no torque sensors, we disregard the torque information from the
+            // Gazebo sensors. UPDATE: checked the torque values and they are tiny
+            // (order of e-05), which we expect since DART uses a hard contact model.
+            // Only soft contact models can transmit torques)
+            for (int i = 0; i < num_contacts; i++)
             {
-                // TODO: find out why we get multiple wrenches for the same contact
-                int num_wrenches = msg.states[i].wrenches.size();
-
-                for (int j = 0; j < num_wrenches; j++)
-                {
-                    // wrench force
-                    double f[] = {msg.states[i].wrenches[j].force.x,
-                                  msg.states[i].wrenches[j].force.y,
-                                  msg.states[i].wrenches[j].force.z};
-
-                    // contact normal
-                    double n[] = {msg.states[i].contact_normals[j].x,
-                                  msg.states[i].contact_normals[j].y,
-                                  msg.states[i].contact_normals[j].z};
-
-                    // add only wrench force in normal direction
-                    pressure += calcDotProduct(f, n, 3);
-                }
+                f[0] += msg.states[i].total_wrench.force.x;
+                f[1] += msg.states[i].total_wrench.force.y;
+                f[2] += msg.states[i].total_wrench.force.z;
             }
+
+            // average over all contacts
+            f[0] /= num_contacts;
+            f[1] /= num_contacts;
+            f[2] /= num_contacts;
+
+            // pressure is magnitude of total force vector
+            pressure = sqrt(pow(f[0], 2) + pow(f[1], 2) + pow(f[2], 2)) * scaling_factor;
         }
     }
 };
