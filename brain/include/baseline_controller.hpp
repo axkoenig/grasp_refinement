@@ -7,7 +7,7 @@
 #include <tf2/LinearMath/Transform.h>
 #include <tf2/LinearMath/Vector3.h>
 
-#include "reflex_interface/interface.hpp"
+#include "reflex_interface/reflex_interface.hpp"
 
 using namespace std;
 

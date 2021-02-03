@@ -1,7 +1,7 @@
 
 #include <ros/ros.h>
 
-#include "reflex_interface/interface.hpp"
+#include "reflex_interface/reflex_interface.hpp"
 
 std::string node_name = "reflex_interface_node";
 
