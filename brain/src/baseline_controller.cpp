@@ -5,6 +5,7 @@
 #include "reflex_interface/hand_state.hpp"
 #include "baseline_controller.hpp"
 #include "helpers.hpp"
+#include "gazebo_interface/gazebo_interface.hpp"
 
 using namespace std;
 
