@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   reflex_msgs
   std_srvs
   message_generation
+  gazebo_interface
 )
 
 ## System dependencies are found with CMake's conventions
