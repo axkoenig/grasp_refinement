@@ -11,6 +11,26 @@
 
 class FingerState
 {
+public:
+    FingerState(ros::NodeHandle *nh, int finger_id);
+    const int num_sensors = 9;
+    void setProximalAngleFromMsg(float angle);
+    void setDistalAngleFromMsg(float angle);
+    void setPreshapeAngleFromMsg(float angle);
+    void setSensorContactsFromMsg(boost::array<unsigned char, 9> sensor_contacts);
+    void setSensorPressuresFromMsg(boost::array<float, 9> sensor_pressures);
+    float getProximalAngle() { return proximal_angle; };
+    float getDistalAngle() { return distal_angle; };
+    float getPreshapeAngle() { return preshape_angle; };
+    tf2::Vector3 getProximalNormal();
+    tf2::Vector3 getDistalNormal();
+    std::vector<tf2::Transform> getContactFramesWorldSim();
+    std::array<bool, 9> getSensorContacts() { return sensor_contacts; };
+    std::array<float, 9> getSensorPressures() { return sensor_pressures; };
+    bool hasContact();
+    bool hasProximalContact();
+    bool hasDistalContact();
+
 private:
     int finger_id;
     ros::NodeHandle nh;
@@ -24,28 +44,8 @@ private:
     tf2::Transform proximal_joint_frame;
     std::vector<tf2::Transform> contact_frames_world = {};
     void setProximalJointFrame();
-    void updateNormalsFromMeasuredJointAngles();
-    void updateNormalsExactSim();
-
-public:
-    const int num_sensors = 9;
-    FingerState(ros::NodeHandle *nh, int finger_id);
-    void setProximalAngleFromMsg(float angle);
-    void setDistalAngleFromMsg(float angle);
-    void setPreshapeAngleFromMsg(float angle);
-    void setSensorContactsFromMsg(boost::array<unsigned char, 9> sensor_contacts);
-    void setSensorPressuresFromMsg(boost::array<float, 9> sensor_pressures);
-    std::array<bool, 9> getSensorContacts() { return sensor_contacts; };
-    std::array<float, 9> getSensorPressures() { return sensor_pressures; };
-    float getProximalAngle() { return proximal_angle; };
-    float getDistalAngle() { return distal_angle; };
-    float getPreshapeAngle() { return preshape_angle; };
-    tf2::Vector3 getProximalNormal();
-    tf2::Vector3 getDistalNormal();
-    std::vector<tf2::Transform> getContactFramesWorldSim();
-    bool hasContact();
-    bool hasProximalContact();
-    bool hasDistalContact();
+    void updateNormalsShellReal();
+    void updateNormalsShellSim();
 };
 
 #endif

@@ -1,8 +1,8 @@
 #ifndef INTERFACE_H
 #define INTERFACE_H
 
-#include "hand_command.hpp"
-#include "hand_state.hpp"
+#include "reflex_interface/hand_command.hpp"
+#include "reflex_interface/hand_state.hpp"
 
 class ReflexInterface
 {

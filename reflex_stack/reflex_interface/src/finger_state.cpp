@@ -1,14 +1,13 @@
-#include <tf2/LinearMath/Transform.h>
 #include <tf2_ros/transform_listener.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <gazebo_msgs/GetLinkState.h>
 
 #include "reflex_interface/finger_state.hpp"
-// #include "helpers.hpp"
+#include "gazebo_interface/gazebo_interface.hpp"
 
-FingerState::FingerState(int finger_id)
+FingerState::FingerState(ros::NodeHandle *nh, int finger_id)
 {
+    this->nh = *nh;
     this->finger_id = finger_id;
     setProximalJointFrame();
 }
@@ -89,7 +88,7 @@ void FingerState::setSensorPressuresFromMsg(boost::array<float, 9> sensor_pressu
 {
     for (int i = 0; i < num_sensors; i++)
     {
-        this->sensor_pressure[i] = sensor_pressure[i];
+        this->sensor_pressures[i] = sensor_pressures[i];
     }
 }
 
@@ -129,27 +128,13 @@ bool FingerState::hasDistalContact()
     return false;
 }
 
-void FingerState::updateNormalsExactSim()
+void FingerState::updateNormalsShellSim()
 {
-    // NOTE: this method gets the exact surface normals of the links in "shell" frame (not "world"!) via the simulation.
-    // This method serves as a sanity check for the method updateNormalsFromMeasuredJointAngles(). It directly queries
-    // the simulation for the current link joint frames and returns their z axis as they are normal to the link surface.
-
-    // TODO when I create ReflexInterface class, pass its NodeHandle in here. Currently this creates a NodeHandle every
-    // time the method is called.
-    // ROS_WARN("THIS METHOD IS VERY INEFFICIENT.");
-    // ros::NodeHandle nh;
-
-    // std::string link_name = "proximal_" + std::to_string(finger_id);
-    // tf2::Transform transform = getLinkPoseSim(&nh, link_name, "shell");
-    // proximal_normal = transform * tf2::Vector3{0, 0, 1};
-
-    // link_name = "distal_" + std::to_string(finger_id);
-    // transform = getLinkPoseSim(&nh, link_name, "shell");
-    // distal_normal = transform * tf2::Vector3{0, 0, 1};
+    // NOTE: this method gets the exact surface normals of the links in the shell frame via the simulation.
+    throw "Not implemented.";
 }
 
-void FingerState::updateNormalsFromMeasuredJointAngles()
+void FingerState::updateNormalsShellReal()
 {
     // NOTE: this method calculates approximate surface normals in "shell" frame (not "world"!) from measured joint angles.
     // Idea: z axis of proximal_joint_frame points in normal direction of proximal pad (see RViz). We factor in the rotation
@@ -184,12 +169,12 @@ void FingerState::updateNormalsFromMeasuredJointAngles()
 
 tf2::Vector3 FingerState::getProximalNormal()
 {
-    updateNormalsFromMeasuredJointAngles();
+    updateNormalsShellReal();
     return proximal_normal;
 }
 
 tf2::Vector3 FingerState::getDistalNormal()
 {
-    updateNormalsFromMeasuredJointAngles();
+    updateNormalsShellReal();
     return distal_normal;
 }

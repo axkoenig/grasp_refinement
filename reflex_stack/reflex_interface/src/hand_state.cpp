@@ -1,17 +1,21 @@
+#include <vector>
 
+#include "gazebo_interface/gazebo_interface.hpp"
 #include "reflex_interface/hand_state.hpp"
 
-HandState::HandState(ros::NodeHandle *nh)
+HandState::HandState(ros::NodeHandle *nh, bool use_sim_data)
+    : finger_states{new FingerState(nh, 1), new FingerState(nh, 2), new FingerState(nh, 3)}
 {
+    this->use_sim_data = use_sim_data;
     state_sub = nh->subscribe("reflex/hand_state", 1, &HandState::callback, this);
 }
 
-int HandState::countFingersInContact()
+int HandState::getNumFingersInContact()
 {
     int count = 0;
     for (int i = 0; i < num_fingers; i++)
     {
-        if (finger_states[i].hasContact() == true)
+        if (finger_states[i]->hasContact() == true)
         {
             count++;
         }
@@ -23,7 +27,7 @@ int HandState::getFingerIdSingleContact()
 {
     for (int i = 0; i < num_fingers; i++)
     {
-        if (finger_states[i].hasContact() == true)
+        if (finger_states[i]->hasContact() == true)
         {
             return i;
         }
@@ -33,32 +37,62 @@ int HandState::getFingerIdSingleContact()
 
 void HandState::callback(const reflex_msgs::Hand &msg)
 {
-    // A) update finger state
     for (int i = 0; i < num_fingers; i++)
     {
-        finger_states[i].setProximalAngleFromMsg(msg.finger[i].proximal);
-        finger_states[i].setDistalAngleFromMsg(msg.finger[i].distal_approx);
-        finger_states[i].setSensorContactsFromMsg(msg.finger[i].contact);
-        finger_states[i].setSensorPressureFromMsg(msg.finger[i].pressure);
+        finger_states[i]->setProximalAngleFromMsg(msg.finger[i].proximal);
+        finger_states[i]->setDistalAngleFromMsg(msg.finger[i].distal_approx);
+        finger_states[i]->setSensorContactsFromMsg(msg.finger[i].contact);
+        finger_states[i]->setSensorPressuresFromMsg(msg.finger[i].pressure);
 
         if (i != 2)
         {
             // set preshape angle for fingers 1 and 2 (finger 3 doesn't have a preshape angle)
-            finger_states[i].setPreshapeAngleFromMsg(msg.motor[3].joint_angle / 2);
+            finger_states[i]->setPreshapeAngleFromMsg(msg.motor[3].joint_angle / 2);
         }
     }
-    // B) update hand state
-    int contact_count = countFingersInContact();
-    switch (contact_count)
+    use_sim_data ? updateContactFramesWorldSim() : updateContactFramesWorldReal();
+}
+
+HandState::ContactState HandState::getContactState()
+{
+    switch (getNumFingersInContact())
     {
     case 0:
-        cur_state = NoContact;
-        break;
+        return NoContact;
     case 1:
-        cur_state = SingleFingerContact;
-        break;
+        return SingleFingerContact;
     default:
-        cur_state = MultipleFingerContact;
-        break;
+        return MultipleFingerContact;
     }
+}
+
+void HandState::updateContactFramesWorldSim()
+{
+    // reset variables
+    contactFramesWorld = {};
+    contactFingerIds = {};
+
+    // iterate over fingers
+    for (int i = 0; i < num_fingers; i++)
+    {
+        std::vector<tf2::Transform> frames = finger_states[i]->getContactFramesWorldSim();
+
+        if (!frames.empty())
+        {
+            contactFramesWorld.insert(contactFramesWorld.end(), frames.begin(), frames.end());
+            contactFingerIds.push_back(i + 1);
+        }
+    }
+}
+
+void HandState::updateContactFramesWorldReal()
+{
+    // TODO: solve with forward kinematics and compare with results we obtain from simulation.
+    // because we want this in world coosy we also need the gripper pose.
+    throw "Not implemented.";
+}
+
+float HandState::getGraspQuality(tf2::Vector3 object_com_world)
+{
+    return grasp_quality.getEpsilon(contactFramesWorld, object_com_world);
 }
