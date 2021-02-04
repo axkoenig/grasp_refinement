@@ -30,7 +30,15 @@ public:
     void setDistalAngleFromMsg(float angle);
     void setPreshapeAngleFromMsg(float angle);
     void setSensorContactsFromMsg(boost::array<unsigned char, 9> sensor_contacts);
-    void setSensorPressureFromMsg(boost::array<float, 9> sensor_pressure);
+    void setSensorPressuresFromMsg(boost::array<float, 9> sensor_pressures);
+    std::array<bool, 9> getSensorContacts() { return sensor_contacts; };
+    std::array<float, 9> getSensorPressures() { return sensor_pressures; };
+    float getProximalAngle() { return proximal_angle; };
+    float getDistalAngle() { return distal_angle; };
+    float getPreshapeAngle() { return preshape_angle; };
+    tf2::Vector3 getProximalNormal();
+    tf2::Vector3 getDistalNormal();
+    std::vector<tf2::Transform> getContactFramesWorldSim();
     bool hasContact();
     bool hasProximalContact();
     bool hasDistalContact();
