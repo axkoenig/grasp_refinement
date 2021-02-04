@@ -6,11 +6,13 @@
 
 class ReflexInterface
 {
-private:
-    ros::NodeHandle nh;
-
 public:
-    HandState state = HandState(&nh, true);
-    HandCommand command = HandCommand(&nh);
+    ReflexInterface(ros::NodeHandle *nh)
+        : state(new HandState(nh, true)),
+          command(new HandCommand(nh))
+    {
+    }
+    HandState *state;
+    HandCommand *command;
 };
 #endif

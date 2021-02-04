@@ -10,6 +10,7 @@
 using namespace std;
 
 BaselineController::BaselineController(ros::NodeHandle *nh, tf2::Transform init_wrist_pose, tf2::Transform goal_wrist_pose, bool simulation_only, float time_out)
+    : ri(new ReflexInterface(nh))
 {
     this->nh = nh;
     this->init_wrist_pose = init_wrist_pose;
@@ -26,7 +27,7 @@ BaselineController::BaselineController(ros::NodeHandle *nh, tf2::Transform init_
     simulation_only ? moveToInitPoseSim() : moveToInitPoseReal();
 
     // put fingers in spherical open position
-    ri.command.executePrimitive(HandCommand::Primitive::SphericalOpen);
+    ri->command->executePrimitive(HandCommand::Primitive::SphericalOpen);
 }
 
 void BaselineController::checkTimeOut()
@@ -54,7 +55,7 @@ void BaselineController::moveToInitPoseSim()
     moveObjectOutOfWay(nh, object_name, init_object_pose);
 
     // close fingers s.t. they do not collide with ground_plane upon moving to init_wrist_pose
-    ri.command.executePrimitive(HandCommand::Primitive::SphericalClose);
+    ri->command->executePrimitive(HandCommand::Primitive::SphericalClose);
 
     // move robot hand to init pose
     desired_pose = init_wrist_pose;
@@ -144,16 +145,16 @@ void BaselineController::sendWristTransform(tf2::Transform transform)
 
 tf2::Vector3 BaselineController::getApproachDirectionSingleContact()
 {
-    int finger_id = ri.state.getFingerIdSingleContact();
+    int finger_id = ri->state->getFingerIdSingleContact();
 
     // check if it's a proximal contact (if false, we know it is a distal contact)
     bool prox;
-    ri.state.finger_states[finger_id].hasProximalContact() ? prox = true : false;
+    ri->state->finger_states[finger_id]->hasProximalContact() ? prox = true : false;
 
     tf2::Vector3 normal;
     prox
-        ? normal = ri.state.finger_states[finger_id].getProximalNormal()
-        : normal = ri.state.finger_states[finger_id].getDistalNormal();
+        ? normal = ri->state->finger_states[finger_id]->getProximalNormal()
+        : normal = ri->state->finger_states[finger_id]->getDistalNormal();
 
     float scaling_factor = backoff_factor * step_size;
 
@@ -166,7 +167,7 @@ void BaselineController::timeStep()
     if (state == NotGrasped)
     {
         // check if we can make grasping attempt
-        switch (ri.state.getContactState())
+        switch (ri->state->getContactState())
         {
         case HandState::ContactState::NoContact:
         {
@@ -184,7 +185,7 @@ void BaselineController::timeStep()
         {
             // do spherical grasp
             ROS_INFO("Multi contact --> Grasping, then lifting.");
-            ri.command.executePrimitive(HandCommand::Primitive::SphericalClose);
+            ri->command->executePrimitive(HandCommand::Primitive::SphericalClose);
             state = GraspedButNotLifted;
             ros::Duration(0.5).sleep();
 
@@ -215,7 +216,7 @@ void BaselineController::timeStep()
         }
 
         ROS_INFO("Opening hand.");
-        ri.command.executePrimitive(HandCommand::Primitive::Open);
+        ri->command->executePrimitive(HandCommand::Primitive::Open);
 
         stopExperiment();
     }
@@ -238,14 +239,14 @@ void BaselineController::resetWorldSim()
     moveObjectOutOfWay(nh, object_name, init_object_pose);
 
     // close fingers s.t. they do not collide with ground_plane upon moving to waypoint_frame
-    ri.command.executePrimitive(HandCommand::Primitive::SphericalClose);
+    ri->command->executePrimitive(HandCommand::Primitive::SphericalClose);
     sendWristTransform(waypoint_frame);
     waitUntilWristReachedPoseSim(waypoint_frame, "waypoint origin");
     sendWristTransform(world_frame);
     waitUntilWristReachedPoseSim(world_frame, "origin");
 
     // open fingers to neural position
-    ri.command.executePrimitive(HandCommand::Primitive::Open);
+    ri->command->executePrimitive(HandCommand::Primitive::Open);
 
     // move object back to old pose
     ROS_INFO_STREAM("Moving object back to initial pose.");

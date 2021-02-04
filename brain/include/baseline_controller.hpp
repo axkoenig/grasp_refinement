@@ -58,7 +58,7 @@ private:
     bool finished = false;
     std::string status_msg = "All good.";
     State state = NotGrasped;
-    ReflexInterface ri = ReflexInterface();
+    ReflexInterface *ri;
 
     ros::NodeHandle *nh;
     ros::Time start_time;
