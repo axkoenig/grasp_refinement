@@ -129,6 +129,7 @@ add_library(${PROJECT_NAME}
   src/hand_command.cpp
   src/hand_state.cpp
   src/finger_state.cpp
+  src/grasp_quality.cpp
 )
 
 ## Declare a C++ executable
