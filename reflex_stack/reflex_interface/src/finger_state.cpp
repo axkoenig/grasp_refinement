@@ -61,7 +61,31 @@ void FingerState::setSensorContactsFromMsg(boost::array<unsigned char, 9> sensor
     }
 }
 
-void FingerState::setSensorPressureFromMsg(boost::array<float, 9> sensor_pressure)
+std::vector<tf2::Transform> FingerState::getContactFramesWorldSim()
+{
+    // reset variables
+    contact_frames_world = {};
+    std::string sensor_name = "";
+
+    for (int i = 0; i < num_sensors; i++)
+    {
+        if (sensor_contacts[i])
+        {
+            if (i < 5) // proximal contact
+            {
+                sensor_name = "proximal_" + std::to_string(finger_id) + "_sensor_" + std::to_string(i + 1);
+            }
+            else // distal contact
+            {
+                sensor_name = "distal_" + std::to_string(finger_id) + "_sensor_" + std::to_string(i - 4);
+            }
+            contact_frames_world.push_back(getLinkPoseSim(&nh, sensor_name, "world", false));
+        }
+    }
+    return contact_frames_world;
+}
+
+void FingerState::setSensorPressuresFromMsg(boost::array<float, 9> sensor_pressures)
 {
     for (int i = 0; i < num_sensors; i++)
     {
