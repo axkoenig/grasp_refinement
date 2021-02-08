@@ -23,16 +23,15 @@ class GazeboEnv(gym.Env):
         self.pause_name = "/gazebo/pause_physics"
         self.unpause = rospy.ServiceProxy(self.unpause_name, Empty)
         self.pause = rospy.ServiceProxy(self.pause_name, Empty)
-        self.start_time = rospy.get_rostime()
-
+        
         # define system state
         self.hand_angles = np.zeros(4)
         self.hand_cmd = PoseCommand()
 
         # action for one finger (more, stay, less)
-        self.action_space = gym.spaces.Discrete(3)
+        self.action_space = gym.spaces.Box(low=np.array([-1]), high=np.array([1]), dtype=np.float32)
         self.observation_space = gym.spaces.Box(
-            low=np.array([0, 0, 0, 0]), high=np.array([3, 3, 3, 3]), dtype=np.float64
+            low=np.array([0]), high=np.array([2.3]), dtype=np.float32
         )
         self.reward_range = (-np.inf, np.inf)
 
@@ -62,58 +61,53 @@ class GazeboEnv(gym.Env):
         except rospy.ServiceException as e:
             rospy.loginfo(self.pause_name + " service call failed")
 
-    def step(self, action):
-        self.sim_unpause()
-
-        increment = 0.1
-
-        if action == 0:  # more
-            self.hand_cmd.f1 = self.hand_angles[0] + increment
-        elif action == 1:  # stay
-            self.hand_cmd.f1 = self.hand_angles[0]
-        elif action == 2:  # less
-            self.hand_cmd.f1 = self.hand_angles[0] - increment
-
+    def execute_for_seconds(self, secs, prefix):
         self.hand_pub.publish(self.hand_cmd)
-        rospy.loginfo("Sleeping 0.2 secs.")
-        rospy.sleep(0.2)
-
+        self.sim_unpause()
+        rospy.loginfo(f"{prefix}: Executing {self.hand_cmd.f1} for {secs} secs.")
+        rospy.sleep(secs)
         self.sim_pause()
 
+    def step(self, action):
+        # scale action from [-1,1] to [0,2]
+        self.hand_cmd.f1 = action + 1
+        self.execute_for_seconds(0.2, "Step")
+
+        # obtain observations
         obs = np.zeros(self.observation_space.shape)
         obs[0] = self.hand_angles[0]
-        obs[1] = self.hand_angles[1]
-        obs[2] = self.hand_angles[2]
-        obs[3] = self.hand_angles[3]
+        # obs[1] = self.hand_angles[1]
+        # obs[2] = self.hand_angles[2]
+        # obs[3] = self.hand_angles[3]
 
-        
         des_angle = 1
         reward = 0
-        if abs(self.hand_angles[0] - des_angle) < 0.3:
-            reward = 1
-        reward_msg = Float32(reward)
-        self.reward_pub.publish(reward_msg)
-
         done = False
         logs = {}
 
-        # finish episode when angle above 3 rad
-        if obs[0] > 3:
+        # reward should be 0 if on goal (scale linearly if not)
+        reward = -1.0 * abs(self.hand_angles[0] - des_angle)
+        reward_msg = Float32(reward)
+        self.reward_pub.publish(reward_msg)
+
+        if obs[0] > 2:
             done = True
+            rospy.loginfo("Angle above 2 rad. Setting done = True.")
+        elif rospy.get_rostime().secs - self.last_reset_time.secs > 10:
+            done = True
+            rospy.loginfo("Episode lasted 4 secs. Setting done = True.")
 
         return obs, reward, done, logs
 
     def reset(self):
-        rospy.loginfo("Opening hand again.")
-        self.hand_cmd = PoseCommand()
+        # opening hand
         self.hand_cmd.f1 = 0
-        self.hand_pub.publish(self.hand_cmd)
+        self.execute_for_seconds(0.5, "Reset")
 
-        # make sure sim is unpaused before sleeping
-        self.sim_unpause()
-        rospy.sleep(3)
-
+        # reset vars
         obs = np.zeros(self.observation_space.shape)
+        self.last_reset_time = rospy.get_rostime()
+        
         return obs
 
     def close(self):
