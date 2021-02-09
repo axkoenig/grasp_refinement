@@ -5,7 +5,6 @@ import rospy
 from std_msgs.msg import Float32
 from std_srvs.srv import Empty
 from reflex_msgs.msg import PoseCommand, Hand
-import rospy
 
 
 class GazeboEnv(gym.Env):
@@ -15,28 +14,21 @@ class GazeboEnv(gym.Env):
 
         self.hand_pub = rospy.Publisher("reflex/pos_cmd", PoseCommand, queue_size=5)
         self.reward_pub = rospy.Publisher("agent/reward", Float32, queue_size=5)
-        self.hand_sub = rospy.Subscriber(
-            "reflex/hand_state", Hand, self.hand_callback, queue_size=5
-        )
+        self.hand_sub = rospy.Subscriber("reflex/hand_state", Hand, self.hand_callback, queue_size=5)
 
         self.unpause_name = "/gazebo/unpause_physics"
         self.pause_name = "/gazebo/pause_physics"
         self.unpause = rospy.ServiceProxy(self.unpause_name, Empty)
         self.pause = rospy.ServiceProxy(self.pause_name, Empty)
-        
+
         # define system state
         self.hand_angles = np.zeros(4)
         self.hand_cmd = PoseCommand()
 
         # action for one finger (more, stay, less)
         self.action_space = gym.spaces.Box(low=np.array([-1]), high=np.array([1]), dtype=np.float32)
-        self.observation_space = gym.spaces.Box(
-            low=np.array([0]), high=np.array([2.3]), dtype=np.float32
-        )
+        self.observation_space = gym.spaces.Box(low=np.array([0]), high=np.array([2.3]), dtype=np.float32)
         self.reward_range = (-np.inf, np.inf)
-
-        # TODO check what this does
-        self.seed()
 
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)
@@ -71,7 +63,7 @@ class GazeboEnv(gym.Env):
     def step(self, action):
         # scale action from [-1,1] to [0,2]
         self.hand_cmd.f1 = action + 1
-        self.execute_for_seconds(0.2, "Step")
+        self.execute_for_seconds(0.3, "Step")
 
         # obtain observations
         obs = np.zeros(self.observation_space.shape)
@@ -90,24 +82,26 @@ class GazeboEnv(gym.Env):
         reward_msg = Float32(reward)
         self.reward_pub.publish(reward_msg)
 
-        if obs[0] > 2:
+        limit_rad = 2
+        limit_time = 8
+
+        if obs[0] > limit_rad:
             done = True
-            rospy.loginfo("Angle above 2 rad. Setting done = True.")
-        elif rospy.get_rostime().secs - self.last_reset_time.secs > 10:
+            rospy.loginfo(f"Angle above {limit_rad} rad. Setting done = True.")
+        elif rospy.get_rostime().secs - self.last_reset_time.secs > limit_time:
             done = True
-            rospy.loginfo("Episode lasted 4 secs. Setting done = True.")
+            rospy.loginfo(f"Episode lasted {limit_time} secs. Setting done = True.")
 
         return obs, reward, done, logs
 
     def reset(self):
         # opening hand
         self.hand_cmd.f1 = 0
-        self.execute_for_seconds(0.5, "Reset")
+        self.execute_for_seconds(1, "Reset")
 
         # reset vars
         obs = np.zeros(self.observation_space.shape)
         self.last_reset_time = rospy.get_rostime()
-        
         return obs
 
     def close(self):
