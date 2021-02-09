@@ -55,7 +55,7 @@ class GazeboEnv(gym.Env):
     def execute_for_seconds(self, secs, prefix):
         self.hand_pub.publish(self.hand_cmd)
         self.sim_unpause()
-        rospy.loginfo(f"{prefix}: Executing {self.hand_cmd.f1} for {secs} secs.")
+        rospy.loginfo(f"{prefix}: Executing {self.hand_cmd.f1}, {self.hand_cmd.f2}, {self.hand_cmd.f3} for {secs} secs.")
         rospy.sleep(secs)
         self.sim_pause()
 
