@@ -80,5 +80,8 @@
     "C_Cpp.errorSquiggles": "Disabled",
     "ros.distro": "noetic",
     "cmake.configureOnOpen": false,
-    "python.formatting.provider": "black"
+    "python.formatting.provider": "black",
+    "python.formatting.blackArgs": [
+        "--line-length=150"
+    ]
 }
