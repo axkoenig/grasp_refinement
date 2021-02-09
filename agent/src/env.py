@@ -26,7 +26,7 @@ class GazeboEnv(gym.Env):
         self.hand_cmd = PoseCommand()
 
         # action for one finger (more, stay, less)
-        self.action_space = gym.spaces.Box(low=np.array([-1]), high=np.array([1]), dtype=np.float32)
+        self.action_space = gym.spaces.Box(low=np.array([0]), high=np.array([2]), dtype=np.float32)
         self.observation_space = gym.spaces.Box(low=np.array([0]), high=np.array([2.3]), dtype=np.float32)
         self.reward_range = (-np.inf, np.inf)
 
@@ -61,8 +61,7 @@ class GazeboEnv(gym.Env):
         self.sim_pause()
 
     def step(self, action):
-        # scale action from [-1,1] to [0,2]
-        self.hand_cmd.f1 = action + 1
+        self.hand_cmd.f1 = action
         self.execute_for_seconds(0.3, "Step")
 
         # obtain observations
