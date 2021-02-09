@@ -25,7 +25,6 @@ class GazeboEnv(gym.Env):
         self.hand_angles = np.zeros(4)
         self.hand_cmd = PoseCommand()
 
-        # action for one finger (more, stay, less)
         self.action_space = gym.spaces.Box(low=np.array([0]), high=np.array([2]), dtype=np.float32)
         self.observation_space = gym.spaces.Box(low=np.array([0]), high=np.array([2.3]), dtype=np.float32)
         self.reward_range = (-np.inf, np.inf)
