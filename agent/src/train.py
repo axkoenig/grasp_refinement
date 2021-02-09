@@ -4,7 +4,6 @@ import gym
 from stable_baselines3 import TD3
 from stable_baselines3.td3.policies import MlpPolicy
 from stable_baselines3.common.noise import NormalActionNoise
-from stable_baselines3.common.env_checker import check_env
 
 from env import GazeboEnv
 
