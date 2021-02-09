@@ -3,7 +3,7 @@ brain/experiments/data/*
 brain/experiments/figures/*
 
 # ignore saved RL models
-/agent/src/*.zip
+/agent/src/models
 
 devel/
 logs/
