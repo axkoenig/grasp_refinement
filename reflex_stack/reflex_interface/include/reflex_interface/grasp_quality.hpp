@@ -10,11 +10,12 @@ class GraspQuality
 {
 private:
     float mu;
-    int num_primitive_wrenches;
+    int num_edges;
 
 public:
-    GraspQuality(float mu = 0.2, int num_primitive_wrenches = 4);
-    
+    GraspQuality(float mu = 0.4, int num_edges = 4);
+
+    // all args have to be in same coordinate system!
     float getEpsilon(std::vector<tf2::Transform> contact_frames_world,
                      tf2::Vector3 object_com_world);
 };
