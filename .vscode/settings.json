@@ -83,5 +83,8 @@
     "python.formatting.provider": "black",
     "python.formatting.blackArgs": [
         "--line-length=150"
-    ]
+    ],
+    "files.watcherExclude": {
+        "**/singularity.img/**": true,
+    }
 }
