@@ -58,9 +58,9 @@ From: osrf/ros:noetic-desktop-focal
   catkin_make
 
   echo "\n\n\n====INSTALLING RL PACKAGES====\n\n\n"
-  apt -y install python3-pip
+  apt -y install python3-pip screen
   pip3 install gym stable_baselines3
-  apt -y install screen
+  apt-get -y install python3-tk
 
 %runscript
   echo "\n\n\n====STARTING SIMULATION====\n\n\n"
