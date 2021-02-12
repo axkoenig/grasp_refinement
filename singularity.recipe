@@ -7,24 +7,27 @@ From: osrf/ros:noetic-desktop-focal
   export ROS_LOG_DIR=$OUTPUT
   export ROS_HOME=$OUTPUT
 
+%labels
+  MAINTAINER = Alexander Koenig 
+  EMAIL = awckoenig@gmail.com 
+
 %files
   agent /catkin_ws/src/grasp_refinement/agent 
   brain /catkin_ws/src/grasp_refinement/brain 
   reflex_stack /catkin_ws/src/grasp_refinement/reflex_stack 
 
 %post
-  apt-get -y update
-  apt-get -y upgrade
+  apt-get -y update && apt-get -y upgrade
+  apt -y update && apt -y upgrade
   
-  echo "\n\n\n====INSTALLING GAZEBO 11 FROM SOURCE====\n\n\n"
+  echo "\n\n\n====INSTALLING GAZEBO DEPENDENCIES====\n\n\n"
   apt-get -y install wget gnupg2 lsb-release
   apt-get -y remove ".*gazebo.*" ".*sdformat.*" ".*ignition-math.*" ".*ignition-msgs.*" ".*ignition-transport.*"
   sh -c "echo 'deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main' > /etc/apt/sources.list.d/gazebo-stable.list"
   wget https://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
   apt-get -y update
   wget https://raw.githubusercontent.com/ignition-tooling/release-tools/master/jenkins-scripts/lib/dependencies_archive.sh -O /tmp/dependencies.sh
-  bash -c "GAZEBO_MAJOR_VERSION=11 ROS_DISTRO=noetic . /tmp/dependencies.sh"
-  bash -c "echo $BASE_DEPENDENCIES $GAZEBO_BASE_DEPENDENCIES | tr -d '\\' | xargs apt-get -y install"
+  bash -c 'GAZEBO_MAJOR_VERSION=11 ROS_DISTRO=noetic . /tmp/dependencies.sh && echo $BASE_DEPENDENCIES $GAZEBO_BASE_DEPENDENCIES | tr -d "\\" | xargs apt-get -y install'
 
   echo "\n\n\n====INSTALLING DART 6====\n\n\n"
   apt-get -y install software-properties-common
@@ -32,6 +35,16 @@ From: osrf/ros:noetic-desktop-focal
   apt-get -y update
   apt-get -y install libdart6-dev
   apt-get -y install libdart6-utils-urdf-dev
+
+  echo "\n\n\n====INSTALLING GAZEBO 11====\n\n\n"
+  apt -y install git
+  git clone https://github.com/osrf/gazebo /tmp/gazebo
+  cd /tmp/gazebo
+  mkdir build && cd build
+  cmake ../
+  make -j4
+  make install
+  rm -r /tmp/gazebo
 
   echo "\n\n\n====INSTALLING PROJECT DEPENDENCIES====\n\n\n"
   apt-get -y install ros-noetic-ros-control ros-noetic-ros-controllers
@@ -44,18 +57,9 @@ From: osrf/ros:noetic-desktop-focal
   cd /catkin_ws
   catkin_make
 
-
-  
-  # apt install -y git
-  # git clone --recursive https://github.com/axkoenig/grasp_refinement.git
-  # install gazebo 11 from source
-#  git clone https://github.com/osrf/gazebo /tmp/gazebo
-#  cd /tmp/gazebo
-#  mkdir build
-#  cd build
-#  cmake ../
-#  make -j4
-#  make install 
-
 %runscript
   echo "\n\n\n====RUNNING SIMULATION====\n\n\n"
+  . /opt/ros/noetic/setup.sh
+  . /catkin_ws/devel/setup.sh
+  # roslaunch description reflex.launch gui:=false | python /catkin_ws/src/grasp_refinement/agent/src/train.py
+  # roslaunch description reflex.launch gui:=false | roslaunch brain baseline_commander.launch 
