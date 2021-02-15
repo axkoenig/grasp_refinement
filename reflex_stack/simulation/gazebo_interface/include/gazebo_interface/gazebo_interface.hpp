@@ -15,14 +15,17 @@ tf2::Transform getModelPoseSim(ros::NodeHandle *nh, string model_name, string re
 tf2::Transform getLinkPoseSim(ros::NodeHandle *nh, string link_name, string reference_frame = "world", bool verbose = true);
 
 template <typename T>
-void getParam(ros::NodeHandle *nh, T *param, const string param_name)
+void getParam(ros::NodeHandle *nh, T *param, const string param_name, bool verbose = true)
 {
     // wait for param_name on parameter server
     while (ros::ok())
     {
         if (nh->getParam(param_name, *param))
         {
-            ROS_INFO_STREAM("Obtained " << param_name << ": " << *param << " from parameter server.");
+            if (verbose)
+            {
+                ROS_INFO_STREAM("Obtained " << param_name << ": " << *param << " from parameter server.");
+            }
             return;
         }
         else
