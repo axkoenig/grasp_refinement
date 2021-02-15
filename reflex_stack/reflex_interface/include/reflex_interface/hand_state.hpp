@@ -12,9 +12,10 @@
 class HandState
 {
 public:
-    HandState(ros::NodeHandle *nh, bool use_sim_data);
+    HandState(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_data_obj);
     ros::NodeHandle *nh;
     ros::Subscriber state_sub;
+    ros::Publisher grasp_quality_pub;
     FingerState *finger_states[3];
     GraspQuality grasp_quality = GraspQuality();
 
@@ -28,13 +29,15 @@ public:
     ContactState getContactState();
     int getNumFingersInContact();
     int getFingerIdSingleContact();
-    float getGraspQuality(tf2::Vector3 object_com_world, bool com_from_sim);
+    float getGraspQuality();                                // use this to get object c.o.m. from simulation 
+    float getGraspQuality(tf2::Vector3 object_com_world);   // use this if you can estimate the object c.o.m. from e.g. computer vision  
     std::vector<tf2::Transform> getContactFramesWorld() { return contactFramesWorld; };
     std::vector<int> getContactFingerIds() { return contactFingerIds; };
 
 private:
     ContactState cur_state;
-    bool use_sim_data;
+    bool use_sim_data_hand;
+    bool use_sim_data_obj;
     const int num_fingers = 3;
     const int num_motors = 4;
     std::vector<tf2::Transform> contactFramesWorld;

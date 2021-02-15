@@ -1,14 +1,18 @@
 #include <vector>
 
+#include <std_msgs/Float64.h>
+
 #include "gazebo_interface/gazebo_interface.hpp"
 #include "reflex_interface/hand_state.hpp"
 
-HandState::HandState(ros::NodeHandle *nh, bool use_sim_data)
+HandState::HandState(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_data_obj)
     : finger_states{new FingerState(nh, 1), new FingerState(nh, 2), new FingerState(nh, 3)}
 {
     this->nh = nh;
-    this->use_sim_data = use_sim_data;
+    this->use_sim_data_hand = use_sim_data_hand;
+    this->use_sim_data_obj = use_sim_data_obj;
     state_sub = nh->subscribe("reflex/hand_state", 1, &HandState::callback, this);
+    grasp_quality_pub = nh->advertise<std_msgs::Float64>("/reflex/grasp_quality", 1);
 }
 
 int HandState::getNumFingersInContact()
@@ -51,7 +55,24 @@ void HandState::callback(const reflex_msgs::Hand &msg)
             finger_states[i]->setPreshapeAngleFromMsg(msg.motor[3].joint_angle / 2);
         }
     }
-    use_sim_data ? updateContactFramesWorldSim() : updateContactFramesWorldReal();
+
+    use_sim_data_hand ? updateContactFramesWorldSim() : updateContactFramesWorldReal();
+
+    std_msgs::Float64 quality_msg;
+
+    if (use_sim_data_obj)
+    {
+        quality_msg.data = getGraspQuality();
+    }
+    else
+    {
+        // we could obtain center of mass from computer vision or manual estimates.
+        // could listen to a ROS topic here to obtain object_com_world and then:
+        // quality_msg.data = getGraspQuality(object_com_world)
+        throw "Not implemented.";
+    }
+
+    grasp_quality_pub.publish(quality_msg);
 }
 
 HandState::ContactState HandState::getContactState()
@@ -93,16 +114,18 @@ void HandState::updateContactFramesWorldReal()
     throw "Not implemented.";
 }
 
-float HandState::getGraspQuality(tf2::Vector3 object_com_world, bool com_from_sim)
+float HandState::getGraspQuality()
 {
-    // get object center of mass from simulation
-    if (com_from_sim)
-    {
-        std::string object_name;
-        getParam(nh, &object_name, "object_name");
+    std::string object_name;
+    getParam(nh, &object_name, "object_name", false);
 
-        // assume com is object origin
-        object_com_world = getModelPoseSim(nh, object_name, "world", false).getOrigin();
-    }
+    // assume com is object origin
+    tf2::Vector3 object_com_world = getModelPoseSim(nh, object_name, "world", false).getOrigin();
+
+    return grasp_quality.getEpsilon(contactFramesWorld, object_com_world);
+}
+
+float HandState::getGraspQuality(tf2::Vector3 object_com_world)
+{
     return grasp_quality.getEpsilon(contactFramesWorld, object_com_world);
 }
