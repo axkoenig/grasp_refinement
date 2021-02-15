@@ -1,7 +1,12 @@
 #include <math.h>
 
+#include <ros/ros.h>
 #include <tf2/LinearMath/Quaternion.h>
-// #include <libqhull/libqhull.h>
+
+extern "C"
+{
+#include <libqhull_r.h>
+}
 
 #include "reflex_interface/grasp_quality.hpp"
 
@@ -16,6 +21,12 @@ float GraspQuality::getEpsilon(std::vector<tf2::Transform> contact_frames_world,
 {
     int num_contacts = contact_frames_world.size();
 
+    // no contacts
+    if (num_contacts == 0)
+    {
+        return -1.0;
+    }
+
     // wrench primitives of all contacts
     std::vector<tf2::Vector3> force_primitives = {};
     std::vector<tf2::Vector3> torque_primitives = {};
@@ -29,6 +40,7 @@ float GraspQuality::getEpsilon(std::vector<tf2::Transform> contact_frames_world,
     // phi is angle around contact normal between each force primitives
     double phi = 2 * M_PI / num_edges;
     tf2::Quaternion q_phi;
+
     for (int i = 0; i < num_contacts; i++)
     {
         // compute lever arm from object COM to contact position
@@ -47,32 +59,64 @@ float GraspQuality::getEpsilon(std::vector<tf2::Transform> contact_frames_world,
     }
 
     // wrench space is 6 dimensional (3 force, 3 torque)
-    int dim = 6; 
-    int num_primitive_wrenches = num_contacts * num_edges;
-    int num_vertices = dim * num_primitive_wrenches;
-    
-    // vertices is a concatenation of all 6D vectors for each contact
-    // format: { f_x_1, f_y_1, f_z_1, t_x_1, t_y_1, t_z_1,  ... 
-    //           f_x_n, f_y_n, f_z_n, t_x_n, t_y_n, t_z_n }
-    // where n is num_contacts
-    // coordT vertices[num_vertices];
+    int dim = 6;
+    int num_ft_primitives = num_contacts * num_edges;
+    int num_points = dim * num_ft_primitives;
 
-    // // iterate over primitives
-    // for (int i = 0; i < num_primitive_wrenches; i++)
-    // {   
-    //     // iterate over x,y,z coordinates
-    //     for (int j = 0; j < 3; j++)
-    //     {
-    //         vertices[6*i+j] = force_primitives[i][j];
-    //         vertices[6*i+j+3] = torque_primitives[i][j];
-    //     }
-    // }
+    // allocate memory for points
+    coordT *points = (coordT *)calloc(num_points, sizeof(coordT));
+    ;
 
-    // int i = qh_new_qhull(dim, num_contacts, vertices, false, NULL, NULL, NULL);
+    // debug
+    ROS_INFO_STREAM("Size of force primitive is: " << force_primitives.size() << " I expect it to be " << num_ft_primitives);
+    ROS_INFO_STREAM("Size of torque primitive is: " << torque_primitives.size() << " I expect it to be " << num_ft_primitives);
 
-    // calculate convex hull of all wrench primitives
+    // points is a concatenation of all 6D primitive wrenches for each contact
+    // format: { f_x_11, f_y_11, f_z_11, t_x_11, t_y_11, t_z_11,  ...
+    //           f_x_ne, f_y_ne, f_z_ne, t_x_ne, t_y_ne, t_z_ne }
+    // where    n is num_contacts
+    // and      e is num_edges
 
-    // calc ball and return radius (qhull equations)
+    // iterate over primitives
+    for (int i = 0; i < num_ft_primitives; i++)
+    {
+        // iterate over x,y,z coordinates in Vector3
+        for (int j = 0; j < 3; j++)
+        {
+            points[dim * i + j] = force_primitives[i][j];
+            points[dim * i + j + 3] = torque_primitives[i][j];
+        }
+    }
 
-    return 0.0;
+    // Tv = verify result: structure, convexity, and point inclusion
+    // Qt = triangulated output
+    // s = print summary to stderr
+    // n = print hyperplane normals with offsets
+    char flags[] = "qhull Tv Qt s";
+    qhT qh_qh;
+    qhT *qh = &qh_qh;
+    qh_zero(qh, NULL);
+    int exitcode = qh_new_qhull(qh, dim, num_points, points, true, flags, NULL, NULL);
+
+    if (exitcode != 0)
+    {
+        ROS_WARN("Convex hull creation failed. Returning -1.0.");
+        qh_freeqhull(qh, !qh_ALL);
+        int curlong, totlong;
+        qh_memfreeshort(qh, &curlong, &totlong);
+        return -1.0;
+    }
+
+    // find facet that is closest to origin
+    coordT origin[dim] = {0, 0, 0, 0, 0, 0};
+    boolT bestoutside, isoutside;
+    realT bestdist;
+    qh_findbestfacet(qh, origin, bestoutside, &bestdist, &isoutside);
+
+    // free memory
+    qh_freeqhull(qh, !qh_ALL);
+    int curlong, totlong;
+    qh_memfreeshort(qh, &curlong, &totlong);
+
+    return bestdist;
 }
