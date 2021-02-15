@@ -10,7 +10,7 @@
 using namespace std;
 
 BaselineController::BaselineController(ros::NodeHandle *nh, tf2::Transform init_wrist_pose, tf2::Transform goal_wrist_pose, bool simulation_only, float time_out)
-    : ri(new ReflexInterface(nh, simulation_only))
+    : ri(new ReflexInterface(nh, simulation_only, simulation_only))
 {
     this->nh = nh;
     this->init_wrist_pose = init_wrist_pose;
