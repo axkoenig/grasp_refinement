@@ -5,20 +5,18 @@ from stable_baselines3 import TD3
 from stable_baselines3.td3.policies import MlpPolicy
 from stable_baselines3.common.noise import NormalActionNoise
 
-from envs.sanity_env_three_joints import GazeboEnv
+from envs.sanity_env_one_joint import GazeboEnv
 
 env = GazeboEnv()
-log_name = "three_joints"
+log_name = "one_joint"
+parent_dir = "/output/"
 
 n_actions = env.action_space.shape[-1]
 action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
 
-model = TD3(MlpPolicy, env, action_noise=action_noise, verbose=1, tensorboard_log="logs")
+model = TD3(MlpPolicy, env, action_noise=action_noise, verbose=1, tensorboard_log=parent_dir + "logs")
 model.learn(total_timesteps=10000, tb_log_name=log_name)
-
-model.save("models/" + log_name)
-del model
-model = TD3.load("models/" + log_name)
+model.save(parent_dir + "models/" + log_name)
 
 print("Evaluating model...")
 
