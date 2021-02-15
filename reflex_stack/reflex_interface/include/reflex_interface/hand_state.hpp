@@ -13,6 +13,7 @@ class HandState
 {
 public:
     HandState(ros::NodeHandle *nh, bool use_sim_data);
+    ros::NodeHandle *nh;
     ros::Subscriber state_sub;
     FingerState *finger_states[3];
     GraspQuality grasp_quality = GraspQuality();
@@ -27,7 +28,7 @@ public:
     ContactState getContactState();
     int getNumFingersInContact();
     int getFingerIdSingleContact();
-    float getGraspQuality(tf2::Vector3 object_com_world);
+    float getGraspQuality(tf2::Vector3 object_com_world, bool com_from_sim);
     std::vector<tf2::Transform> getContactFramesWorld() { return contactFramesWorld; };
     std::vector<int> getContactFingerIds() { return contactFingerIds; };
 

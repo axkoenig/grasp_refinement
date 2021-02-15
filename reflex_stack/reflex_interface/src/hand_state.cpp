@@ -6,6 +6,7 @@
 HandState::HandState(ros::NodeHandle *nh, bool use_sim_data)
     : finger_states{new FingerState(nh, 1), new FingerState(nh, 2), new FingerState(nh, 3)}
 {
+    this->nh = nh;
     this->use_sim_data = use_sim_data;
     state_sub = nh->subscribe("reflex/hand_state", 1, &HandState::callback, this);
 }
@@ -92,7 +93,16 @@ void HandState::updateContactFramesWorldReal()
     throw "Not implemented.";
 }
 
-float HandState::getGraspQuality(tf2::Vector3 object_com_world)
+float HandState::getGraspQuality(tf2::Vector3 object_com_world, bool com_from_sim)
 {
+    // get object center of mass from simulation
+    if (com_from_sim)
+    {
+        std::string object_name;
+        getParam(nh, &object_name, "object_name");
+
+        // assume com is object origin
+        object_com_world = getModelPoseSim(nh, object_name, "world", false).getOrigin();
+    }
     return grasp_quality.getEpsilon(contactFramesWorld, object_com_world);
 }
