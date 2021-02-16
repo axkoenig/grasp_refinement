@@ -1,5 +1,8 @@
 #include <string>
 #include <cmath>
+#include <vector>
+#include <numeric>
+
 #include <ros/ros.h>
 #include <std_msgs/Float64.h>
 #include <gazebo_msgs/ContactsState.h>
@@ -18,6 +21,11 @@ private:
     double pressure = 0.0;
     bool contact = false;
     int num_contacts = 0;
+
+    // use for filtering of noisy sensing from simulation
+    int buf_size = 5;
+    std::vector<bool> contact_buffer = {0, 0, 0, 0, 0};
+    std::vector<float> pressure_buffer = {0, 0, 0, 0, 0};
 
     // TODO: find real scaling factor (for now pressure magnitudes don't matter)
     double scaling_factor = 1.0;
@@ -47,9 +55,12 @@ public:
         pressure = 0.0;
         contact = false;
 
+        // rotate buffers right
+        std::rotate(contact_buffer.rbegin(), contact_buffer.rbegin() + 1, contact_buffer.rend());
+        std::rotate(pressure_buffer.rbegin(), pressure_buffer.rbegin() + 1, pressure_buffer.rend());
+
         if (num_contacts > 0)
         {
-            contact = true;
             double f[3] = {0, 0, 0};
 
             // get sum of all contact forces on sensor (NOTE: since the real reflex hand
@@ -70,8 +81,20 @@ public:
             f[2] /= num_contacts;
 
             // pressure is magnitude of total force vector
-            pressure = sqrt(pow(f[0], 2) + pow(f[1], 2) + pow(f[2], 2)) * scaling_factor;
+            pressure_buffer[0] = sqrt(pow(f[0], 2) + pow(f[1], 2) + pow(f[2], 2)) * scaling_factor;
+            contact_buffer[0] = true;
         }
+        else
+        {
+            pressure_buffer[0] = 0.0;
+            contact_buffer[0] = false;
+        }
+
+        // if any element in contact buffer is true, we return true
+        contact = true ? std::any_of(contact_buffer.begin(), contact_buffer.end(), [](bool v) { return v; }) : false;
+
+        // we average pressure over buffer
+        pressure = std::accumulate(pressure_buffer.begin(), pressure_buffer.end(), 0.0) / buf_size;
     }
 };
 
