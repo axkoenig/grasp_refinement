@@ -23,6 +23,8 @@ std::string pinch_srv_name = "reflex/pinch";
 std::string sph_open_srv_name = "reflex/spherical_open";
 std::string sph_close_srv_name = "reflex/spherical_close";
 std::string pos_incr_srv_name = "reflex/pos_incr";
+std::string close_until_contact_srv_name = "reflex/close_until_contact";
+std::string tighten_grip_srv_name = "reflex/tighten_grip";
 
 float trans_scaling = 0.01;
 float rot_scaling = 0.2;
@@ -120,6 +122,8 @@ int main(int argc, char **argv)
     ros::ServiceClient sph_open_client = nh.serviceClient<std_srvs::Trigger>(sph_open_srv_name);
     ros::ServiceClient sph_close_client = nh.serviceClient<std_srvs::Trigger>(sph_close_srv_name);
     ros::ServiceClient pos_incr_client = nh.serviceClient<reflex_interface::PosIncrement>(pos_incr_srv_name);
+    ros::ServiceClient close_until_contact_client = nh.serviceClient<std_srvs::Trigger>(close_until_contact_srv_name);
+    ros::ServiceClient tighten_grip_client = nh.serviceClient<std_srvs::Trigger>(tighten_grip_srv_name);
 
     // service messages
     std_srvs::Trigger trigger;
@@ -131,7 +135,7 @@ int main(int argc, char **argv)
     tf2::Transform transform;
 
     // populate initial wrist transform
-    std::array<float, 6> cur_pose = init_pose; 
+    std::array<float, 6> cur_pose = init_pose;
     transform = calcTransformFromEuler(init_pose);
     ts.header.frame_id = source_frame;
     ts.child_frame_id = target_frame;
@@ -194,37 +198,43 @@ int main(int argc, char **argv)
         // FINGER CONTROL (PRIMITIVES) ------------------------------------------
         switch (key)
         {
-        case 'c':
+        case 'y':
         {
-            close_client.call(trigger);
-            ROS_INFO("%s", trigger.response.message.c_str());
+            pinch_client.call(trigger);
             break;
         }
         case 'x':
         {
             open_client.call(trigger);
-            ROS_INFO("%s", trigger.response.message.c_str());
             break;
         }
-        case 'y':
+        case 'c':
         {
-            pinch_client.call(trigger);
-            ROS_INFO("%s", trigger.response.message.c_str());
+            close_client.call(trigger);
             break;
         }
         case 'v':
         {
             sph_open_client.call(trigger);
-            ROS_INFO("%s", trigger.response.message.c_str());
             break;
         }
         case 'b':
         {
             sph_close_client.call(trigger);
-            ROS_INFO("%s", trigger.response.message.c_str());
+            break;
+        }
+        case 'n':
+        {
+            close_until_contact_client.call(trigger);
+            break;
+        }
+        case 't':
+        {
+            tighten_grip_client.call(trigger);
             break;
         }
         }
+        ROS_INFO("%s", trigger.response.message.c_str());
 
         // EXIT ------------------------------------------
         if (key == '\x03')
