@@ -1,14 +1,10 @@
-#include <ros/ros.h>
-#include <std_msgs/Float64.h>
-#include <std_srvs/Trigger.h>
-#include <reflex_msgs/PoseCommand.h>
-#include <math.h>
-
 #include "reflex_interface/PosIncrement.h"
 #include "reflex_interface/hand_command.hpp"
 
-HandCommand::HandCommand(ros::NodeHandle *nh)
+HandCommand::HandCommand(ros::NodeHandle *nh, HandState *state)
 {
+    this->state = state;
+
     pub = nh->advertise<reflex_msgs::PoseCommand>(pos_cmd_topic, 1);
     open_service = nh->advertiseService(open_srv_name, &HandCommand::callbackOpen, this);
     close_service = nh->advertiseService(close_srv_name, &HandCommand::callbackClose, this);
@@ -16,15 +12,17 @@ HandCommand::HandCommand(ros::NodeHandle *nh)
     sph_open_service = nh->advertiseService(sph_open_srv_name, &HandCommand::callbackSphOpen, this);
     sph_close_service = nh->advertiseService(sph_close_srv_name, &HandCommand::callbackSphClose, this);
     pos_incr_service = nh->advertiseService(pos_incr_srv_name, &HandCommand::callbackPosIncr, this);
+    close_until_contact_service = nh->advertiseService(close_until_contact_srv_name, &HandCommand::callbackCloseUntilContact, this);
+    tighten_grip_service = nh->advertiseService(tighten_grip_srv_name, &HandCommand::callbackTightenGrip, this);
 }
 
 std::string HandCommand::getStatusMsg()
 {
     std::string str;
-    int size = cur_pos.size();
+    int size = cur_cmd.size();
     for (int i = 0; i < size; i++)
     {
-        str += std::to_string(cur_pos[i]);
+        str += std::to_string(cur_cmd[i]);
         if (i != size - 1)
         {
             str += ", ";
@@ -40,27 +38,27 @@ void HandCommand::executePrimitive(HandCommand::Primitive primitive, bool verbos
     {
     case Open:
     {
-        cur_pos = open_pos;
+        cur_cmd = open_pos;
         break;
     }
     case Close:
     {
-        cur_pos = close_pos;
+        cur_cmd = close_pos;
         break;
     }
     case Pinch:
     {
-        cur_pos = pinch_pos;
+        cur_cmd = pinch_pos;
         break;
     }
     case SphericalOpen:
     {
-        cur_pos = sph_open_pos;
+        cur_cmd = sph_open_pos;
         break;
     }
     case SphericalClose:
     {
-        cur_pos = sph_close_pos;
+        cur_cmd = sph_close_pos;
         break;
     }
     }
@@ -123,14 +121,81 @@ bool HandCommand::callbackPosIncr(reflex_interface::PosIncrement::Request &req, 
     return true;
 }
 
+bool HandCommand::callbackCloseUntilContact(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
+{
+    ros::Duration allowed_duration(close_until_contact_time_out);
+    ros::Time start_time = ros::Time::now();
+    std::vector<bool> fingers_in_contact = {0, 0, 0};
+    std::vector<bool> contact_memory = {0, 0, 0};
+
+    ros::Rate rate(close_until_contact_pub_rate);
+
+    while (allowed_duration > (ros::Time::now() - start_time))
+    {
+        // stop if all fingers have been in contact at least once throughout this service call
+        bool stop = std::all_of(contact_memory.begin(), contact_memory.end(), [](bool v) { return v; });
+
+        if (state->allFingersInContact() || stop)
+        {
+            res.success = true;
+            res.message = "All fingers have been in contact.";
+            return true;
+        }
+
+        fingers_in_contact = state->getFingersInContact();
+        float increment[4] = {0, 0, 0, 0};
+
+        for (int i = 0; i < 3; i++)
+        {
+            if (!fingers_in_contact[i] && !contact_memory[i])
+            {
+                // for all fingers that did not have contact yet: tighten up
+                increment[i] = close_until_contact_incr;
+            }
+            else if (fingers_in_contact[i])
+            {
+                // memorize that we obtained a contact at this finger
+                contact_memory[i] = 1;
+            }
+        }
+        this->executePosIncrement(increment);
+
+        // make sure to process callbacks in HandState class
+        ros::spinOnce();
+        rate.sleep();
+    }
+
+    res.success = false;
+    res.message = "Did not obtain contact on all fingers within time-out of " + std::to_string(close_until_contact_time_out) + " secs.";
+    return true;
+}
+
+bool HandCommand::callbackTightenGrip(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
+{
+    // tighten joints by tighten_incr rad and leave preshape as is
+    float increment[4] = {tighten_incr,
+                          tighten_incr,
+                          tighten_incr,
+                          0};
+    this->executePosIncrement(increment);
+    res.success = true;
+    res.message = this->getStatusMsg();
+    return true;
+}
+
 void HandCommand::executePosIncrement(float increment[4])
 {
+    float cur_state[4] = {state->finger_states[0]->getProximalAngle(),
+                          state->finger_states[1]->getProximalAngle(),
+                          state->finger_states[2]->getProximalAngle(),
+                          state->finger_states[0]->getPreshapeAngle() + state->finger_states[1]->getPreshapeAngle()};
+
     for (int i = 0; i < 4; i++)
     {
-        float val = cur_pos[i] + increment[i];
+        float val = cur_state[i] + increment[i];
         if (val > low_limits[i] && val < high_limits[i])
         {
-            cur_pos[i] = val;
+            cur_cmd[i] = val;
         }
     }
     this->sendCommands();
@@ -138,10 +203,10 @@ void HandCommand::executePosIncrement(float increment[4])
 
 void HandCommand::sendCommands()
 {
-    pos_cmd.f1 = cur_pos[0];
-    pos_cmd.f2 = cur_pos[1];
-    pos_cmd.f3 = cur_pos[2];
-    pos_cmd.preshape = cur_pos[3];
+    pos_cmd.f1 = cur_cmd[0];
+    pos_cmd.f2 = cur_cmd[1];
+    pos_cmd.f3 = cur_cmd[2];
+    pos_cmd.preshape = cur_cmd[3];
 
     pub.publish(pos_cmd);
 }
