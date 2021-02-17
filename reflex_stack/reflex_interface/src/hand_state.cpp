@@ -14,6 +14,14 @@ HandState::HandState(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_d
     this->use_sim_data_obj = use_sim_data_obj;
     state_sub = nh->subscribe("reflex/hand_state", 1, &HandState::callback, this);
     grasp_quality_pub = nh->advertise<std_msgs::Float64>("/reflex/grasp_quality", 1);
+
+    num_sensors_in_contact_per_finger = {0, 0, 0};
+    fingers_in_contact = {0, 0, 0};
+}
+
+bool HandState::allFingersInContact()
+{
+    return std::all_of(fingers_in_contact.begin(), fingers_in_contact.end(), [](bool v) { return v; });
 }
 
 int HandState::getNumFingersInContact()
@@ -92,8 +100,9 @@ HandState::ContactState HandState::getContactState()
 void HandState::updateContactFramesWorldSim()
 {
     // reset variables
-    contactFramesWorld = {};
-    contactFingerIds = {};
+    contact_frames_world = {};
+    num_sensors_in_contact_per_finger = {0, 0, 0};
+    fingers_in_contact = {0, 0, 0};
 
     // iterate over fingers
     for (int i = 0; i < num_fingers; i++)
@@ -102,8 +111,9 @@ void HandState::updateContactFramesWorldSim()
 
         if (!frames.empty())
         {
-            contactFramesWorld.insert(contactFramesWorld.end(), frames.begin(), frames.end());
-            contactFingerIds.push_back(i + 1);
+            contact_frames_world.insert(contact_frames_world.end(), frames.begin(), frames.end());
+            num_sensors_in_contact_per_finger[i] = contact_frames_world.size();
+            fingers_in_contact[i] = true;
         }
     }
 }
@@ -124,12 +134,12 @@ float HandState::getGraspQuality()
     tf2::Vector3 object_com_world = getModelPoseSim(nh, object_name, "world", false).getOrigin();
 
     // if epsilon returns with -1 (error occured) we return 0.0 for grasp quality
-    float epsilon = std::max(0.0f, grasp_quality.getEpsilon(contactFramesWorld, object_com_world));
+    float epsilon = std::max(0.0f, grasp_quality.getEpsilon(contact_frames_world, object_com_world));
     return epsilon;
 }
 
 float HandState::getGraspQuality(tf2::Vector3 object_com_world)
 {
-    float epsilon = std::max(0.0f, grasp_quality.getEpsilon(contactFramesWorld, object_com_world));
+    float epsilon = std::max(0.0f, grasp_quality.getEpsilon(contact_frames_world, object_com_world));
     return epsilon;
 }
