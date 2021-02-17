@@ -29,10 +29,12 @@ public:
     ContactState getContactState();
     int getNumFingersInContact();
     int getFingerIdSingleContact();
-    float getGraspQuality();                                // use this to get object c.o.m. from simulation 
-    float getGraspQuality(tf2::Vector3 object_com_world);   // use this if you can estimate the object c.o.m. from e.g. computer vision  
-    std::vector<tf2::Transform> getContactFramesWorld() { return contactFramesWorld; };
-    std::vector<int> getContactFingerIds() { return contactFingerIds; };
+    float getGraspQuality();                              // use this to get object c.o.m. from simulation
+    float getGraspQuality(tf2::Vector3 object_com_world); // use this if you can estimate the object c.o.m. from e.g. computer vision
+    std::vector<tf2::Transform> getContactFramesWorld() { return contact_frames_world; };
+    std::vector<int> getNumSensorsInContactPerFinger() { return num_sensors_in_contact_per_finger; };
+    std::vector<bool> getFingersInContact() { return fingers_in_contact; };
+    bool allFingersInContact();
 
 private:
     ContactState cur_state;
@@ -40,8 +42,9 @@ private:
     bool use_sim_data_obj;
     const int num_fingers = 3;
     const int num_motors = 4;
-    std::vector<tf2::Transform> contactFramesWorld;
-    std::vector<int> contactFingerIds; // example: two sensors in contact on finger 1 and one on finger 2: {1,1,2}
+    std::vector<tf2::Transform> contact_frames_world;
+    std::vector<int> num_sensors_in_contact_per_finger; // example: two sensors in contact on finger 1 and one on finger 2: {2, 1, 0}
+    std::vector<bool> fingers_in_contact;               // example: fingers 1 and 3 in contact: {1, 0, 1}
     void callback(const reflex_msgs::Hand &msg);
     void updateContactFramesWorldSim();
     void updateContactFramesWorldReal();
