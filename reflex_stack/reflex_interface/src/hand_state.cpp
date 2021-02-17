@@ -1,4 +1,5 @@
 #include <vector>
+#include <algorithm>
 
 #include <std_msgs/Float64.h>
 
@@ -122,10 +123,13 @@ float HandState::getGraspQuality()
     // assume com is object origin
     tf2::Vector3 object_com_world = getModelPoseSim(nh, object_name, "world", false).getOrigin();
 
-    return grasp_quality.getEpsilon(contactFramesWorld, object_com_world);
+    // if epsilon returns with -1 (error occured) we return 0.0 for grasp quality
+    float epsilon = std::max(0.0f, grasp_quality.getEpsilon(contactFramesWorld, object_com_world));
+    return epsilon;
 }
 
 float HandState::getGraspQuality(tf2::Vector3 object_com_world)
 {
-    return grasp_quality.getEpsilon(contactFramesWorld, object_com_world);
+    float epsilon = std::max(0.0f, grasp_quality.getEpsilon(contactFramesWorld, object_com_world));
+    return epsilon;
 }
