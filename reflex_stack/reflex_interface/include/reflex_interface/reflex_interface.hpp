@@ -18,7 +18,7 @@ public:
     
     ReflexInterface(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_data_obj)
         : state(new HandState(nh, use_sim_data_hand, use_sim_data_obj)),
-          command(new HandCommand(nh))
+          command(new HandCommand(nh, state))
     {
     }
     HandState *state;
