@@ -17,7 +17,8 @@ public:
 
     // all args have to be in same coordinate system!
     float getEpsilon(std::vector<tf2::Transform> contact_frames_world,
-                     tf2::Vector3 object_com_world);
+                     tf2::Vector3 object_com_world,
+                     bool verbose = false);
 };
 
 #endif
