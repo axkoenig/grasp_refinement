@@ -18,8 +18,8 @@ class Space:
         self.vars = []
         self.dim = 0
 
-    def add_variable(self, var, num_instances):
-        self.vars.extend([var for i in range(num_instances)])
+    def add_variable(self, name, init_value, min_val, max_val, num_instances):
+        self.vars.extend([Variable(name, init_value, min_val, max_val) for i in range(num_instances)])
         self.dim = len(self.vars)
 
     def get_min_vals(self):
@@ -33,7 +33,6 @@ class Space:
         max_vals = np.empty((0,))
         for i in range(self.dim):
             max_vals = np.append(max_vals, self.vars[i].max_val)
-
         print("Max values of " + self.__class__.__name__ + f" are {max_vals}.")
         return max_vals
 
