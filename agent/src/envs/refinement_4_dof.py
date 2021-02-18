@@ -27,10 +27,10 @@ class ObservationSpace(Space):
         self.num_wrist_obj_dists = 3
         self.prox_angle_max = 3
 
-        self.add_variable("prox_angle", 0, 0, self.prox_angle_max, self.num_motors)
-        self.add_variable("dist_angle", 0, 0, 0.2 * self.prox_angle_max, self.num_fingers)
-        self.add_variable("contact_pressure", 0, 0, 5, self.num_contact_pressures)
-        self.add_variable("wrist_obj_dist", 0, 0, 0.2, self.num_wrist_obj_dists)
+        self.add_variable(self.num_motors, "prox_angle", 0, 0, self.prox_angle_max)
+        self.add_variable(self.num_fingers, "dist_angle", 0, 0, 0.2 * self.prox_angle_max)
+        self.add_variable(self.num_contact_pressures, "contact_pressure", 0, 0, 5)
+        self.add_variable(self.num_wrist_obj_dists, "wrist_obj_dist", 0, 0, 0.2)
 
 
 class ActionSpace(Space):
@@ -39,8 +39,8 @@ class ActionSpace(Space):
     def __init__(self):
         super().__init__()
 
-        self.add_variable("finger_incr", 0, deg2rad(-10), deg2rad(10), 3)
-        self.add_variable("dist_angle", 0, -0.03, 0.03, 1)
+        self.add_variable(3, "finger_incr", 0, deg2rad(-10), deg2rad(10))
+        self.add_variable(1, "wrist_z", 0, -0.03, 0.03)
 
 
 class GazeboEnv(gym.Env):

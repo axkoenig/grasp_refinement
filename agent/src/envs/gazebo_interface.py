@@ -29,3 +29,6 @@ class GazeboInterface:
         rospy.loginfo(f"{prefix}: Executing " + cmd_str + f" for {secs} secs.")
         rospy.sleep(secs)
         self.sim_pause()
+
+    def get_dist_tcp_obj(self):
+        pass

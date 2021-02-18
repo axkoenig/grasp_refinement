@@ -18,7 +18,7 @@ class Space:
         self.vars = []
         self.dim = 0
 
-    def add_variable(self, name, init_value, min_val, max_val, num_instances):
+    def add_variable(self, num_instances, name, init_value, min_val, max_val):
         self.vars.extend([Variable(name, init_value, min_val, max_val) for i in range(num_instances)])
         self.dim = len(self.vars)
 
