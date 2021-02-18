@@ -6,7 +6,7 @@ from std_msgs.msg import Float32
 from reflex_msgs.msg import PoseCommand, Hand
 
 from .helpers import rad2deg, deg2rad
-from .space import Space, Variable
+from .space import Space
 from .gazebo_interface import GazeboInterface
 
 # TODO clip observation_space if needed and alert (check if Gym does this by default)
@@ -20,15 +20,17 @@ class ObservationSpace(Space):
     def __init__(self):
         super().__init__()
 
-        self.prox_angle = Variable("prox_angle", 0, 0, 3)
-        self.dist_angle = Variable("dist_angle", 0, 0, 0.2 * self.prox_angle.max_val)  # as defined in finger_controller.cpp
-        self.contact_pressure = Variable("contact_pressure", 0, 0, 5)
-        self.wrist_obj_dist = Variable("wrist_obj_dist", 0, 0, 0.2)
+        self.num_fingers = 3
+        self.num_motors = 4
+        self.num_sensors = 9
+        self.num_contact_pressures = self.num_fingers * self.num_sensors
+        self.num_wrist_obj_dists = 3
+        self.prox_angle_max = 3
 
-        self.add_variable(self.prox_angle, 3)
-        self.add_variable(self.dist_angle, 3)
-        self.add_variable(self.contact_pressure, 27)
-        self.add_variable(self.wrist_obj_dist, 3)
+        self.add_variable("prox_angle", 0, 0, self.prox_angle_max, self.num_motors)
+        self.add_variable("dist_angle", 0, 0, 0.2 * self.prox_angle_max, self.num_fingers)
+        self.add_variable("contact_pressure", 0, 0, 5, self.num_contact_pressures)
+        self.add_variable("wrist_obj_dist", 0, 0, 0.2, self.num_wrist_obj_dists)
 
 
 class ActionSpace(Space):
@@ -37,11 +39,8 @@ class ActionSpace(Space):
     def __init__(self):
         super().__init__()
 
-        self.finger_incr = Variable("finger_incr", 0, deg2rad(-10), deg2rad(10))
-        self.wrist_z_incr = Variable("dist_angle", 0, -0.03, 0.03)
-
-        self.add_variable(self.finger_incr, 3)
-        self.add_variable(self.wrist_z_incr, 1)
+        self.add_variable("finger_incr", 0, deg2rad(-10), deg2rad(10), 3)
+        self.add_variable("dist_angle", 0, -0.03, 0.03, 1)
 
 
 class GazeboEnv(gym.Env):
@@ -56,11 +55,11 @@ class GazeboEnv(gym.Env):
 
         self.gazebo_interface = GazeboInterface()
         self.hand_cmd = PoseCommand()
-        self.actions = ActionSpace()
-        self.observations = ObservationSpace()
+        self.acts = ActionSpace()
+        self.obs = ObservationSpace()
 
-        self.action_space = gym.spaces.Box(low=self.actions.get_min_vals(), high=self.actions.get_max_vals(), dtype=np.float32)
-        self.observation_space = gym.spaces.Box(low=self.observations.get_min_vals(), high=self.observations.get_max_vals(), dtype=np.float32)
+        self.action_space = gym.spaces.Box(low=self.acts.get_min_vals(), high=self.acts.get_max_vals(), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=self.obs.get_min_vals(), high=self.obs.get_max_vals(), dtype=np.float32)
         self.reward_range = (-np.inf, np.inf)
 
         self.hand_pub = rospy.Publisher("reflex/pos_cmd", PoseCommand, queue_size=5)
@@ -72,9 +71,19 @@ class GazeboEnv(gym.Env):
         return [seed]
 
     def hand_callback(self, msg):
-        self.observations.vars[0].cur_val = msg.finger[0].proximal
-        self.observations.vars[1].cur_val = msg.finger[1].proximal
-        self.observations.vars[2].cur_val = msg.finger[2].proximal
+
+        for i in range(self.obs.num_fingers):
+            # joint pos 1 to 3 from magnetic encoders (more accurate than motor encoders)
+            self.obs.vars[i].cur_val = msg.finger[i].proximal
+            self.obs.vars[i + self.obs.num_motors].cur_val = msg.finger[i].distal_approx
+
+            for j in range(self.obs.num_sensors):
+                self.obs.vars[i + self.obs.num_motors + self.obs.num_fingers + j].cur_val = msg.finger[i].pressure[j]
+
+        # joint pos 4 from motor encoder (there is no magnetic encoder)
+        self.obs.vars[3].cur_val = msg.motor[3].joint_angle
+
+        # update wrist pose
 
     def step(self, action):
         self.hand_cmd.f1 = action[0]
@@ -95,7 +104,7 @@ class GazeboEnv(gym.Env):
         reward_msg = Float32(reward)
         self.reward_pub.publish(reward_msg)
 
-        prox_angles = self.observations.vars[:3]
+        prox_angles = self.obs.vars[:3]
         if not all(prox_angle.cur_val < self.joint_lim for prox_angle in prox_angles):
             done = True
             rospy.loginfo(f"One angle is above {self.joint_lim} rad. Setting done = True.")
@@ -103,7 +112,7 @@ class GazeboEnv(gym.Env):
             done = True
             rospy.loginfo(f"Episode lasted {self.max_ep_len} secs. Setting done = True.")
 
-        return self.observations.get_cur_vals(), reward, done, logs
+        return self.obs.get_cur_vals(True), reward, done, logs
 
     def reset(self):
         # opening hand
