@@ -19,6 +19,8 @@ def main(args):
         from envs.sanity_one_joint import GazeboEnv
     elif args.environment == "sanity_three_joints":
         from envs.sanity_three_joints import GazeboEnv
+    elif args.environment == "refinement_4_dof":
+        from envs.refinement_5_dof import GazeboEnv
     else:
         raise ValueError("Invalid environment name.")
 
@@ -54,7 +56,7 @@ def main(args):
 if __name__ == "__main__":
     parser = ArgumentParser("Trains an RL algorithm for autonomous grasping.")
 
-    parser.add_argument("--environment", type=str, default="sanity_one_joint", help="Environment to load.")
+    parser.add_argument("--environment", type=str, default="refinement_4_dof", help="Environment to load.")
     parser.add_argument("--train", type=int, default=1, help="Whether to train or evaluate the model.")
     parser.add_argument("--max_ep_len", type=float, default=8, help="Maximum episode length in secs sim time.")
     parser.add_argument("--joint_lim", type=float, default=2, help="End episode if joint limit reached.")
