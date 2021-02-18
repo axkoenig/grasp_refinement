@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class Variable:
     """Defines one action or observation variable."""
 
@@ -12,25 +13,34 @@ class Variable:
 
 class Space:
     """Parent class for observation and action class."""
+
     def __init__(self):
         self.vars = []
         self.dim = 0
 
-    def get_space_low(self):
-        space_low = np.empty((0,))
-        for i in range(self.dim):
-            space_low = np.append(space_low, self.vars[i].min_val)
-        print("Min values of " + self.__class__.__name__ + f" are {space_low}.")
-        return space_low
-
-    def get_space_high(self):
-        space_high = np.empty((0,))
-        for i in range(self.dim):
-            space_high = np.append(space_high, self.vars[i].max_val)
-
-        print("Max values of " + self.__class__.__name__ + f" is {space_high}.")
-        return space_high
-
     def add_variable(self, var, num_instances):
         self.vars.extend([var for i in range(num_instances)])
         self.dim = len(self.vars)
+
+    def get_min_vals(self):
+        min_vals = np.empty((0,))
+        for i in range(self.dim):
+            min_vals = np.append(min_vals, self.vars[i].min_val)
+        print("Min values of " + self.__class__.__name__ + f" are {min_vals}.")
+        return min_vals
+
+    def get_max_vals(self):
+        max_vals = np.empty((0,))
+        for i in range(self.dim):
+            max_vals = np.append(max_vals, self.vars[i].max_val)
+
+        print("Max values of " + self.__class__.__name__ + f" are {max_vals}.")
+        return max_vals
+
+    def get_cur_vals(self, verbose=False):
+        cur_vals = np.empty((0,))
+        for i in range(self.dim):
+            cur_vals = np.append(cur_vals, self.vars[i].cur_val)
+        if verbose:
+            print("Cur values of " + self.__class__.__name__ + f" is {cur_vals}.")
+        return cur_vals

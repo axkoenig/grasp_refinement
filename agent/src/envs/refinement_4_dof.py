@@ -59,8 +59,8 @@ class GazeboEnv(gym.Env):
         self.actions = ActionSpace()
         self.observations = ObservationSpace()
 
-        self.action_space = gym.spaces.Box(low=self.actions.get_space_low(), high=self.actions.get_space_high(), dtype=np.float32)
-        self.observation_space = gym.spaces.Box(low=self.observations.get_space_low(), high=self.observations.get_space_high(), dtype=np.float32)
+        self.action_space = gym.spaces.Box(low=self.actions.get_min_vals(), high=self.actions.get_max_vals(), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=self.observations.get_min_vals(), high=self.observations.get_max_vals(), dtype=np.float32)
         self.reward_range = (-np.inf, np.inf)
 
         self.hand_pub = rospy.Publisher("reflex/pos_cmd", PoseCommand, queue_size=5)
@@ -72,7 +72,6 @@ class GazeboEnv(gym.Env):
         return [seed]
 
     def hand_callback(self, msg):
-
         self.observations.vars[0].cur_val = msg.finger[0].proximal
         self.observations.vars[1].cur_val = msg.finger[1].proximal
         self.observations.vars[2].cur_val = msg.finger[2].proximal
@@ -87,11 +86,6 @@ class GazeboEnv(gym.Env):
         cmd_str = f"{self.hand_cmd.f1}, {self.hand_cmd.f2}, {self.hand_cmd.f3}"
         self.gazebo_interface.run_for_seconds("Step", self.exec_secs, cmd_str)
 
-        # obtain observations
-        obs = np.zeros(self.observation_space.shape)
-        for i in range(self.observations.dim): 
-            obs[i] = self.observations.vars[i].cur_val
-
         des_angle = 1
         reward = 0
         done = False
@@ -100,15 +94,16 @@ class GazeboEnv(gym.Env):
         # TODO update reward
         reward_msg = Float32(reward)
         self.reward_pub.publish(reward_msg)
-        
-        if obs[0] > self.joint_lim or obs[1] > self.joint_lim or obs[2] > self.joint_lim:
+
+        prox_angles = self.observations.vars[:3]
+        if not all(prox_angle.cur_val < self.joint_lim for prox_angle in prox_angles):
             done = True
             rospy.loginfo(f"One angle is above {self.joint_lim} rad. Setting done = True.")
         elif rospy.get_rostime().secs - self.last_reset_time.secs > self.max_ep_len:
             done = True
             rospy.loginfo(f"Episode lasted {self.max_ep_len} secs. Setting done = True.")
 
-        return obs, reward, done, logs
+        return self.observations.get_cur_vals(), reward, done, logs
 
     def reset(self):
         # opening hand
