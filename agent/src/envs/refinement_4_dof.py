@@ -3,11 +3,11 @@ import numpy as np
 
 import rospy
 from std_msgs.msg import Float32
-from std_srvs.srv import Empty
 from reflex_msgs.msg import PoseCommand, Hand
 
 from .helpers import rad2deg, deg2rad
 from .space import Space, Variable
+from .gazebo_interface import GazeboInterface
 
 # TODO clip observation_space if needed and alert (check if Gym does this by default)
 # TODO experiment stopping CONDITIONS end if object too further than max wrist obj distance away
@@ -25,7 +25,6 @@ class ObservationSpace(Space):
         self.contact_pressure = Variable("contact_pressure", 0, 0, 5)
         self.wrist_obj_dist = Variable("wrist_obj_dist", 0, 0, 0.2)
 
-        print(self.prox_angle.max_val)
         self.add_variable(self.prox_angle, 3)
         self.add_variable(self.dist_angle, 3)
         self.add_variable(self.contact_pressure, 27)
@@ -55,11 +54,7 @@ class GazeboEnv(gym.Env):
 
         rospy.init_node("agent", anonymous=True)
 
-        self.unpause_name = "/gazebo/unpause_physics"
-        self.pause_name = "/gazebo/pause_physics"
-        self.unpause = rospy.ServiceProxy(self.unpause_name, Empty)
-        self.pause = rospy.ServiceProxy(self.pause_name, Empty)
-
+        self.gazebo_interface = GazeboInterface()
         self.hand_cmd = PoseCommand()
         self.actions = ActionSpace()
         self.observations = ObservationSpace()
@@ -82,34 +77,15 @@ class GazeboEnv(gym.Env):
         self.observations.vars[1].cur_val = msg.finger[1].proximal
         self.observations.vars[2].cur_val = msg.finger[2].proximal
 
-    def sim_unpause(self):
-        rospy.wait_for_service(self.unpause_name)
-        try:
-            self.unpause()
-        except rospy.ServiceException as e:
-            rospy.loginfo(self.unpause_name + " service call failed")
-
-    def sim_pause(self):
-        rospy.wait_for_service(self.pause_name)
-        try:
-            self.pause()
-        except rospy.ServiceException as e:
-            rospy.loginfo(self.pause_name + " service call failed")
-
-    def execute_for_seconds(self, secs, prefix):
-        self.hand_pub.publish(self.hand_cmd)
-        self.sim_unpause()
-        rospy.loginfo(f"{prefix}: Executing {self.hand_cmd.f1}, {self.hand_cmd.f2}, {self.hand_cmd.f3} for {secs} secs.")
-        rospy.sleep(secs)
-        self.sim_pause()
-
     def step(self, action):
         self.hand_cmd.f1 = action[0]
         self.hand_cmd.f2 = action[1]
         self.hand_cmd.f3 = action[2]
 
-        # TODO add more actions here 
-        self.execute_for_seconds(self.exec_secs, "Step")
+        # TODO add more actions here
+        self.hand_pub.publish(self.hand_cmd)
+        cmd_str = f"{self.hand_cmd.f1}, {self.hand_cmd.f2}, {self.hand_cmd.f3}"
+        self.gazebo_interface.run_for_seconds("Step", self.exec_secs, cmd_str)
 
         # obtain observations
         obs = np.zeros(self.observation_space.shape)
@@ -139,7 +115,9 @@ class GazeboEnv(gym.Env):
         self.hand_cmd.f1 = 0
         self.hand_cmd.f2 = 0
         self.hand_cmd.f3 = 0
-        self.execute_for_seconds(1, "Reset")
+        self.hand_pub.publish(self.hand_cmd)
+        cmd_str = f"{self.hand_cmd.f1}, {self.hand_cmd.f2}, {self.hand_cmd.f3}"
+        self.gazebo_interface.run_for_seconds("Reset", 1, cmd_str)
 
         # reset vars
         obs = np.zeros(self.observation_space.shape)
