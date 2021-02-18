@@ -20,7 +20,7 @@ def main(args):
     elif args.environment == "sanity_three_joints":
         from envs.sanity_three_joints import GazeboEnv
     elif args.environment == "refinement_4_dof":
-        from envs.refinement_5_dof import GazeboEnv
+        from envs.refinement_4_dof import GazeboEnv
     else:
         raise ValueError("Invalid environment name.")
 
