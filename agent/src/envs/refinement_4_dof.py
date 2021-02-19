@@ -83,7 +83,11 @@ class GazeboEnv(gym.Env):
         # joint pos 4 from motor encoder (there is no magnetic encoder)
         self.obs.vars[3].cur_val = msg.motor[3].joint_angle
 
-        # update wrist pose
+        # last three variables are obj position in tcp frame
+        trans = self.gazebo_interface.get_trans_tcp_obj()
+        self.obs.vars[-3].cur_val = trans[0]
+        self.obs.vars[-2].cur_val = trans[1]
+        self.obs.vars[-1].cur_val = trans[2]
 
     def step(self, action):
         self.hand_cmd.f1 = action[0]
