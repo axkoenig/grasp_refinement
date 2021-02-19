@@ -25,6 +25,9 @@ class GazeboInterface:
         self.br = tf2_ros.TransformBroadcaster()
         self.ts_wrist = geometry_msgs.msg.TransformStamped()
 
+        # self.obj_init_t = 
+        # self.obj_init_q = 
+
     def sim_unpause(self):
         try:
             self.unpause()
@@ -43,7 +46,7 @@ class GazeboInterface:
         rospy.sleep(secs)
         self.sim_pause()
 
-    def tq_from_pose(self, pose, name, frame):
+    def tq_from_pose(self, pose, name, frame, verbose=True):
         t = [pose.position.x, pose.position.y, pose.position.z]
         q = [pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w]
         if self.verbose:
@@ -69,15 +72,20 @@ class GazeboInterface:
             rospy.loginfo(self.get_link_state_name + " service call failed with exception: " + e)
         return self.get_homo_matrix_from_msg(res.link_state.pose)
 
-    def get_dist_tcp_obj(self):
+    def get_trans_tcp_obj(self):
         mat_shell = self.get_link_pose("shell")
         mat_obj = self.get_model_pose(self.object_name)
    
         # add tcp offset to current shell transform
         mat_tcp = tf.transformations.translation_matrix([0.02, 0, 0.09228])
         mat_tcp = np.dot(mat_shell, mat_tcp)
-   
-        return np.linalg.norm(tf.transformations.translation_from_matrix(mat_tcp) - tf.transformations.translation_from_matrix(mat_obj))
+
+        # get transform from tcp to object
+        mat_tcp_to_obj = np.dot(tf.transformations.inverse_matrix(mat_tcp), mat_obj)
+        return tf.transformations.translation_from_matrix(mat_tcp_to_obj)
+
+    def get_dist_tcp_obj(self):
+        return np.linalg.norm(self.get_t_tcp_obj())
 
     def move_wrist_along_z(self, increment):
         mat_shell = self.get_link_pose("shell")
