@@ -33,6 +33,18 @@ float finger_scaling = 0.1;
 // format: {x, y, z, r, p ,y} in "reflex" frame
 std::array<float, 6> init_pose = {0, 0, 0.1, -M_PI / 2, 0, 0};
 
+tf2::Transform getTcpToWristFrame()
+{
+    float z_offset = -0.09228;
+    float x_offset = -0.02;
+
+    tf2::Transform translate_to_wrist = tf2::Transform();
+    translate_to_wrist.setIdentity();
+    translate_to_wrist.setOrigin(tf2::Vector3{x_offset, 0, z_offset});
+
+    return translate_to_wrist;
+}
+
 // keys for wrist teleoperation (note this is for my german keyboard)
 std::map<char, std::vector<float>> wrist_bindings{
 
@@ -134,9 +146,9 @@ int main(int argc, char **argv)
     geometry_msgs::TransformStamped ts;
     tf2::Transform transform;
 
-    // populate initial wrist transform
+    // populate initial wrist transform (we are controlling TCP)
     std::array<float, 6> cur_pose = init_pose;
-    transform = calcTransformFromEuler(init_pose);
+    transform = calcTransformFromEuler(init_pose) * getTcpToWristFrame();
     ts.header.frame_id = source_frame;
     ts.child_frame_id = target_frame;
     ts.transform = tf2::toMsg(transform);
@@ -179,7 +191,7 @@ int main(int argc, char **argv)
             ROS_INFO("Wrist transform reset.");
         }
 
-        transform = calcTransformFromEuler(cur_pose);
+        transform = calcTransformFromEuler(cur_pose) * getTcpToWristFrame();
         ts.header.stamp = ros::Time::now();
         ts.transform = tf2::toMsg(transform);
         br.sendTransform(ts);
