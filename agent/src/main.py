@@ -14,7 +14,7 @@ def main(args):
     log_path = os.path.join(args.output_dir, "logs", args.environment)
     model_path = os.path.join(args.output_dir, "models", args.environment, args.log_name)
 
-    # load environment
+    print("Loading environment...")
     if args.environment == "sanity_one_joint":
         from envs.sanity_one_joint import GazeboEnv
     elif args.environment == "sanity_three_joints":
@@ -24,7 +24,7 @@ def main(args):
     else:
         raise ValueError("Invalid environment name.")
 
-    # prepare model 
+    # prepare model
     env = GazeboEnv(args.exec_secs, args.max_ep_len, args.joint_lim)
     n_actions = env.action_space.shape[-1]
     action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
