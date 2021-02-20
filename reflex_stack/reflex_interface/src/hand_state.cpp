@@ -1,7 +1,9 @@
 #include <vector>
 #include <algorithm>
+#include <numeric>
 
 #include <std_msgs/Float64.h>
+#include <std_msgs/Int32.h>
 
 #include "gazebo_interface/gazebo_interface.hpp"
 #include "reflex_interface/hand_state.hpp"
@@ -13,6 +15,7 @@ HandState::HandState(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_d
     this->use_sim_data_hand = use_sim_data_hand;
     this->use_sim_data_obj = use_sim_data_obj;
     state_sub = nh->subscribe("reflex/hand_state", 1, &HandState::callback, this);
+    num_contacts_pub = nh->advertise<std_msgs::Int32>("reflex/num_contacts", 1);
     grasp_quality_pub = nh->advertise<std_msgs::Float64>("/reflex/grasp_quality", 1);
 
     num_sensors_in_contact_per_finger = {0, 0, 0};
@@ -68,7 +71,9 @@ void HandState::callback(const reflex_msgs::Hand &msg)
     use_sim_data_hand ? updateContactFramesWorldSim() : updateContactFramesWorldReal();
 
     std_msgs::Float64 quality_msg;
-
+    std_msgs::Int32 num_contacts;
+    num_contacts.data = std::accumulate(num_sensors_in_contact_per_finger.begin(), num_sensors_in_contact_per_finger.end(), 0);
+    
     if (use_sim_data_obj)
     {
         quality_msg.data = getGraspQuality();
@@ -80,7 +85,7 @@ void HandState::callback(const reflex_msgs::Hand &msg)
         // quality_msg.data = getGraspQuality(object_com_world)
         throw "Not implemented.";
     }
-
+    num_contacts_pub.publish(num_contacts);
     grasp_quality_pub.publish(quality_msg);
 }
 

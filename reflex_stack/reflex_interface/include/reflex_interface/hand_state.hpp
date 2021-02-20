@@ -16,6 +16,7 @@ public:
     ros::NodeHandle *nh;
     ros::Subscriber state_sub;
     ros::Publisher grasp_quality_pub;
+    ros::Publisher num_contacts_pub;
     FingerState *finger_states[3];
     GraspQuality grasp_quality = GraspQuality();
 
@@ -42,6 +43,7 @@ private:
     bool use_sim_data_obj;
     const int num_fingers = 3;
     const int num_motors = 4;
+    const int num_sensors_per_finger = 9;
     std::vector<tf2::Transform> contact_frames_world;
     std::vector<int> num_sensors_in_contact_per_finger; // example: two sensors in contact on finger 1 and one on finger 2: {2, 1, 0}
     std::vector<bool> fingers_in_contact;               // example: fingers 1 and 3 in contact: {1, 0, 1}
