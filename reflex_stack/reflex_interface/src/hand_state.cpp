@@ -16,7 +16,7 @@ HandState::HandState(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_d
     this->use_sim_data_obj = use_sim_data_obj;
     state_sub = nh->subscribe("reflex/hand_state", 1, &HandState::callback, this);
     num_contacts_pub = nh->advertise<std_msgs::Int32>("reflex/num_contacts", 1);
-    grasp_quality_pub = nh->advertise<std_msgs::Float64>("/reflex/grasp_quality", 1);
+    epsilon_pub = nh->advertise<std_msgs::Float64>("/reflex/epsilon", 1);
 
     num_sensors_in_contact_per_finger = {0, 0, 0};
     fingers_in_contact = {0, 0, 0};
@@ -70,23 +70,23 @@ void HandState::callback(const reflex_msgs::Hand &msg)
 
     use_sim_data_hand ? updateContactFramesWorldSim() : updateContactFramesWorldReal();
 
-    std_msgs::Float64 quality_msg;
+    std_msgs::Float64 epsilon_msg;
     std_msgs::Int32 num_contacts;
     num_contacts.data = std::accumulate(num_sensors_in_contact_per_finger.begin(), num_sensors_in_contact_per_finger.end(), 0);
     
     if (use_sim_data_obj)
     {
-        quality_msg.data = getGraspQuality();
+        epsilon_msg.data = getEpsilon();
     }
     else
     {
         // we could obtain center of mass from computer vision or manual estimates.
         // could listen to a ROS topic here to obtain object_com_world and then:
-        // quality_msg.data = getGraspQuality(object_com_world)
+        // epsilon_msg.data = getEpsilon(object_com_world)
         throw "Not implemented.";
     }
     num_contacts_pub.publish(num_contacts);
-    grasp_quality_pub.publish(quality_msg);
+    epsilon_pub.publish(epsilon_msg);
 }
 
 HandState::ContactState HandState::getContactState()
@@ -130,7 +130,7 @@ void HandState::updateContactFramesWorldReal()
     throw "Not implemented.";
 }
 
-float HandState::getGraspQuality()
+float HandState::getEpsilon()
 {
     std::string object_name;
     getParam(nh, &object_name, "object_name", false);
@@ -143,7 +143,7 @@ float HandState::getGraspQuality()
     return epsilon;
 }
 
-float HandState::getGraspQuality(tf2::Vector3 object_com_world)
+float HandState::getEpsilon(tf2::Vector3 object_com_world)
 {
     float epsilon = std::max(0.0f, grasp_quality.getEpsilon(contact_frames_world, object_com_world));
     return epsilon;
