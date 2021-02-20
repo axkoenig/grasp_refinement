@@ -5,7 +5,7 @@ import rospy
 from std_msgs.msg import Float32
 from reflex_msgs.msg import PoseCommand, Hand
 
-from .helpers import rad2deg, deg2rad
+from .helpers import rad2deg, deg2rad, get_homo_matrix_from_tq
 from .space import Space
 from .gazebo_interface import GazeboInterface
 
@@ -40,7 +40,7 @@ class ActionSpace(Space):
         super().__init__()
 
         self.add_variable(3, "finger_incr", 0, deg2rad(-10), deg2rad(10))
-        self.add_variable(1, "wrist_z", 0, -0.03, 0.03)
+        self.add_variable(1, "wrist_z_abs", 0, 0, 0.06)
 
 
 class GazeboEnv(gym.Env):
@@ -52,6 +52,15 @@ class GazeboEnv(gym.Env):
         self.epsilon_scaling = 10
 
         rospy.init_node("agent", anonymous=True)
+
+        self.wrist_init_pose = get_homo_matrix_from_tq(
+            [-0.04029641827077922, 0.1877200198173525, 0.08613854642685925],
+            [-0.7072138021849631, 2.9635822779245583e-05, 2.9644795664464442e-05, 0.7069997427453507],
+        )
+        self.obj_init_pose = get_homo_matrix_from_tq(
+            [-0.03029641827077922, 0.3857962704198499, 0.07269308204115527],
+            [0.08724778936721149, -0.1950795486820534, -0.026497115718354176, 0.9765396539798828],
+        )
 
         self.gazebo_interface = GazeboInterface()
         self.hand_cmd = PoseCommand()
@@ -90,21 +99,22 @@ class GazeboEnv(gym.Env):
         self.obs.vars[-1].cur_val = trans[2]
 
     def step(self, action):
-        self.hand_cmd.f1 = action[0]
-        self.hand_cmd.f2 = action[1]
-        self.hand_cmd.f3 = action[2]
 
-        # TODO add more actions here
+        # publish incoming actions
+        self.hand_cmd.f1 = self.obs.vars[0].cur_val + action[0]
+        self.hand_cmd.f2 = self.obs.vars[1].cur_val + action[1]
+        self.hand_cmd.f3 = self.obs.vars[2].cur_val + action[2]
+        self.hand_cmd.preshape = 1.570796
         self.hand_pub.publish(self.hand_cmd)
-        cmd_str = f"{self.hand_cmd.f1}, {self.hand_cmd.f2}, {self.hand_cmd.f3}"
+        self.gazebo_interface.move_wrist_along_z(action[3])
+
+        cmd_str = f"{self.hand_cmd.f1}, {self.hand_cmd.f2}, {self.hand_cmd.f3}, {action[3]}"
         self.gazebo_interface.run_for_seconds("Step", self.exec_secs, cmd_str)
 
-        des_angle = 1
         reward = 0
         done = False
         logs = {}
 
-        # TODO update reward
         reward_msg = Float32(reward)
         self.reward_pub.publish(reward_msg)
 
@@ -116,16 +126,10 @@ class GazeboEnv(gym.Env):
             done = True
             rospy.loginfo(f"Episode lasted {self.max_ep_len} secs. Setting done = True.")
 
-        return self.obs.get_cur_vals(True), reward, done, logs
+        return self.obs.get_cur_vals(), reward, done, logs
 
     def reset(self):
-        # opening hand
-        self.hand_cmd.f1 = 0
-        self.hand_cmd.f2 = 0
-        self.hand_cmd.f3 = 0
-        self.hand_pub.publish(self.hand_cmd)
-        cmd_str = f"{self.hand_cmd.f1}, {self.hand_cmd.f2}, {self.hand_cmd.f3}"
-        self.gazebo_interface.run_for_seconds("Reset", 1, cmd_str)
+        self.gazebo_interface.reset_world(self.wrist_init_pose, self.obj_init_pose)
 
         # reset vars
         obs = np.zeros(self.observation_space.shape)
