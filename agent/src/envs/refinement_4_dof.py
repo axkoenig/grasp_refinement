@@ -2,7 +2,7 @@ import gym
 import numpy as np
 
 import rospy
-from std_msgs.msg import Float32
+from std_msgs.msg import Float64, Int32
 from reflex_msgs.msg import PoseCommand, Hand
 
 from .helpers import rad2deg, deg2rad, get_homo_matrix_from_tq
@@ -72,12 +72,23 @@ class GazeboEnv(gym.Env):
         self.reward_range = (-np.inf, np.inf)
 
         self.hand_pub = rospy.Publisher("reflex/pos_cmd", PoseCommand, queue_size=5)
-        self.reward_pub = rospy.Publisher("agent/reward", Float32, queue_size=5)
+        self.reward_pub = rospy.Publisher("agent/reward", Float64, queue_size=5)
         self.hand_sub = rospy.Subscriber("reflex/hand_state", Hand, self.hand_callback, queue_size=5)
+        self.num_contacts_sub = rospy.Subscriber("reflex/num_contacts", Int32, self.num_contacts_callback, queue_size=5)
+        self.epsilon_sub = rospy.Subscriber("reflex/epsilon", Float64, self.epsilon_callback, queue_size=5)
+
+        self.num_contacts = 0
+        self.epsilon = 0
 
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)
         return [seed]
+
+    def num_contacts_callback(self, msg):
+        self.num_contacts = msg.data
+
+    def epsilon_callback(self, msg):
+        self.epsilon = msg.data
 
     def hand_callback(self, msg):
 
@@ -111,15 +122,17 @@ class GazeboEnv(gym.Env):
         cmd_str = f"{self.hand_cmd.f1}, {self.hand_cmd.f2}, {self.hand_cmd.f3}, {action[3]}"
         self.gazebo_interface.run_for_seconds("Step", self.exec_secs, cmd_str)
 
-        reward = 0
+        # want to maximise num_contacts, and minimize dist_tcp_obj
+        reward = self.num_contacts - 50 * self.gazebo_interface.get_dist_tcp_obj()
         done = False
+        
         logs = {}
 
-        reward_msg = Float32(reward)
+        reward_msg = Float64(reward)
         self.reward_pub.publish(reward_msg)
 
-        prox_angles = self.obs.vars[:3]
-        if not all(prox_angle.cur_val < self.joint_lim for prox_angle in prox_angles):
+        # check if should end episode
+        if not all(prox_angle.cur_val < self.joint_lim for prox_angle in self.obs.vars[:3]):
             done = True
             rospy.loginfo(f"One angle is above {self.joint_lim} rad. Setting done = True.")
         elif rospy.get_rostime().secs - self.last_reset_time.secs > self.max_ep_len:
