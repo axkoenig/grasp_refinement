@@ -45,7 +45,7 @@ class GazeboInterface:
         self.ts_wrist = geometry_msgs.msg.TransformStamped()
         self.br = tf2_ros.TransformBroadcaster()
         self.sim_unpause()
-        rospy.sleep(1) # broadcaster needs some time to start
+        rospy.sleep(1)  # broadcaster needs some time to start
 
     def sim_unpause(self):
         try:
@@ -74,11 +74,11 @@ class GazeboInterface:
         mat_q = tf.transformations.quaternion_matrix(q)
         return np.dot(mat_t, mat_q)
 
-    def get_object_pose(self): 
+    def get_object_pose(self):
         return self.get_measured_pose(self.mes_obj_buf, self.mes_obj_name)
 
-    def get_wrist_pose(self): 
-        return self.get_measured_pose(self.mes_wrist_buf, self.mes_wrist_name) 
+    def get_wrist_pose(self):
+        return self.get_measured_pose(self.mes_wrist_buf, self.mes_wrist_name)
 
     def get_measured_pose(self, buffer, name, frame="world"):
         try:

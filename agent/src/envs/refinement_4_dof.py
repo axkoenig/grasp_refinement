@@ -127,7 +127,7 @@ class GazeboEnv(gym.Env):
         reward = self.num_contacts - 100 * self.gazebo_interface.get_dist_tcp_obj()
         reward_msg = Float64(reward)
         self.reward_pub.publish(reward_msg)
-        
+
         done = False
         logs = {}
 
