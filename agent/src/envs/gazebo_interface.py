@@ -12,7 +12,6 @@ from .helpers import get_tq_from_homo_matrix
 
 class GazeboInterface:
     def __init__(self, verbose=False):
-
         self.verbose = verbose
 
         self.unpause_name = "/gazebo/unpause_physics"
@@ -34,13 +33,19 @@ class GazeboInterface:
         self.sph_open_hand = rospy.ServiceProxy("/reflex/spherical_open", Trigger)
         self.close_until_contact = rospy.ServiceProxy("/reflex/close_until_contact", Trigger)
 
+        # setup listener to measured wrist and object poses
+        self.mes_wrist_name = "reflex_interface/wrist_measured"
+        self.mes_wrist_buf = tf2_ros.Buffer()
+        self.mes_wrist_listener = tf2_ros.TransformListener(self.mes_wrist_buf)
+        self.mes_obj_name = "reflex_interface/obj_measured"
+        self.mes_obj_buf = tf2_ros.Buffer()
+        self.mes_obj_listener = tf2_ros.TransformListener(self.mes_obj_buf)
+
+        # setup broadcaster for desired wrist pose
         self.ts_wrist = geometry_msgs.msg.TransformStamped()
         self.br = tf2_ros.TransformBroadcaster()
-        self.wrist_init = tf.transformations.identity_matrix()
-
-        # TransformBroadcaster needs some time to start
         self.sim_unpause()
-        rospy.sleep(1)
+        rospy.sleep(1) # broadcaster needs some time to start
 
     def sim_unpause(self):
         try:
@@ -60,34 +65,31 @@ class GazeboInterface:
         rospy.sleep(secs)
         self.sim_pause()
 
-    def get_homo_matrix_from_msg(self, pose, name, frame):
-        t = [pose.position.x, pose.position.y, pose.position.z]
-        q = [pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w]
+    def get_homo_matrix_from_msg(self, transform, name, frame):
+        t = [transform.translation.x, transform.translation.y, transform.translation.z]
+        q = [transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w]
         if self.verbose:
             print("Pose of {} relative to {} frame is \n t={}, q={}".format(name, frame, t, q))
         mat_t = tf.transformations.translation_matrix(t)
         mat_q = tf.transformations.quaternion_matrix(q)
         return np.dot(mat_t, mat_q)
 
-    def get_model_pose(self, model, frame="world"):
-        rospy.wait_for_service(self.get_model_state_name)
-        try:
-            res = self.get_model_state(model, frame)
-        except rospy.ServiceException as e:
-            rospy.loginfo(self.get_model_state_name + " service call failed with exception: " + str(e))
-        return self.get_homo_matrix_from_msg(res.pose, model, frame)
+    def get_object_pose(self): 
+        return self.get_measured_pose(self.mes_obj_buf, self.mes_obj_name)
 
-    def get_link_pose(self, link, frame="world"):
-        rospy.wait_for_service(self.get_link_state_name)
+    def get_wrist_pose(self): 
+        return self.get_measured_pose(self.mes_wrist_buf, self.mes_wrist_name) 
+
+    def get_measured_pose(self, buffer, name, frame="world"):
         try:
-            res = self.get_link_state(link, frame)
-        except rospy.ServiceException as e:
-            rospy.loginfo(self.get_link_state_name + " service call failed with exception: " + str(e))
-        return self.get_homo_matrix_from_msg(res.link_state.pose, link, frame)
+            trans = buffer.lookup_transform(frame, name, rospy.Time())
+            return self.get_homo_matrix_from_msg(trans.transform, name, frame)
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
+            rospy.loginfo("Couldn't look up object pose. Exception: " + str(e))
 
     def get_trans_tcp_obj(self):
-        mat_shell = self.get_link_pose("shell")
-        mat_obj = self.get_model_pose(self.object_name)
+        mat_shell = self.get_wrist_pose()
+        mat_obj = self.get_object_pose()
 
         # add tcp offset to current shell transform
         mat_tcp = tf.transformations.translation_matrix([0.02, 0, 0.09228])
@@ -133,21 +135,19 @@ class GazeboInterface:
         self.ts_wrist.transform.rotation.w = q[3]
         self.br.sendTransform(self.ts_wrist)
 
-    def move_wrist_along_z(self, increment):
-        # relative to starting position
+    def move_wrist_along_z(self, origin_pose, increment):
         mat_incr = tf.transformations.translation_matrix([0, 0, increment])
-        mat_shell = np.dot(self.wrist_init, mat_incr)
+        mat_shell = np.dot(origin_pose, mat_incr)
         self.send_transform(mat_shell)
 
     def wait_until_reached_pose(self, pose, t_tol=0.02, q_tol=0.05):
         r = rospy.Rate(10)
         t, q = get_tq_from_homo_matrix(pose)
         while not rospy.is_shutdown():
-            mat_shell = self.get_link_pose("shell")
-            t_cur = tf.transformations.translation_from_matrix(mat_shell)
-            q_cur = tf.transformations.quaternion_from_matrix(mat_shell)
+            mat_shell = self.get_wrist_pose()
+            t_cur, q_cur = get_tq_from_homo_matrix(mat_shell)
             if np.linalg.norm(t_cur - t) > t_tol:
-                rospy.loginfo(f"Wrist position not within tolerance of {t_tol} yet.")
+                rospy.loginfo(f"Wrist position not within tolerance of {np.linalg.norm(t_cur - t)} yet.")
             elif np.linalg.norm(q_cur - q) > t_tol:
                 rospy.loginfo(f"Wrist orientation not within tolerance of {q_tol} yet.")
             else:
@@ -157,21 +157,21 @@ class GazeboInterface:
 
     def reset_world(self, mat_shell, mat_obj):
         self.unpause()
+
         res = self.open_hand(TriggerRequest())
+        rospy.sleep(0.5)
         rospy.loginfo("Opened reflex fingers: \n" + str(res))
 
         rospy.loginfo("Moving wrist to start position.")
         self.send_transform(mat_shell)
-        self.wrist_init = mat_shell
-        rospy.sleep(2)
-
-        # self.wait_until_reached_pose(mat_shell)
-
+        self.wait_until_reached_pose(mat_shell)
         self.set_model_pose(mat_obj, self.object_name)
 
         res = self.sph_open_hand(TriggerRequest())
-        rospy.loginfo("Spherical openend reflex fingers: \n" + str(res))
         rospy.sleep(0.5)
+        rospy.loginfo("Spherical openend reflex fingers: \n" + str(res))
+
         res = self.close_until_contact(TriggerRequest())
         rospy.loginfo("Closed reflex fingers until contact: \n" + str(res))
+        rospy.sleep(1)
         self.pause()
