@@ -17,15 +17,17 @@ def main(args):
     print("Loading environment...")
     if args.environment == "sanity_one_joint":
         from envs.sanity_one_joint import GazeboEnv
+        env = GazeboEnv(args.exec_secs, args.max_ep_len, args.joint_lim)
     elif args.environment == "sanity_three_joints":
         from envs.sanity_three_joints import GazeboEnv
+        env = GazeboEnv(args.exec_secs, args.max_ep_len, args.joint_lim)
     elif args.environment == "refinement_4_dof":
         from envs.refinement_4_dof import GazeboEnv
+        env = GazeboEnv(args.exec_secs, args.max_ep_len, args.joint_lim, args.obj_shift_tol)
     else:
         raise ValueError("Invalid environment name.")
 
     # prepare model
-    env = GazeboEnv(args.exec_secs, args.max_ep_len, args.joint_lim)
     n_actions = env.action_space.shape[-1]
     action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
     model = TD3(MlpPolicy, env, action_noise=action_noise, verbose=1, tensorboard_log=log_path)
@@ -61,6 +63,7 @@ if __name__ == "__main__":
     parser.add_argument("--max_ep_len", type=float, default=8, help="Maximum episode length in secs sim time.")
     parser.add_argument("--joint_lim", type=float, default=2, help="End episode if joint limit reached.")
     parser.add_argument("--exec_secs", type=float, default=0.3, help="How long to execute same command on hand.")
+    parser.add_argument("--obj_shift_tol", type=float, default=0.03, help="How far object is allowed to shift.")
     parser.add_argument("--time_steps", type=float, default=4000, help="How many time steps to train.")
     parser.add_argument("--log_name", type=str, default="test", help="Name for log.")
     parser.add_argument("--output_dir", type=str, default="./", help="Path of output directory.")
