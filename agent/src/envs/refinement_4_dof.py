@@ -5,12 +5,11 @@ import rospy
 from std_msgs.msg import Float64, Int32
 from reflex_msgs.msg import PoseCommand, Hand
 
-from .helpers import rad2deg, deg2rad, get_homo_matrix_from_tq
+from .helpers import rad2deg, deg2rad, get_homo_matrix_from_tq, get_tq_from_homo_matrix
 from .space import Space
 from .gazebo_interface import GazeboInterface
 
 # TODO clip observation_space if needed and alert (check if Gym does this by default)
-# TODO experiment stopping CONDITIONS end if object too further than max wrist obj distance away
 # TODO check what seed does
 
 
@@ -40,16 +39,17 @@ class ActionSpace(Space):
         super().__init__()
 
         self.add_variable(3, "finger_incr", 0, deg2rad(-10), deg2rad(10))
-        self.add_variable(1, "wrist_z_abs", 0, 0, 0.06)
+        self.add_variable(1, "wrist_z_abs", 0, 0, 0.08)
 
 
 class GazeboEnv(gym.Env):
-    def __init__(self, exec_secs, max_ep_len, joint_lim):
+    def __init__(self, exec_secs, max_ep_len, joint_lim, obj_shift_tol):
 
         self.exec_secs = exec_secs
         self.max_ep_len = max_ep_len
         self.joint_lim = joint_lim
         self.epsilon_scaling = 10
+        self.obj_shift_tol = obj_shift_tol
 
         rospy.init_node("agent", anonymous=True)
 
@@ -57,8 +57,9 @@ class GazeboEnv(gym.Env):
             [-0.04029641827077922, 0.1877200198173525, 0.08613854642685925],
             [-0.7072138021849631, 2.9635822779245583e-05, 2.9644795664464442e-05, 0.7069997427453507],
         )
+        self.t_obj_init = [-0.03029641827077922, 0.3857962704198499, 0.07269308204115527]
         self.obj_init_pose = get_homo_matrix_from_tq(
-            [-0.03029641827077922, 0.3857962704198499, 0.07269308204115527],
+            self.t_obj_init,
             [0.08724778936721149, -0.1950795486820534, -0.026497115718354176, 0.9765396539798828],
         )
 
@@ -117,22 +118,26 @@ class GazeboEnv(gym.Env):
         self.hand_cmd.f3 = self.obs.vars[2].cur_val + action[2]
         self.hand_cmd.preshape = 1.570796
         self.hand_pub.publish(self.hand_cmd)
-        self.gazebo_interface.move_wrist_along_z(action[3])
+        self.gazebo_interface.move_wrist_along_z(self.wrist_init_pose, action[3])
 
         cmd_str = f"{self.hand_cmd.f1}, {self.hand_cmd.f2}, {self.hand_cmd.f3}, {action[3]}"
         self.gazebo_interface.run_for_seconds("Step", self.exec_secs, cmd_str)
 
         # want to maximise num_contacts, and minimize dist_tcp_obj
-        reward = self.num_contacts - 50 * self.gazebo_interface.get_dist_tcp_obj()
-        done = False
-        
-        logs = {}
-
+        reward = self.num_contacts - 100 * self.gazebo_interface.get_dist_tcp_obj()
         reward_msg = Float64(reward)
         self.reward_pub.publish(reward_msg)
+        
+        done = False
+        logs = {}
+
+        t_obj, _ = get_tq_from_homo_matrix(self.gazebo_interface.get_object_pose())
 
         # check if should end episode
-        if not all(prox_angle.cur_val < self.joint_lim for prox_angle in self.obs.vars[:3]):
+        if np.linalg.norm(t_obj - self.t_obj_init) > self.obj_shift_tol:
+            done = True
+            rospy.loginfo(f"Object shift is above {self.obj_shift_tol} m. Setting done = True.")
+        elif not all(prox_angle.cur_val < self.joint_lim for prox_angle in self.obs.vars[:3]):
             done = True
             rospy.loginfo(f"One angle is above {self.joint_lim} rad. Setting done = True.")
         elif rospy.get_rostime().secs - self.last_reset_time.secs > self.max_ep_len:
