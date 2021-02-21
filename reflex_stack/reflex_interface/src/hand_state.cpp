@@ -4,6 +4,8 @@
 
 #include <std_msgs/Float64.h>
 #include <std_msgs/Int32.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <geometry_msgs/TransformStamped.h>
 
 #include "gazebo_interface/gazebo_interface.hpp"
 #include "reflex_interface/hand_state.hpp"
@@ -20,6 +22,8 @@ HandState::HandState(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_d
 
     num_sensors_in_contact_per_finger = {0, 0, 0};
     fingers_in_contact = {0, 0, 0};
+
+    getParam(nh, &object_name, "object_name", false);
 }
 
 bool HandState::allFingersInContact()
@@ -68,15 +72,27 @@ void HandState::callback(const reflex_msgs::Hand &msg)
         }
     }
 
-    use_sim_data_hand ? updateContactFramesWorldSim() : updateContactFramesWorldReal();
+    if (use_sim_data_hand)
+    {
+        updateContactFramesWorldSim();
+        tf2::Transform wrist_measured = getLinkPoseSim(nh, "shell", "world", false);
+        broadcastModelState(wrist_measured, "world", "reflex_interface/wrist_measured", &br_reflex_measured);
+    }
+    else
+    {
+        updateContactFramesWorldReal();
+        // measured wrist pose should be published by robot ROS driver!
+    }
 
     std_msgs::Float64 epsilon_msg;
     std_msgs::Int32 num_contacts;
     num_contacts.data = std::accumulate(num_sensors_in_contact_per_finger.begin(), num_sensors_in_contact_per_finger.end(), 0);
-    
+
     if (use_sim_data_obj)
     {
-        epsilon_msg.data = getEpsilon();
+        tf2::Transform obj_measured = getModelPoseSim(nh, object_name, "world", false);
+        broadcastModelState(obj_measured, "world", "reflex_interface/obj_measured", &br_obj_measured);
+        epsilon_msg.data = getEpsilon(obj_measured.getOrigin());
     }
     else
     {
@@ -87,6 +103,16 @@ void HandState::callback(const reflex_msgs::Hand &msg)
     }
     num_contacts_pub.publish(num_contacts);
     epsilon_pub.publish(epsilon_msg);
+}
+
+void HandState::broadcastModelState(tf2::Transform tf, std::string source_frame, std::string target_frame, tf2_ros::TransformBroadcaster *br)
+{
+    geometry_msgs::TransformStamped ts;
+    ts.header.frame_id = source_frame;
+    ts.child_frame_id = target_frame;
+    ts.header.stamp = ros::Time::now();
+    ts.transform = tf2::toMsg(tf);
+    br->sendTransform(ts);
 }
 
 HandState::ContactState HandState::getContactState()
@@ -130,21 +156,9 @@ void HandState::updateContactFramesWorldReal()
     throw "Not implemented.";
 }
 
-float HandState::getEpsilon()
-{
-    std::string object_name;
-    getParam(nh, &object_name, "object_name", false);
-
-    // assume com is object origin
-    tf2::Vector3 object_com_world = getModelPoseSim(nh, object_name, "world", false).getOrigin();
-
-    // if epsilon returns with -1 (error occured) we return 0.0 for grasp quality
-    float epsilon = std::max(0.0f, grasp_quality.getEpsilon(contact_frames_world, object_com_world));
-    return epsilon;
-}
-
 float HandState::getEpsilon(tf2::Vector3 object_com_world)
 {
+    // if epsilon returns with -1 (error occured) we return 0.0 for grasp quality
     float epsilon = std::max(0.0f, grasp_quality.getEpsilon(contact_frames_world, object_com_world));
     return epsilon;
 }

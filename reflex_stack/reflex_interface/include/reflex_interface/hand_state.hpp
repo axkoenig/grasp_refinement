@@ -5,6 +5,7 @@
 
 #include <ros/ros.h>
 #include <reflex_msgs/Hand.h>
+#include <tf2_ros/transform_broadcaster.h>
 
 #include "reflex_interface/finger_state.hpp"
 #include "reflex_interface/grasp_quality.hpp"
@@ -30,14 +31,14 @@ public:
     ContactState getContactState();
     int getNumFingersInContact();
     int getFingerIdSingleContact();
-    float getEpsilon();                              // use this to get object c.o.m. from simulation
-    float getEpsilon(tf2::Vector3 object_com_world); // use this if you can estimate the object c.o.m. from e.g. computer vision
+    float getEpsilon(tf2::Vector3 object_com_world);
     std::vector<tf2::Transform> getContactFramesWorld() { return contact_frames_world; };
     std::vector<int> getNumSensorsInContactPerFinger() { return num_sensors_in_contact_per_finger; };
     std::vector<bool> getFingersInContact() { return fingers_in_contact; };
     bool allFingersInContact();
 
 private:
+    std::string object_name;
     ContactState cur_state;
     bool use_sim_data_hand;
     bool use_sim_data_obj;
@@ -50,6 +51,9 @@ private:
     void callback(const reflex_msgs::Hand &msg);
     void updateContactFramesWorldSim();
     void updateContactFramesWorldReal();
+    void broadcastModelState(tf2::Transform tf, std::string source_frame, std::string target_frame, tf2_ros::TransformBroadcaster *br);
+    tf2_ros::TransformBroadcaster br_reflex_measured;
+    tf2_ros::TransformBroadcaster br_obj_measured;
 };
 
 #endif
