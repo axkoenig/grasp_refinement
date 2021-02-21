@@ -98,7 +98,7 @@ class GazeboInterface:
         return tf.transformations.translation_from_matrix(mat_tcp_to_obj)
 
     def get_dist_tcp_obj(self):
-        return np.linalg.norm(self.get_t_tcp_obj())
+        return np.linalg.norm(self.get_trans_tcp_obj())
 
     def set_model_pose(self, pose, model_name, reference_frame="world"):
         t, q = get_tq_from_homo_matrix(pose)
@@ -163,7 +163,7 @@ class GazeboInterface:
         rospy.loginfo("Moving wrist to start position.")
         self.send_transform(mat_shell)
         self.wrist_init = mat_shell
-        rospy.sleep(1)
+        rospy.sleep(2)
 
         # self.wait_until_reached_pose(mat_shell)
 
