@@ -4,6 +4,7 @@ import numpy as np
 import rospy
 from std_msgs.msg import Float64, Int32
 from reflex_msgs.msg import PoseCommand, Hand
+from stable_baselines3.common.callbacks import BaseCallback
 
 from .helpers import rad2deg, deg2rad, get_homo_matrix_from_tq, get_tq_from_homo_matrix
 from .space import Space
@@ -42,13 +43,36 @@ class ActionSpace(Space):
         self.add_variable(1, "wrist_z_abs", 0, 0, 0.08)
 
 
+class TensorboardCallback(BaseCallback):
+    def __init__(self, verbose=1):
+        super(TensorboardCallback, self).__init__(verbose)
+        self.cum_num_contacts = 0
+        self.cum_dist_tcp_obj = 0
+        self.cum_epsilon = 0
+
+    def _on_rollout_end(self) -> None:
+        self.logger.record("rollout/cum_num_contacts", self.cum_num_contacts)
+        self.logger.record("rollout/cum_dist_tcp_obj", self.cum_dist_tcp_obj)
+        self.logger.record("rollout/cum_epsilon", self.cum_epsilon)
+
+        # reset vars once recorded
+        self.cum_num_contacts = 0
+        self.cum_dist_tcp_obj = 0
+        self.cum_epsilon = 0
+    
+    def _on_step(self) -> bool:
+        self.cum_num_contacts += self.training_env.get_attr("num_contacts")[0]
+        self.cum_dist_tcp_obj += self.training_env.get_attr("dist_tcp_obj")[0]
+        self.cum_epsilon += self.training_env.get_attr("epsilon")[0]
+        return True
+
+
 class GazeboEnv(gym.Env):
     def __init__(self, exec_secs, max_ep_len, joint_lim, obj_shift_tol):
 
         self.exec_secs = exec_secs
         self.max_ep_len = max_ep_len
         self.joint_lim = joint_lim
-        self.epsilon_scaling = 10
         self.obj_shift_tol = obj_shift_tol
 
         rospy.init_node("agent", anonymous=True)
@@ -124,7 +148,8 @@ class GazeboEnv(gym.Env):
         self.gazebo_interface.run_for_seconds("Step", self.exec_secs, cmd_str)
 
         # want to maximise num_contacts, and minimize dist_tcp_obj
-        reward = self.num_contacts - 100 * self.gazebo_interface.get_dist_tcp_obj()
+        self.dist_tcp_obj = self.gazebo_interface.get_dist_tcp_obj()
+        reward = self.num_contacts - 200 * self.dist_tcp_obj
         reward_msg = Float64(reward)
         self.reward_pub.publish(reward_msg)
 
