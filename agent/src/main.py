@@ -7,7 +7,7 @@ import gym
 from stable_baselines3 import TD3
 from stable_baselines3.td3.policies import MlpPolicy
 from stable_baselines3.common.noise import NormalActionNoise
-
+from stable_baselines3.common.callbacks import CheckpointCallback
 
 def main(args):
 
@@ -15,14 +15,8 @@ def main(args):
     model_path = os.path.join(args.output_dir, "models", args.environment, args.log_name)
 
     print("Loading environment...")
-    if args.environment == "sanity_one_joint":
-        from envs.sanity_one_joint import GazeboEnv
-        env = GazeboEnv(args.exec_secs, args.max_ep_len, args.joint_lim)
-    elif args.environment == "sanity_three_joints":
-        from envs.sanity_three_joints import GazeboEnv
-        env = GazeboEnv(args.exec_secs, args.max_ep_len, args.joint_lim)
-    elif args.environment == "refinement_4_dof":
-        from envs.refinement_4_dof import GazeboEnv
+    if args.environment == "refinement_4_dof":
+        from envs.refinement_4_dof import GazeboEnv, TensorboardCallback
         env = GazeboEnv(args.exec_secs, args.max_ep_len, args.joint_lim, args.obj_shift_tol)
     else:
         raise ValueError("Invalid environment name.")
@@ -31,10 +25,14 @@ def main(args):
     n_actions = env.action_space.shape[-1]
     action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
     model = TD3(MlpPolicy, env, action_noise=action_noise, verbose=1, tensorboard_log=log_path)
-
+    
     if args.train:
+
+        checkpoint_callback = CheckpointCallback(save_freq=args.chkpt_freq, save_path=model_path, name_prefix="chkpt")
+        rewards_callback = TensorboardCallback()
+
         print("Training model...")
-        model.learn(total_timesteps=args.time_steps, tb_log_name=args.log_name)
+        model.learn(total_timesteps=args.time_steps, tb_log_name=args.log_name, callback=[checkpoint_callback, rewards_callback])
         model.save(model_path)
         print("Saved model under: " + model_path)
 
@@ -67,6 +65,7 @@ if __name__ == "__main__":
     parser.add_argument("--time_steps", type=float, default=4000, help="How many time steps to train.")
     parser.add_argument("--log_name", type=str, default="test", help="Name for log.")
     parser.add_argument("--output_dir", type=str, default="./", help="Path of output directory.")
+    parser.add_argument("--chkpt_freq", type=int, default=1000, help="Save model every n training steps.")
 
     args = parser.parse_args()
 
