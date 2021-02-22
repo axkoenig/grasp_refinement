@@ -141,13 +141,13 @@ class GazeboInterface:
         self.send_transform(mat_shell)
 
     def wait_until_reached_pose(self, pose, t_tol=0.02, q_tol=0.05):
-        r = rospy.Rate(10)
+        r = rospy.Rate(5)
         t, q = get_tq_from_homo_matrix(pose)
         while not rospy.is_shutdown():
             mat_shell = self.get_wrist_pose()
             t_cur, q_cur = get_tq_from_homo_matrix(mat_shell)
             if np.linalg.norm(t_cur - t) > t_tol:
-                rospy.loginfo(f"Wrist position not within tolerance of {np.linalg.norm(t_cur - t)} yet.")
+                rospy.loginfo(f"Wrist position not within tolerance of {t_tol} yet.")
             elif np.linalg.norm(q_cur - q) > t_tol:
                 rospy.loginfo(f"Wrist orientation not within tolerance of {q_tol} yet.")
             else:
@@ -156,7 +156,7 @@ class GazeboInterface:
             r.sleep()
 
     def reset_world(self, mat_shell, mat_obj):
-        self.unpause()
+        self.sim_unpause()
 
         res = self.open_hand(TriggerRequest())
         rospy.sleep(0.5)
@@ -174,4 +174,4 @@ class GazeboInterface:
         res = self.close_until_contact(TriggerRequest())
         rospy.loginfo("Closed reflex fingers until contact: \n" + str(res))
         rospy.sleep(1)
-        self.pause()
+        self.sim_pause()
