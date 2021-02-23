@@ -30,7 +30,7 @@ class ObservationSpace(Space):
         self.add_variable(self.num_motors, "prox_angle", 0, 0, self.prox_angle_max)
         self.add_variable(self.num_fingers, "dist_angle", 0, 0, 0.2 * self.prox_angle_max)
         self.add_variable(self.num_contact_pressures, "contact_pressure", 0, 0, 5)
-        self.add_variable(self.num_wrist_obj_dists, "wrist_obj_dist", 0, 0, 0.2)
+        self.add_variable(self.num_wrist_obj_dists, "wrist_obj_dist", 0, 0, 0.15)
 
 
 class ActionSpace(Space):
@@ -49,21 +49,25 @@ class TensorboardCallback(BaseCallback):
         self.cum_num_contacts = 0
         self.cum_dist_tcp_obj = 0
         self.cum_epsilon = 0
+        self.cum_obj_shift = 0
 
     def _on_rollout_end(self) -> None:
         self.logger.record("rollout/cum_num_contacts", self.cum_num_contacts)
         self.logger.record("rollout/cum_dist_tcp_obj", self.cum_dist_tcp_obj)
         self.logger.record("rollout/cum_epsilon", self.cum_epsilon)
+        self.logger.record("rollout/cum_obj_shift", self.cum_obj_shift)
 
         # reset vars once recorded
         self.cum_num_contacts = 0
         self.cum_dist_tcp_obj = 0
         self.cum_epsilon = 0
+        self.cum_obj_shift = 0
     
     def _on_step(self) -> bool:
         self.cum_num_contacts += self.training_env.get_attr("num_contacts")[0]
         self.cum_dist_tcp_obj += self.training_env.get_attr("dist_tcp_obj")[0]
         self.cum_epsilon += self.training_env.get_attr("epsilon")[0]
+        self.cum_obj_shift += self.training_env.get_attr("obj_shift")[0]
         return True
 
 
@@ -148,18 +152,18 @@ class GazeboEnv(gym.Env):
         self.gazebo_interface.run_for_seconds("Step", self.exec_secs, cmd_str)
 
         # want to maximise num_contacts, and minimize dist_tcp_obj
+        t_obj, _ = get_tq_from_homo_matrix(self.gazebo_interface.get_object_pose())
+        self.obj_shift = np.linalg.norm(t_obj - self.t_obj_init)
         self.dist_tcp_obj = self.gazebo_interface.get_dist_tcp_obj()
-        reward = self.num_contacts - 200 * self.dist_tcp_obj
+        reward = self.num_contacts - 200 * self.dist_tcp_obj - 300 * self.obj_shift
         reward_msg = Float64(reward)
         self.reward_pub.publish(reward_msg)
 
         done = False
         logs = {}
 
-        t_obj, _ = get_tq_from_homo_matrix(self.gazebo_interface.get_object_pose())
-
         # check if should end episode
-        if np.linalg.norm(t_obj - self.t_obj_init) > self.obj_shift_tol:
+        if  self.obj_shift > self.obj_shift_tol:
             done = True
             rospy.loginfo(f"Object shift is above {self.obj_shift_tol} m. Setting done = True.")
         elif not all(prox_angle.cur_val < self.joint_lim for prox_angle in self.obs.vars[:3]):
@@ -169,7 +173,7 @@ class GazeboEnv(gym.Env):
             done = True
             rospy.loginfo(f"Episode lasted {self.max_ep_len} secs. Setting done = True.")
 
-        return self.obs.get_cur_vals(), reward, done, logs
+        return self.obs.get_cur_vals(True), reward, done, logs
 
     def reset(self):
         self.gazebo_interface.reset_world(self.wrist_init_pose, self.obj_init_pose)
