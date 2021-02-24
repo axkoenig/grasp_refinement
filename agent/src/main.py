@@ -12,7 +12,8 @@ from stable_baselines3.common.callbacks import CheckpointCallback
 def main(args):
 
     log_path = os.path.join(args.output_dir, "logs", args.environment)
-    model_path = os.path.join(args.output_dir, "models", args.environment, args.log_name)
+    ckpt_path =  os.path.join(args.output_dir, "models", args.environment, args.log_name)
+    model_path = os.path.join(ckpt_path, "final_model")
 
     print("Loading environment...")
     if args.environment == "refinement_4_dof":
@@ -28,7 +29,7 @@ def main(args):
     
     if args.train:
 
-        checkpoint_callback = CheckpointCallback(save_freq=args.chkpt_freq, save_path=model_path, name_prefix="chkpt")
+        checkpoint_callback = CheckpointCallback(save_freq=args.chkpt_freq, save_path=ckpt_path, name_prefix="chkpt")
         rewards_callback = TensorboardCallback()
 
         print("Training model...")
