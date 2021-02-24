@@ -135,10 +135,20 @@ class GazeboInterface:
         self.ts_wrist.transform.rotation.w = q[3]
         self.br.sendTransform(self.ts_wrist)
 
-    def move_wrist_along_z(self, origin_pose, increment):
-        mat_incr = tf.transformations.translation_matrix([0, 0, increment])
-        mat_shell = np.dot(origin_pose, mat_incr)
+    def cmd_wrist_z_abs(self, origin_pose, origin_offset):
+        mat_offset = tf.transformations.translation_matrix([0, 0, origin_offset])
+        mat_shell = np.dot(origin_pose, mat_offset)
         self.send_transform(mat_shell)
+
+    def cmd_wrist_pos_abs(self, origin_pose, origin_offset):
+        mat_offset = tf.transformations.translation_matrix(origin_offset)
+        mat_shell = np.dot(origin_pose, mat_offset)
+        self.send_transform(mat_shell)
+
+    def cmd_wrist_pos_incr(self, increment):
+        mat_increment = tf.transformations.translation_matrix(increment)
+        self.last_wrist_pose = np.dot(self.last_wrist_pose, mat_increment)
+        self.send_transform(self.last_wrist_pose)
 
     def wait_until_reached_pose(self, pose, t_tol=0.02, q_tol=0.05):
         r = rospy.Rate(5)
@@ -163,6 +173,7 @@ class GazeboInterface:
         rospy.loginfo("Opened reflex fingers: \n" + str(res))
 
         rospy.loginfo("Moving wrist to start position.")
+        self.last_wrist_pose = mat_shell
         self.send_transform(mat_shell)
         self.wait_until_reached_pose(mat_shell)
         self.set_model_pose(mat_obj, self.object_name)
