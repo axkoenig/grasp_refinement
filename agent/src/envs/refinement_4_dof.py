@@ -34,14 +34,16 @@ class ObservationSpace(Space):
 
 
 class ActionSpace(Space):
-    """Defines action space"""
+    """Defines action space."""
 
     def __init__(self):
         super().__init__()
 
         self.add_variable(3, "finger_incr", 0, deg2rad(-10), deg2rad(10))
-        self.add_variable(1, "wrist_z_abs", 0, 0, 0.08)
-
+        self.add_variable(1, "wrist_x_abs", 0, -0.02, 0.02)
+        self.add_variable(1, "wrist_y_abs", 0, -0.02, 0.02)
+        self.add_variable(1, "wrist_z_abs", 0, 0, 0.04)
+        
 
 class TensorboardCallback(BaseCallback):
     def __init__(self, verbose=1):
@@ -64,10 +66,20 @@ class TensorboardCallback(BaseCallback):
         self.cum_obj_shift = 0
     
     def _on_step(self) -> bool:
-        self.cum_num_contacts += self.training_env.get_attr("num_contacts")[0]
-        self.cum_dist_tcp_obj += self.training_env.get_attr("dist_tcp_obj")[0]
-        self.cum_epsilon += self.training_env.get_attr("epsilon")[0]
-        self.cum_obj_shift += self.training_env.get_attr("obj_shift")[0]
+        self.cur_num_contacts = self.training_env.get_attr("num_contacts")[0]
+        self.cur_dist_tcp_obj = self.training_env.get_attr("dist_tcp_obj")[0]
+        self.cur_epsilon = self.training_env.get_attr("epsilon")[0]
+        self.cur_obj_shift = self.training_env.get_attr("obj_shift")[0]
+
+        self.logger.record("step/cur_num_contacts", self.cur_num_contacts)
+        self.logger.record("step/cur_dist_tcp_obj", self.cur_dist_tcp_obj)
+        self.logger.record("step/cur_epsilon", self.cur_epsilon)
+        self.logger.record("step/cur_obj_shift", self.cur_obj_shift)
+
+        self.cum_num_contacts += self.cur_num_contacts
+        self.cum_dist_tcp_obj += self.cur_dist_tcp_obj
+        self.cum_epsilon += self.cur_epsilon
+        self.cum_obj_shift += self.cur_obj_shift
         return True
 
 
@@ -146,7 +158,7 @@ class GazeboEnv(gym.Env):
         self.hand_cmd.f3 = self.obs.vars[2].cur_val + action[2]
         self.hand_cmd.preshape = 1.570796
         self.hand_pub.publish(self.hand_cmd)
-        self.gazebo_interface.move_wrist_along_z(self.wrist_init_pose, action[3])
+        self.gazebo_interface.cmd_wrist_pos_abs(self.wrist_init_pose, [action[3], action[4], action[5]])
 
         cmd_str = f"{self.hand_cmd.f1}, {self.hand_cmd.f2}, {self.hand_cmd.f3}, {action[3]}"
         self.gazebo_interface.run_for_seconds("Step", self.exec_secs, cmd_str)
@@ -155,7 +167,7 @@ class GazeboEnv(gym.Env):
         t_obj, _ = get_tq_from_homo_matrix(self.gazebo_interface.get_object_pose())
         self.obj_shift = np.linalg.norm(t_obj - self.t_obj_init)
         self.dist_tcp_obj = self.gazebo_interface.get_dist_tcp_obj()
-        reward = self.num_contacts - 200 * self.dist_tcp_obj - 300 * self.obj_shift
+        reward = self.num_contacts
         reward_msg = Float64(reward)
         self.reward_pub.publish(reward_msg)
 
