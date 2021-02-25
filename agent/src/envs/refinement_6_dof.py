@@ -10,9 +10,6 @@ from .helpers import rad2deg, deg2rad, get_homo_matrix_from_tq, get_tq_from_homo
 from .space import Space
 from .gazebo_interface import GazeboInterface
 
-# TODO clip observation_space if needed and alert (check if Gym does this by default)
-# TODO check what seed does
-
 
 class ObservationSpace(Space):
     """Defines observation space."""
@@ -158,7 +155,7 @@ class GazeboEnv(gym.Env):
         self.hand_cmd.f3 = self.obs.vars[2].cur_val + action[2]
         self.hand_cmd.preshape = 1.570796
         self.hand_pub.publish(self.hand_cmd)
-        self.gazebo_interface.cmd_wrist_pos_abs(self.wrist_init_pose, [action[3], action[4], action[5]])
+        # self.gazebo_interface.cmd_wrist_pos_abs(self.wrist_init_pose, [action[3], action[4], action[5]])
 
         cmd_str = f"{self.hand_cmd.f1}, {self.hand_cmd.f2}, {self.hand_cmd.f3}, {action[3]}"
         self.gazebo_interface.run_for_seconds("Step", self.exec_secs, cmd_str)
