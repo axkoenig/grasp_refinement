@@ -172,6 +172,11 @@ class GazeboInterface:
         rospy.sleep(0.5)
         rospy.loginfo("Opened reflex fingers: \n" + str(res))
 
+        rospy.loginfo("Moving object safe distance away s.t. hand can reset.")
+        large_disp = tf.transformations.translation_matrix([0,1,0])
+        large_mat = np.dot(mat_obj, large_disp)
+        self.set_model_pose(large_mat, self.object_name)
+
         rospy.loginfo("Moving wrist to start position.")
         self.last_wrist_pose = mat_shell
         self.send_transform(mat_shell)
