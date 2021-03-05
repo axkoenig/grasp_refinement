@@ -2,7 +2,10 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="reflex">
 
   <xacro:arg name="actuate_reflex" default="true"/>
-  <xacro:arg name="use_reflex_contact_sensors" default="true"/>
+  <xacro:arg name="use_reflex_contact_sensors" default="false"/>
+
+  <!-- removes all unnecessary collision meshes for grasping and turns necessary ones into boxes -->
+  <xacro:arg name="simplify_collisions" default="false"/>
 
   <!-- Switch joint type for actuated joints depending on if they are being used for control -->
   <xacro:if value="$(arg actuate_reflex)">
@@ -68,12 +71,14 @@
         <mass value="${flex_link_mass}"/>
         <xacro:cuboid_inertia m="${flex_link_mass}" x="${flex_link_box_x}" y="${flex_link_box_y}" z="${flex_link_box_z}"/>
       </inertial>
-      <collision>
-        <origin xyz="${flex_link_box_x/2} 0 ${flex_link_box_z/2}" rpy="0 0 0"/>
-        <geometry>
-          <box size="${flex_link_box_x} ${flex_link_box_y} ${flex_link_box_z}"/>
-        </geometry>
-      </collision>
+      <xacro:unless value="$(arg simplify_collisions)">
+        <collision>
+          <origin xyz="${flex_link_box_x/2} 0 ${flex_link_box_z/2}" rpy="0 0 0"/>
+          <geometry>
+            <box size="${flex_link_box_x} ${flex_link_box_y} ${flex_link_box_z}"/>
+          </geometry>
+        </collision>
+      </xacro:unless>
     </link>
   </xacro:macro>
 
@@ -96,12 +101,14 @@
         <mass value="${proximal_link_mass}"/>
         <xacro:cuboid_inertia m="${proximal_link_mass}" x="${proximal_link_box_x}" y="${proximal_link_box_y}" z="${proximal_link_box_z}"/>
       </inertial>
-      <collision>
-        <origin xyz="-0.011 0.007 0.011" rpy="${pi} 0 0"/>
-        <geometry>
-          <mesh filename="${mesh_path}/proximal_coll.STL"/>
-        </geometry>
-      </collision>
+      <xacro:unless value="$(arg simplify_collisions)">
+        <collision>
+          <origin xyz="-0.011 0.007 0.011" rpy="${pi} 0 0"/>
+          <geometry>
+            <mesh filename="${mesh_path}/proximal_coll.STL"/>
+          </geometry>
+        </collision>
+      </xacro:unless>
     </link>
   </xacro:macro>
 
@@ -124,18 +131,20 @@
         <mass value="${distal_link_mass}"/>
         <xacro:cuboid_inertia m="${distal_link_mass}" x="${distal_link_box_x}" y="${distal_link_box_y}" z="${distal_link_box_z}"/>
       </inertial>
-      <collision>
-        <origin xyz="${-0.077-flex_link_box_x/2} 0.007 ${0.007+flex_link_box_z/2}" rpy="${pi} 0 0"/>
-        <geometry>
-          <mesh filename="${mesh_path}/distal_coll.STL"/>
-        </geometry>
-      </collision>
+      <xacro:unless value="$(arg simplify_collisions)">
+        <collision>
+          <origin xyz="${-0.077-flex_link_box_x/2} 0.007 ${0.007+flex_link_box_z/2}" rpy="${pi} 0 0"/>
+          <geometry>
+            <mesh filename="${mesh_path}/distal_coll.STL"/>
+          </geometry>
+        </collision>
+      </xacro:unless>
     </link>
   </xacro:macro>
 
   <xacro:property name="proximal_pad_box_x" value="0.016"/>
   <xacro:property name="proximal_pad_box_y" value="0.020"/>
-  <xacro:property name="proximal_pad_box_z" value="0.05"/>
+  <xacro:property name="proximal_pad_box_z" value="0.052"/>
 
   <xacro:macro name="proximal_pad" params="finger_id">
     <link name="proximal_${finger_id}_pad">
@@ -152,17 +161,25 @@
         <xacro:cuboid_inertia m="${proximal_pad_mass}" x="${proximal_pad_box_x}" y="${proximal_pad_box_y}" z="${proximal_pad_box_z}"/>
       </inertial>
       <collision>
-        <origin xyz="-0.008 0.014 -0.002" rpy="${pi/2} ${pi/2} 0"/>
-        <geometry>
-          <mesh filename="${mesh_path}/proximal_pad_coll.STL"/>
-        </geometry>
+        <xacro:unless value="$(arg simplify_collisions)">
+          <origin xyz="-0.008 0.014 -0.002" rpy="${pi/2} ${pi/2} 0"/>
+          <geometry>
+            <mesh filename="${mesh_path}/proximal_pad_coll.STL"/>
+          </geometry>
+        </xacro:unless>
+        <xacro:if value="$(arg simplify_collisions)">
+          <origin xyz="0 0.004 -0.035" rpy="0 0 0"/>
+          <geometry>
+            <box size="${proximal_pad_box_x} ${proximal_pad_box_y} ${proximal_pad_box_z}"/>
+          </geometry>
+        </xacro:if>
       </collision>
     </link>
   </xacro:macro>
 
   <xacro:property name="distal_pad_box_x" value="${proximal_pad_box_x}"/>
   <xacro:property name="distal_pad_box_y" value="0.018"/>
-  <xacro:property name="distal_pad_box_z" value="0.037"/>
+  <xacro:property name="distal_pad_box_z" value="0.0385"/>
 
   <xacro:macro name="distal_pad" params="finger_id">
     <link name="distal_${finger_id}_pad">
@@ -180,10 +197,18 @@
         <xacro:cuboid_inertia m="${distal_pad_mass}" x="${distal_pad_box_x}" y="${distal_pad_box_y}" z="${distal_pad_box_z}"/>
       </inertial>
       <collision>
-        <origin xyz="-0.009 0.0155 0.076" rpy="${pi/2} ${pi/2} 0"/>
-        <geometry>
-          <mesh filename="${mesh_path}/distal_pad_coll.STL"/>
-        </geometry>
+        <xacro:unless value="$(arg simplify_collisions)">
+          <origin xyz="-0.008 0.0155 0.076" rpy="${pi/2} ${pi/2} 0"/>
+          <geometry>
+            <mesh filename="${mesh_path}/distal_pad_coll.STL"/>
+          </geometry>
+        </xacro:unless>
+        <xacro:if value="$(arg simplify_collisions)">
+          <origin xyz="0 ${distal_pad_box_y/2-0.002} ${-distal_pad_box_z/2+0.0005}" rpy="0 0 0"/>
+          <geometry>
+            <box size="${distal_pad_box_x} ${distal_pad_box_y} ${distal_pad_box_z}"/>
+          </geometry>
+        </xacro:if>
       </collision>
     </link>
   </xacro:macro>
@@ -207,12 +232,14 @@
         <mass value="${swivel_link_mass}"/>
         <xacro:cuboid_inertia m="${swivel_link_mass}" x="${swivel_box_x}" y="${swivel_box_y}" z="${swivel_box_z}"/>
       </inertial>
-      <collision>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
-        <geometry>
-          <mesh filename="${mesh_path}/swivel_${finger_id}_coll.STL"/>
-        </geometry>
-      </collision>
+      <xacro:unless value="$(arg simplify_collisions)">
+        <collision>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="${mesh_path}/swivel_${finger_id}_coll.STL"/>
+          </geometry>
+        </collision>
+      </xacro:unless>
     </link>
   </xacro:macro>
 
@@ -236,17 +263,20 @@
         <mass value="${shell_mass}"/>
         <xacro:cuboid_inertia m="${shell_mass}" x="${shell_box_x}" y="${shell_box_y}" z="${shell_box_z}"/>
       </inertial>
-      <collision>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
-        <geometry>
-          <mesh filename="${mesh_path}/base_link_coll.STL"/>
-        </geometry>
-      </collision>
+      <xacro:unless value="$(arg simplify_collisions)">
+        <collision>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="${mesh_path}/base_link_coll.STL"/>
+          </geometry>
+        </collision>
+      </xacro:unless>
     </link>
   </xacro:macro>
 
   <!-- y, z measurements we take from the shell -->
   <xacro:property name="pad_box_y" value="0.022"/>
+  <xacro:property name="pad_x_offset" value="0.005"/>
 
   <xacro:macro name="pad_link">
     <link name="pad">
@@ -258,15 +288,23 @@
         <material name="dark_grey"/>
       </visual>
       <inertial>
-        <origin xyz="0 ${pad_box_y/2} ${shell_x_offset}" rpy="0 0 0"/>
+        <origin xyz="0 ${pad_box_y/2} ${pad_x_offset}" rpy="0 0 0"/>
         <mass value="${pad_mass}"/>
         <xacro:cuboid_inertia m="${pad_mass}" x="${shell_box_y}" y="${pad_box_y}" z="${shell_box_x}"/>
       </inertial>
       <collision>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
-        <geometry>
-          <mesh filename="${mesh_path}/pad_coll.STL"/>
-        </geometry>
+        <xacro:unless value="$(arg simplify_collisions)">
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <geometry>
+            <mesh filename="${mesh_path}/pad_coll.STL"/>
+          </geometry>
+        </xacro:unless>
+        <xacro:if value="$(arg simplify_collisions)">
+          <origin xyz="0 ${pad_box_y/2} ${pad_x_offset}" rpy="0 0 0"/>
+          <geometry>
+            <box size="${shell_box_y} ${pad_box_y} ${shell_box_x}"/>
+          </geometry>
+        </xacro:if>
       </collision>
     </link>
   </xacro:macro>
@@ -300,12 +338,12 @@
       <inertial>
         <origin xyz="0 0 0" rpy="0 0 0"/>
         <mass value="${sensor_mass}"/>
-          <xacro:if value="${location == 'proximal'}"> 
-            <xacro:cuboid_inertia m="${sensor_mass}" x="${sensor_box_x_proximal}" y="${sensor_box_y}" z="${sensor_box_z}"/>
-          </xacro:if>
-          <xacro:if value="${location == 'distal'}">
-            <xacro:cuboid_inertia m="${sensor_mass}" x="${sensor_box_x_distal}" y="${sensor_box_y}" z="${sensor_box_z}"/>
-          </xacro:if>
+        <xacro:if value="${location == 'proximal'}">
+          <xacro:cuboid_inertia m="${sensor_mass}" x="${sensor_box_x_proximal}" y="${sensor_box_y}" z="${sensor_box_z}"/>
+        </xacro:if>
+        <xacro:if value="${location == 'distal'}">
+          <xacro:cuboid_inertia m="${sensor_mass}" x="${sensor_box_x_distal}" y="${sensor_box_y}" z="${sensor_box_z}"/>
+        </xacro:if>
       </inertial>
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0"/>
