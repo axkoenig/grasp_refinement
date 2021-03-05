@@ -5,7 +5,7 @@
   <xacro:arg name="use_reflex_contact_sensors" default="false"/>
 
   <!-- removes all unnecessary collision meshes for grasping and turns necessary ones into boxes -->
-  <xacro:arg name="simplify_collisions" default="false"/>
+  <xacro:arg name="simplify_collisions" default="true"/>
 
   <!-- Switch joint type for actuated joints depending on if they are being used for control -->
   <xacro:if value="$(arg actuate_reflex)">
