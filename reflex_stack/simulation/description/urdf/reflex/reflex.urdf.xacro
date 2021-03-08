@@ -156,7 +156,7 @@
         <material name="dark_grey"/>
       </visual>
       <inertial>
-        <origin xyz="0 0.004 -0.035" rpy="0 0 0"/>
+        <origin xyz="0 0.004 -0.036" rpy="0 0 0"/>
         <mass value="${proximal_pad_mass}"/>
         <xacro:cuboid_inertia m="${proximal_pad_mass}" x="${proximal_pad_box_x}" y="${proximal_pad_box_y}" z="${proximal_pad_box_z}"/>
       </inertial>
