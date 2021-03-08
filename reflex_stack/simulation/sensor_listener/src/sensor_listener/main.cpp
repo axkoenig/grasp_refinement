@@ -1,5 +1,4 @@
 #include <ros/ros.h>
-#include <std_msgs/Float64.h>
 #include <reflex_msgs/Hand.h>
 
 #include "sensor_listener/reflex_hand.hpp"
@@ -22,20 +21,16 @@ int main(int argc, char **argv)
     ROS_INFO("Starting to listen to Gazebo sensor values.");
     ROS_INFO("Publishing to %s ...", topic_name.c_str());
 
-    int num_fingers = 3;
-    int num_sensors = 9;
-    int num_motors = 4;
-
     while (ros::ok())
     {
         // iterate over fingers
-        for (int i = 0; i < num_fingers; i++)
+        for (int i = 0; i < hand.num_fingers; i++)
         {
             msg.finger[i].proximal = hand.fingers[i].getProximalAngle();
             msg.finger[i].distal_approx = hand.fingers[i].getDistalAngle();
 
             // iterate over sensors
-            for (int j = 0; j < num_sensors; j++)
+            for (int j = 0; j < hand.num_sensors; j++)
             {
                 msg.finger[i].pressure[j] = hand.fingers[i].sensors[j].getPressure();
                 msg.finger[i].contact[j] = hand.fingers[i].sensors[j].getContact();
@@ -43,7 +38,7 @@ int main(int argc, char **argv)
         }
 
         // iterate over motors
-        for (int i = 0; i < num_motors; i++)
+        for (int i = 0; i < hand.num_motors; i++)
         {
             msg.motor[i].joint_angle = hand.motors[i]->getAngle();
             msg.motor[i].velocity = hand.motors[i]->getVelocity();

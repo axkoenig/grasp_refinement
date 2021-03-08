@@ -7,6 +7,10 @@
 class ReflexHand
 {
 public:
+    int num_fingers = 3;
+    int num_sensors = 9;
+    int num_motors = 4;
+
     ReflexFinger fingers[3] = {ReflexFinger(1), ReflexFinger(2), ReflexFinger(3)};
     ReflexMotor *motors[4];
 
