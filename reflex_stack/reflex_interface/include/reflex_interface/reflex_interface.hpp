@@ -1,5 +1,5 @@
-#ifndef INTERFACE_H
-#define INTERFACE_H
+#ifndef REFLEX_INTERFACE_H
+#define REFLEX_INTERFACE_H
 
 #include "reflex_interface/hand_command.hpp"
 #include "reflex_interface/hand_state.hpp"
