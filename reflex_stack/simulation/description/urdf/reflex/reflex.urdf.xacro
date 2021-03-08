@@ -82,66 +82,6 @@
     </link>
   </xacro:macro>
 
-  <!-- approx length, height and width of a cuboid surrounding the link -->
-  <xacro:property name="proximal_link_box_x" value="0.071"/>
-  <xacro:property name="proximal_link_box_y" value="0.014"/>
-  <xacro:property name="proximal_link_box_z" value="0.012"/>
-
-  <xacro:macro name="proximal_link" params="finger_id">
-    <link name="proximal_${finger_id}">
-      <visual>
-        <origin xyz="-0.011 0.007 0.011" rpy="${pi} 0 0"/>
-        <geometry>
-          <mesh filename="${mesh_path}/proximal.STL"/>
-        </geometry>
-        <material name="black"/>
-      </visual>
-      <inertial>
-        <origin xyz="${proximal_link_box_x/2-0.011} 0 0" rpy="0 0 0"/>
-        <mass value="${proximal_link_mass}"/>
-        <xacro:cuboid_inertia m="${proximal_link_mass}" x="${proximal_link_box_x}" y="${proximal_link_box_y}" z="${proximal_link_box_z}"/>
-      </inertial>
-      <xacro:unless value="$(arg simplify_collisions)">
-        <collision>
-          <origin xyz="-0.011 0.007 0.011" rpy="${pi} 0 0"/>
-          <geometry>
-            <mesh filename="${mesh_path}/proximal_coll.STL"/>
-          </geometry>
-        </collision>
-      </xacro:unless>
-    </link>
-  </xacro:macro>
-
-  <!-- approx length, height and width of a cuboid surrounding the link -->
-  <xacro:property name="distal_link_box_x" value="0.036"/>
-  <xacro:property name="distal_link_box_y" value="${proximal_link_box_y}"/>
-  <xacro:property name="distal_link_box_z" value="0.012"/>
-
-  <xacro:macro name="distal_link" params="finger_id">
-    <link name="distal_${finger_id}">
-      <visual>
-        <origin xyz="${-0.077-flex_link_box_x/2} 0.007 ${0.007+flex_link_box_z/2+0.004+flex_z_offset}" rpy="${pi} 0 0"/>
-        <geometry>
-          <mesh filename="${mesh_path}/distal.STL"/>
-        </geometry>
-        <material name="black"/>
-      </visual>
-      <inertial>
-        <origin xyz="${distal_link_box_x/2} 0 ${distal_link_box_z/2-0.002}" rpy="0 0 0"/>
-        <mass value="${distal_link_mass}"/>
-        <xacro:cuboid_inertia m="${distal_link_mass}" x="${distal_link_box_x}" y="${distal_link_box_y}" z="${distal_link_box_z}"/>
-      </inertial>
-      <xacro:unless value="$(arg simplify_collisions)">
-        <collision>
-          <origin xyz="${-0.077-flex_link_box_x/2} 0.007 ${0.007+flex_link_box_z/2}" rpy="${pi} 0 0"/>
-          <geometry>
-            <mesh filename="${mesh_path}/distal_coll.STL"/>
-          </geometry>
-        </collision>
-      </xacro:unless>
-    </link>
-  </xacro:macro>
-
   <xacro:property name="proximal_pad_box_x" value="0.016"/>
   <xacro:property name="proximal_pad_box_y" value="0.020"/>
   <xacro:property name="proximal_pad_box_z" value="0.052"/>
@@ -160,20 +100,14 @@
         <mass value="${proximal_pad_mass}"/>
         <xacro:cuboid_inertia m="${proximal_pad_mass}" x="${proximal_pad_box_x}" y="${proximal_pad_box_y}" z="${proximal_pad_box_z}"/>
       </inertial>
-      <collision>
-        <xacro:unless value="$(arg simplify_collisions)">
+      <xacro:unless value="$(arg simplify_collisions)">
+        <collision>
           <origin xyz="-0.008 0.014 -0.002" rpy="${pi/2} ${pi/2} 0"/>
           <geometry>
             <mesh filename="${mesh_path}/proximal_pad_coll.STL"/>
           </geometry>
-        </xacro:unless>
-        <xacro:if value="$(arg simplify_collisions)">
-          <origin xyz="0 0.004 -0.035" rpy="0 0 0"/>
-          <geometry>
-            <box size="${proximal_pad_box_x} ${proximal_pad_box_y} ${proximal_pad_box_z}"/>
-          </geometry>
-        </xacro:if>
-      </collision>
+        </collision>
+      </xacro:unless>
     </link>
   </xacro:macro>
 
@@ -196,15 +130,83 @@
         <mass value="${distal_pad_mass}"/>
         <xacro:cuboid_inertia m="${distal_pad_mass}" x="${distal_pad_box_x}" y="${distal_pad_box_y}" z="${distal_pad_box_z}"/>
       </inertial>
-      <collision>
-        <xacro:unless value="$(arg simplify_collisions)">
+      <xacro:unless value="$(arg simplify_collisions)">
+        <collision>
           <origin xyz="-0.008 0.0155 0.076" rpy="${pi/2} ${pi/2} 0"/>
           <geometry>
             <mesh filename="${mesh_path}/distal_pad_coll.STL"/>
           </geometry>
+        </collision>
+      </xacro:unless>
+    </link>
+  </xacro:macro>
+
+  <!-- approx length, height and width of a cuboid surrounding the link -->
+  <xacro:property name="proximal_link_box_x" value="0.071"/>
+  <xacro:property name="proximal_link_box_y" value="0.014"/>
+  <xacro:property name="proximal_link_box_z" value="0.012"/>
+
+  <xacro:macro name="proximal_link" params="finger_id">
+    <link name="proximal_${finger_id}">
+      <visual>
+        <origin xyz="-0.011 0.007 0.011" rpy="${pi} 0 0"/>
+        <geometry>
+          <mesh filename="${mesh_path}/proximal.STL"/>
+        </geometry>
+        <material name="black"/>
+      </visual>
+      <inertial>
+        <origin xyz="${proximal_link_box_x/2-0.011} 0 0" rpy="0 0 0"/>
+        <mass value="${proximal_link_mass}"/>
+        <xacro:cuboid_inertia m="${proximal_link_mass}" x="${proximal_link_box_x}" y="${proximal_link_box_y}" z="${proximal_link_box_z}"/>
+      </inertial>
+      <collision>
+        <xacro:unless value="$(arg simplify_collisions)">
+          <origin xyz="-0.011 0.007 0.011" rpy="${pi} 0 0"/>
+          <geometry>
+            <mesh filename="${mesh_path}/proximal_coll.STL"/>
+          </geometry>
         </xacro:unless>
+        <!-- attaching the collision box of pad here because libgazebo_ros_bumper only works if the collision box is on this parent link -->
         <xacro:if value="$(arg simplify_collisions)">
-          <origin xyz="0 ${distal_pad_box_y/2-0.002} ${-distal_pad_box_z/2+0.0005}" rpy="0 0 0"/>
+          <origin xyz="${proximal_link_box_x/2+0.001} 0 0.004" rpy="${pi/2} 0 -${pi/2}"/>
+          <geometry>
+            <box size="${proximal_pad_box_x} ${proximal_pad_box_y} ${proximal_pad_box_z}"/>
+          </geometry>
+        </xacro:if>
+      </collision>
+    </link>
+  </xacro:macro>
+
+  <!-- approx length, height and width of a cuboid surrounding the link -->
+  <xacro:property name="distal_link_box_x" value="0.036"/>
+  <xacro:property name="distal_link_box_y" value="${proximal_link_box_y}"/>
+  <xacro:property name="distal_link_box_z" value="0.012"/>
+
+  <xacro:macro name="distal_link" params="finger_id">
+    <link name="distal_${finger_id}">
+      <visual>
+        <origin xyz="${-0.077-flex_link_box_x/2} 0.007 ${0.007+flex_link_box_z/2+0.004+flex_z_offset}" rpy="${pi} 0 0"/>
+        <geometry>
+          <mesh filename="${mesh_path}/distal.STL"/>
+        </geometry>
+        <material name="black"/>
+      </visual>
+      <inertial>
+        <origin xyz="${distal_link_box_x/2} 0 ${distal_link_box_z/2-0.002}" rpy="0 0 0"/>
+        <mass value="${distal_link_mass}"/>
+        <xacro:cuboid_inertia m="${distal_link_mass}" x="${distal_link_box_x}" y="${distal_link_box_y}" z="${distal_link_box_z}"/>
+      </inertial>
+      <collision>
+        <xacro:unless value="$(arg simplify_collisions)">
+          <origin xyz="${-0.077-flex_link_box_x/2} 0.007 ${0.007+flex_link_box_z/2}" rpy="${pi} 0 0"/>
+          <geometry>
+            <mesh filename="${mesh_path}/distal_coll.STL"/>
+          </geometry>
+        </xacro:unless>
+        <!-- attaching the collision box of pad here because libgazebo_ros_bumper only works if the collision box is on this parent link -->
+        <xacro:if value="$(arg simplify_collisions)">
+          <origin xyz="${distal_pad_box_x+0.0025} 0 0.0065" rpy="${pi/2} 0 -${pi/2}"/>
           <geometry>
             <box size="${distal_pad_box_x} ${distal_pad_box_y} ${distal_pad_box_z}"/>
           </geometry>
