@@ -9,6 +9,8 @@
 #include <control_msgs/JointControllerState.h>
 #include <reflex_msgs/Hand.h>
 
+#include "gazebo_interface/gazebo_interface.hpp"
+
 std::string node_name = "sensor";
 std::string ns = "gazebo";
 std::string topic_name = "reflex/hand_state";
@@ -63,11 +65,7 @@ public:
         {
             double f[3] = {0, 0, 0};
 
-            // get sum of all contact forces on sensor (NOTE: since the real reflex hand
-            // has no torque sensors, we disregard the torque information from the
-            // Gazebo sensors. UPDATE: checked the torque values and they are tiny
-            // (order of e-05), which we expect since DART uses a hard contact model.
-            // Only soft contact models can transmit torques)
+            // get sum of all contact forces on sensor
             for (int i = 0; i < num_contacts; i++)
             {
                 f[0] += msg.states[i].total_wrench.force.x;
@@ -107,7 +105,12 @@ private:
     ros::Subscriber proximal_sub;
     ros::Subscriber proximal_to_flex_sub;
     ros::Subscriber flex_to_distal_sub;
+    ros::Subscriber proximal_sensor_link_sub;
+    ros::Subscriber distal_sensor_link_sub;
 
+    std::string proximal_sensor_link_name; 
+    std::string distal_sensor_link_name;
+    
     float proximal_angle = 0.0;
     float proximal_to_flex_angle = 0.0;
     float flex_to_distal_angle = 0.0;
@@ -120,23 +123,19 @@ public:
         this->finger_id = finger_id;
         std::string finger_id_str = std::to_string(this->finger_id);
 
-        sensors[0].setTopic(ns + "/proximal_" + finger_id_str + "_sensor_1_bumper");
-        sensors[1].setTopic(ns + "/proximal_" + finger_id_str + "_sensor_2_bumper");
-        sensors[2].setTopic(ns + "/proximal_" + finger_id_str + "_sensor_3_bumper");
-        sensors[3].setTopic(ns + "/proximal_" + finger_id_str + "_sensor_4_bumper");
-        sensors[4].setTopic(ns + "/proximal_" + finger_id_str + "_sensor_5_bumper");
-        sensors[5].setTopic(ns + "/distal_" + finger_id_str + "_sensor_1_bumper");
-        sensors[6].setTopic(ns + "/distal_" + finger_id_str + "_sensor_2_bumper");
-        sensors[7].setTopic(ns + "/distal_" + finger_id_str + "_sensor_3_bumper");
-        sensors[8].setTopic(ns + "/distal_" + finger_id_str + "_sensor_4_bumper");
-
         std::string proximal_topic = ns + "/finger_" + finger_id_str + "_proximal_position_controller/state";
         std::string proximal_to_flex_topic = ns + "/finger_" + finger_id_str + "_proximal_to_flex_position_controller/state";
         std::string flex_to_distal_topic = ns + "/finger_" + finger_id_str + "_flex_to_distal_position_controller/state";
+        proximal_sensor_link_name = ns + "/proximal_" + finger_id_str;
+        distal_sensor_link_name = ns + "/distal_" + finger_id_str;
+        std::string proximal_sensor_link_topic = proximal_sensor_link_name + "_sensor_bumper";
+        std::string distal_sensor_link_topic = distal_sensor_link_name + "_sensor_bumper";
 
         proximal_sub = nh.subscribe(proximal_topic, 1, &ReflexFinger::proximal_callback, this);
         proximal_to_flex_sub = nh.subscribe(proximal_to_flex_topic, 1, &ReflexFinger::proximal_to_flex_callback, this);
         flex_to_distal_sub = nh.subscribe(flex_to_distal_topic, 1, &ReflexFinger::flex_to_distal_callback, this);
+        proximal_sensor_link_sub = nh.subscribe(proximal_sensor_link_topic, 1, &ReflexFinger::proximal_contacts_callback, this);
+        distal_sensor_link_sub = nh.subscribe(distal_sensor_link_topic, 1, &ReflexFinger::distal_contacts_callback, this);
     }
 
     void proximal_callback(const control_msgs::JointControllerState &msg)
@@ -165,6 +164,27 @@ public:
         // we take the average of both flexure joints
         // TODO: compare with real reflex sensor readings
         return (proximal_to_flex_angle + flex_to_distal_angle) / 2;
+    }
+
+    void proximal_contacts_callback(const gazebo_msgs::ContactsState &msg)
+    {
+        // get pose of proximal link
+        tf2::Transform prox_link_pose = getLinkPoseSim(&nh, proximal_sensor_link_name, "world", false);
+
+        // iterate over contacts 
+
+        // multiply all contacts positions with inverse transform
+
+
+        // assign sensor by contact position
+
+
+    }
+
+    void distal_contacts_callback(const gazebo_msgs::ContactsState &msg)
+    {
+        tf2::Transform dist_link_pose = getLinkPoseSim(&nh, distal_sensor_link_name, "world", false);
+        
     }
 };
 
