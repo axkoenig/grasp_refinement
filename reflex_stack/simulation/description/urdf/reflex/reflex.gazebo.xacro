@@ -81,7 +81,7 @@
   <!-- adds sensor plugin to proximal and distal links -->
   <xacro:macro name="link_sensor" params="location finger_id">
 
-    <xacro:property name="link_name" value="${location}_${finger_id}"/>
+    <xacro:property name="link_name" value="${location}_${finger_id}_pad"/>
     <xacro:property name="sensor_name" value="gazebo/${link_name}_sensor"/>
 
     <gazebo reference="${link_name}">
@@ -102,6 +102,15 @@
 
   <xacro:macro name="preserve_fixed" params="location finger_id sensor_id">
     <gazebo reference="${location}_${finger_id}_to_sensor_${sensor_id}">
+      <preserveFixedJoint>true</preserveFixedJoint>
+    </gazebo>
+  </xacro:macro>
+
+  <!-- this makes sure that link stays seperate from parent link. by default
+       Gazebo merges links with fixed joints together to one link, but here 
+       we need it to be separate to latch on the libgazebo_ros_bumper plugin -->
+  <xacro:macro name="preserve_fixed_pad" params="location finger_id">
+    <gazebo reference="${location}_${finger_id}_to_pad">
       <preserveFixedJoint>true</preserveFixedJoint>
     </gazebo>
   </xacro:macro>
@@ -136,6 +145,9 @@
     <xacro:preserve_fixed location="distal" finger_id="${id}" sensor_id="2"/>
     <xacro:preserve_fixed location="distal" finger_id="${id}" sensor_id="3"/>
     <xacro:preserve_fixed location="distal" finger_id="${id}" sensor_id="4"/>
+
+    <xacro:preserve_fixed_pad location="proximal" finger_id="${id}"/>
+    <xacro:preserve_fixed_pad location="distal" finger_id="${id}"/>
   </xacro:macro>
 
   <xacro:gazebo_finger id="1"/>
