@@ -119,20 +119,22 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/sensor_listener.cpp
-# )
+add_library(${PROJECT_NAME}
+  src/${PROJECT_NAME}/reflex_finger.cpp
+  src/${PROJECT_NAME}/reflex_motor.cpp
+  src/${PROJECT_NAME}/reflex_sensor.cpp
+)
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/sensor_listener_node.cpp)
-add_executable(${PROJECT_NAME}_node src/sensor_listener.cpp)
+add_executable(${PROJECT_NAME}_node src/${PROJECT_NAME}/main.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -152,6 +154,11 @@ add_dependencies(${PROJECT_NAME}_node reflex_msgs_generate_messages_cpp ${catkin
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_node
+  ${PROJECT_NAME}
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
 )
 
