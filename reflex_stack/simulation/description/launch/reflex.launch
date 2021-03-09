@@ -3,7 +3,6 @@
 
     <!-- custom arguments -->
     <arg name="run_sensors_node" default="true" />
-    <arg name="run_debug_node" default="true" />
     <arg name="run_wrist_controller_node" default="true" />
     <arg name="run_keyboard_teleop_nodes" default="false" />
     <arg name="run_reflex_interface_node" default="true" />
@@ -74,12 +73,7 @@
     <group if="$(arg run_sensors_node)">
         <node pkg="sensor_listener" type="sensor_listener_node" name="sensor_listener_node" output="screen"/>
     </group>
-
-    <!-- Run debug sensors on link (outputs force and penetration depth for each link) -->
-    <group if="$(arg run_debug_node)">
-        <node pkg="sensor_listener" type="sensor_listener_debug_node" name="sensor_listener_debug_node" output="screen"/>
-    </group>
-
+    
     <!-- Run reflex interface node -->
     <group if="$(arg run_reflex_interface_node)">
         <node pkg="reflex_interface" type="reflex_interface_node" name="reflex_interface_node" output="screen"/>
