@@ -7,13 +7,10 @@
 class ReflexSensor
 {
 private:
-    ros::NodeHandle nh;
-    ros::Subscriber sensor_sub;
     double pressure = 0.0;
     bool contact = false;
-    int num_contacts = 0;
 
-    // use for filtering of noisy sensing from simulation
+    // use rolling buffer to filter noisy sensing from simulation
     int buf_size = 5;
     std::vector<bool> contact_buffer = {0, 0, 0, 0, 0};
     std::vector<float> pressure_buffer = {0, 0, 0, 0, 0};
@@ -24,8 +21,8 @@ private:
 public:
     double getPressure();
     bool getContact();
-    void setTopic(std::string topic);
-    void callback(const gazebo_msgs::ContactsState &msg);
+    void addContactToBuffer(const bool contact);
+    void addPressureToBuffer(const float pressure);
 };
 
 #endif
