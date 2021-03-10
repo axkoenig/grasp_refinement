@@ -24,7 +24,7 @@ public:
     float getPreshapeAngle() { return preshape_angle; };
     tf2::Vector3 getProximalNormal();
     tf2::Vector3 getDistalNormal();
-    std::vector<tf2::Transform> getContactFramesWorldSim();
+    void fillContactInfoWorldSim(std::vector<tf2::Vector3> &contact_positions_world, std::vector<tf2::Vector3> &contact_normals_world);
     std::array<bool, 9> getSensorContacts() { return sensor_contacts; };
     std::array<float, 9> getSensorPressures() { return sensor_pressures; };
     bool hasContact();
@@ -39,13 +39,11 @@ private:
     float proximal_angle = 0.0;
     float distal_angle = 0.0;
     float preshape_angle = 0.0; // is only modified for fingers 1 and 2
-    tf2::Vector3 proximal_normal = tf2::Vector3{0, 0, 0};
-    tf2::Vector3 distal_normal = tf2::Vector3{0, 0, 0};
+    tf2::Vector3 prox_normal_in_shell_frame = tf2::Vector3{0, 0, 0};
+    tf2::Vector3 dist_normal_in_shell_frame = tf2::Vector3{0, 0, 0};
     tf2::Transform proximal_joint_frame;
-    std::vector<tf2::Transform> contact_frames_world = {};
     void setProximalJointFrame();
-    void updateNormalsShellReal();
-    void updateNormalsShellSim();
+    void updateFingerNormalsInShellFrame();
 };
 
 #endif

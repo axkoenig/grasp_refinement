@@ -60,28 +60,72 @@ void FingerState::setSensorContactsFromMsg(boost::array<unsigned char, 9> sensor
     }
 }
 
-std::vector<tf2::Transform> FingerState::getContactFramesWorldSim()
+void FingerState::fillContactInfoWorldSim(std::vector<tf2::Vector3> &contact_positions_world, std::vector<tf2::Vector3> &contact_normals_world)
 {
-    // reset variables
-    contact_frames_world = {};
-    std::string sensor_name = "";
+    // this method checks each sensor for contact and fills vectors with positions and normals
+    // of the virtual sensors. we could also get the contact position and normals directly from
+    // the simulation, but this won't be possible in real world. in real world we can only calculate
+    // approx position and normal of each sensor in 3D space. hence this function is a "hybrid"
+    // between getting accurate information from the simulation (the distal and proximal pose) and
+    // also outputting values that would be obtainable in real world (the sensor pos and normal).
+
+    if (contact_positions_world.size() != contact_normals_world.size())
+    {
+        ROS_ERROR("Number of contact positions and normals must be equal.");
+        return;
+    }
+
+    // obtain only the link poses that are in contact
+    bool has_prox_contact = hasProximalContact();
+    bool has_dist_contact = hasDistalContact();
+    tf2::Transform prox_link_pose;
+    tf2::Transform dist_link_pose;
+
+    if (!has_prox_contact && !has_dist_contact)
+    {
+        return;
+    }
+    if (has_prox_contact)
+    {
+        prox_link_pose = getLinkPoseSim(&nh, "proximal_" + std::to_string(finger_id), "world", false);
+    }
+    if (has_dist_contact)
+    {
+        dist_link_pose = getLinkPoseSim(&nh, "distal_" + std::to_string(finger_id), "world", false);
+    }
 
     for (int i = 0; i < num_sensors; i++)
     {
         if (sensor_contacts[i])
-        {
-            if (i < 5) // proximal contact
+        {   
+            // proximal contact
+            if (i < 5)
             {
-                sensor_name = "proximal_" + std::to_string(finger_id) + "_sensor_" + std::to_string(i + 1);
+                // contact normal is z axis of link frame
+                tf2::Vector3 normal = prox_link_pose * tf2::Vector3{0, 0, 1};
+                normal.normalize();
+                contact_normals_world.push_back(normal);
+
+                // contact position defined in link frame (lies on surface of finger above the sensor)
+                tf2::Vector3 contact_pos = {0.008 + 0.0097 * (i + 1), 0, 0.014};
+
+                // transform contact position to world coordinates
+                contact_pos = prox_link_pose * contact_pos;
+
+                contact_positions_world.push_back(prox_link_pose.getOrigin() + contact_pos);
             }
-            else // distal contact
+            // distal contact
+            else
             {
-                sensor_name = "distal_" + std::to_string(finger_id) + "_sensor_" + std::to_string(i - 4);
+                tf2::Vector3 normal = dist_link_pose * tf2::Vector3{0, 0, 1};
+                normal.normalize();
+                contact_normals_world.push_back(normal);
+                tf2::Vector3 contact_pos = {-0.004 + 0.0091 * (i - 4), 0, 0.0155};
+                contact_pos = dist_link_pose * contact_pos;
+                contact_positions_world.push_back(dist_link_pose.getOrigin() + contact_pos);
             }
-            contact_frames_world.push_back(getLinkPoseSim(&nh, sensor_name, "world", false));
         }
     }
-    return contact_frames_world;
 }
 
 void FingerState::setSensorPressuresFromMsg(boost::array<float, 9> sensor_pressures)
@@ -128,17 +172,12 @@ bool FingerState::hasDistalContact()
     return false;
 }
 
-void FingerState::updateNormalsShellSim()
-{
-    // NOTE: this method gets the exact surface normals of the links in the shell frame via the simulation.
-    throw "Not implemented.";
-}
-
-void FingerState::updateNormalsShellReal()
+void FingerState::updateFingerNormalsInShellFrame()
 {
     // NOTE: this method calculates approximate surface normals in "shell" frame (not "world"!) from measured joint angles.
     // Idea: z axis of proximal_joint_frame points in normal direction of proximal pad (see RViz). We factor in the rotation
     // around preshape, proximal and distal joints and return this z axis.
+    // this works on the real hand as well as in simulation.
 
     tf2::Transform transform = proximal_joint_frame;
 
@@ -157,24 +196,24 @@ void FingerState::updateNormalsShellReal()
         transform *= rotate_preshape_angle;
     }
 
-    proximal_normal = transform * tf2::Vector3{0, 0, 1};
+    prox_normal_in_shell_frame = transform * tf2::Vector3{0, 0, 1};
 
     // 3) rotate negative y axis for current measured distal_angle
     q.setRPY(0, -distal_angle, 0);
     tf2::Transform rotate_distal_angle = tf2::Transform(q, tf2::Vector3{0, 0, 0});
     transform *= rotate_distal_angle;
 
-    distal_normal = transform * tf2::Vector3{0, 0, 1};
+    dist_normal_in_shell_frame = transform * tf2::Vector3{0, 0, 1};
 }
 
 tf2::Vector3 FingerState::getProximalNormal()
 {
-    updateNormalsShellReal();
-    return proximal_normal;
+    updateFingerNormalsInShellFrame();
+    return prox_normal_in_shell_frame;
 }
 
 tf2::Vector3 FingerState::getDistalNormal()
 {
-    updateNormalsShellReal();
-    return distal_normal;
+    updateFingerNormalsInShellFrame();
+    return dist_normal_in_shell_frame;
 }
