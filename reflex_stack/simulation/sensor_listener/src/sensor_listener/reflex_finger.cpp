@@ -61,7 +61,7 @@ float ReflexFinger::getDistalAngle()
     return (proximal_to_flex_angle + flex_to_distal_angle) / 2;
 }
 
-float get_length(const float (&vector)[3])
+float ReflexFinger::calc_l2_norm(const float (&vector)[3])
 {
     return sqrt(pow(vector[0], 2) + pow(vector[1], 2) + pow(vector[2], 2));
 }
@@ -114,11 +114,11 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
         f[0] = msg.states[num_contact_states - 1].wrenches[i].force.x;
         f[1] = msg.states[num_contact_states - 1].wrenches[i].force.y;
         f[2] = msg.states[num_contact_states - 1].wrenches[i].force.z;
-        float len_f = get_length(f);
+        float f_norm = calc_l2_norm(f);
 
         // stop if force is smaller than thresh (we are doing this since
         // Gazebo returns many forces which are 0 and we want to ignore them)
-        if (len_f < ignore_force_thresh)
+        if (f_norm < ignore_force_thresh)
         {
             continue;
         }
@@ -138,7 +138,7 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
             continue;
         }
         int sensor_id = which_sensor(contact_pos[0], sensor_boundaries, num_sensors_on_link - 1);
-        pressures[sensor_id] += len_f;
+        pressures[sensor_id] += f_norm;
         contacts[sensor_id] = true;
         num_real_contacts[sensor_id] += 1;
     }

@@ -49,6 +49,7 @@ public:
     void flex_to_distal_callback(const control_msgs::JointControllerState &msg);
     float getProximalAngle();
     float getDistalAngle();
+    float calc_l2_norm(const float (&vector)[3]);
     void proximal_contacts_callback(const gazebo_msgs::ContactsState &msg);
     void distal_contacts_callback(const gazebo_msgs::ContactsState &msg);
     void eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
