@@ -9,10 +9,10 @@ ReflexFinger::ReflexFinger(const int &finger_id)
     std::string proximal_topic = "gazebo/finger_" + finger_id_str + "_proximal_position_controller/state";
     std::string proximal_to_flex_topic = "gazebo/finger_" + finger_id_str + "_proximal_to_flex_position_controller/state";
     std::string flex_to_distal_topic = "gazebo/finger_" + finger_id_str + "_flex_to_distal_position_controller/state";
-    proximal_sensor_link_name = "gazebo/proximal_" + finger_id_str;
-    distal_sensor_link_name = "gazebo/distal_" + finger_id_str;
-    std::string proximal_sensor_link_topic = proximal_sensor_link_name + "_pad_sensor_bumper";
-    std::string distal_sensor_link_topic = distal_sensor_link_name + "_pad_sensor_bumper";
+    proximal_sensor_link_name = "proximal_" + finger_id_str;
+    distal_sensor_link_name = "distal_" + finger_id_str;
+    std::string proximal_sensor_link_topic = "gazebo/" + proximal_sensor_link_name + "_pad_sensor_bumper";
+    std::string distal_sensor_link_topic = "gazebo/" + distal_sensor_link_name + "_pad_sensor_bumper";
 
     proximal_sub = nh.subscribe(proximal_topic, 1, &ReflexFinger::proximal_callback, this);
     proximal_to_flex_sub = nh.subscribe(proximal_to_flex_topic, 1, &ReflexFinger::proximal_to_flex_callback, this);
@@ -69,24 +69,21 @@ float get_length(const float (&vector)[3])
 void ReflexFinger::proximal_contacts_callback(const gazebo_msgs::ContactsState &msg)
 {
     // pad origin is center of pad collision box which surrounds proximal link
-    tf2::Transform prox_link_to_world = getLinkPoseSim(&nh, "world", proximal_sensor_link_name, false);
-
-    eval_contacts_callback(msg, 0, 5, num_prox_sensors, prox_sensor_boundaries, prox_link_to_world, prox_link_to_prox_pad_origin);
+    tf2::Transform world_to_prox_link = getLinkPoseSim(&nh, proximal_sensor_link_name, "world", false);
+    eval_contacts_callback(msg, 0, num_prox_sensors, prox_sensor_boundaries, world_to_prox_link, prox_link_to_prox_pad_origin);
 }
 
 void ReflexFinger::distal_contacts_callback(const gazebo_msgs::ContactsState &msg)
 {
-    tf2::Transform dist_link_to_world = getLinkPoseSim(&nh, "world", distal_sensor_link_name, false);
-
-    eval_contacts_callback(msg, 5, 9, num_dist_sensors, dist_sensor_boundaries, dist_link_to_world, dist_link_to_dist_pad_origin);
+    tf2::Transform world_to_dist_link = getLinkPoseSim(&nh, distal_sensor_link_name, "world", false);
+    eval_contacts_callback(msg, 5, num_dist_sensors, dist_sensor_boundaries, world_to_dist_link, dist_link_to_dist_pad_origin);
 }
 
 void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
                                           const int &first_sensor_idx,
-                                          const int &last_sensor_idx,
                                           const int &num_sensors_on_link,
                                           const float sensor_boundaries[],
-                                          const tf2::Transform &link_to_world,
+                                          const tf2::Transform &world_to_link,
                                           const tf2::Vector3 &link_to_pad_origin)
 {
     // number of intermediate collision results (usually around 20)
@@ -96,17 +93,15 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
     // no contacts on link, set all sensors zero
     if (num_contact_states == 0)
     {
-        for (int i = first_sensor_idx; i < last_sensor_idx; i++)
+        for (int i = 0; i < num_sensors_on_link; i++)
         {
-            sensors[i].addContactToBuffer(false);
-            sensors[i].addPressureToBuffer(0.0);
+            sensors[first_sensor_idx + i].addContactToBuffer(false);
+            sensors[first_sensor_idx + i].addPressureToBuffer(0.0);
         }
         return;
     }
 
-    ROS_INFO_STREAM("we have numstates >0");
-
-    // define bins for each sensor
+    // define bins for each sensor and keep track of number of contacts for each sensor
     float pressures[num_sensors_on_link] = {0};
     bool contacts[num_sensors_on_link] = {0};
     int num_real_contacts[num_sensors_on_link] = {0};
@@ -127,30 +122,28 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
         {
             continue;
         }
-        ROS_INFO_STREAM("force larger than thresh. len_f is " << len_f);
 
         tf2::Vector3 contact_pos = {msg.states[num_contact_states - 1].contact_positions[i].x,
                                     msg.states[num_contact_states - 1].contact_positions[i].y,
                                     msg.states[num_contact_states - 1].contact_positions[i].z};
 
         // transform contact_pos from world frame to pad origin
-        contact_pos = link_to_world * contact_pos - link_to_pad_origin;
+        contact_pos = world_to_link.inverse() * contact_pos - link_to_pad_origin;
+        tf2::Vector3 contact_in_link_frame = world_to_link.inverse() * contact_pos;
 
         // stop if contact on back of finger
         if (contact_pos[2] < 0.0)
         {
+            ROS_WARN("Ignoring contact on back of finger.");
             continue;
         }
         int sensor_id = which_sensor(contact_pos[0], sensor_boundaries, num_sensors_on_link - 1);
-
-        ROS_INFO_STREAM("sensor id is " << sensor_id);
-
         pressures[sensor_id] += len_f;
         contacts[sensor_id] = true;
         num_real_contacts[sensor_id] += 1;
     }
 
-    for (int i = first_sensor_idx; i < last_sensor_idx; i++)
+    for (int i = 0; i < num_sensors_on_link; i++)
     {
         // average forces if we have multiple contacts on one sensor
         if (num_real_contacts[i] > 1)
@@ -158,8 +151,8 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
             pressures[i] /= num_real_contacts[i];
         }
         // save final values for each sensor
-        sensors[i].addContactToBuffer(contacts[i]);
-        sensors[i].addPressureToBuffer(pressures[i]);
+        sensors[first_sensor_idx + i].addContactToBuffer(contacts[i]);
+        sensors[first_sensor_idx + i].addPressureToBuffer(pressures[i]);
     }
 };
 

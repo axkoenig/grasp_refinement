@@ -53,10 +53,9 @@ public:
     void distal_contacts_callback(const gazebo_msgs::ContactsState &msg);
     void eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
                                 const int &first_sensor_idx,
-                                const int &last_sensor_idx,
                                 const int &num_sensors_on_link,
                                 const float sensor_boundaries[],
-                                const tf2::Transform &pad_origin_to_world,
+                                const tf2::Transform &world_to_link,
                                 const tf2::Vector3 &link_to_pad_origin);
 };
 
