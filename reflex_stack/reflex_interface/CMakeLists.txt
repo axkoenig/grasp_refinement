@@ -179,17 +179,17 @@ include_directories(
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
-  src/hand_command.cpp
-  src/hand_state.cpp
-  src/finger_state.cpp
-  src/grasp_quality.cpp
+  src/${PROJECT_NAME}/hand_command.cpp
+  src/${PROJECT_NAME}/hand_state.cpp
+  src/${PROJECT_NAME}/finger_state.cpp
+  src/${PROJECT_NAME}/grasp_quality.cpp
 )
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(finger_teleop_node src/keyboard_teleop.cpp)
-add_executable(${PROJECT_NAME}_node src/main.cpp)
+add_executable(finger_teleop_node src/${PROJECT_NAME}/keyboard_teleop.cpp)
+add_executable(${PROJECT_NAME}_node src/${PROJECT_NAME}/main.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
