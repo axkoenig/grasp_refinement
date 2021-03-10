@@ -75,7 +75,8 @@
         "*.xacro": "cpp",
         "regex": "cpp",
         "shared_mutex": "cpp",
-        "*.ipp": "cpp"
+        "*.ipp": "cpp",
+        "enc.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled",
     "ros.distro": "noetic",
