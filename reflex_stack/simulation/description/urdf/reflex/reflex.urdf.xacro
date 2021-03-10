@@ -245,7 +245,7 @@
 
   <!-- approx length, height and width of a cuboid surrounding the link -->
   <xacro:property name="shell_box_x" value="0.13"/>
-  <xacro:property name="shell_box_y" value="0.09"/>
+  <xacro:property name="shell_box_y" value="0.084"/>
   <xacro:property name="shell_box_z" value="0.07"/>
   <xacro:property name="shell_x_offset" value="0.01"/>
 
@@ -300,9 +300,9 @@
           </geometry>
         </xacro:unless>
         <xacro:if value="$(arg simplify_collisions)">
-          <origin xyz="0 ${pad_box_y/2} ${pad_x_offset}" rpy="0 0 0"/>
+          <origin xyz="0 -0.021 ${pad_x_offset}" rpy="0 0 0"/>
           <geometry>
-            <box size="${shell_box_y} ${pad_box_y} ${shell_box_x}"/>
+            <box size="${shell_box_y} ${shell_box_y} ${shell_box_x}"/>
           </geometry>
         </xacro:if>
       </collision>
