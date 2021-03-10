@@ -19,13 +19,21 @@ GraspQuality::GraspQuality(float mu, int num_edges)
 {
     this->mu = mu;
     this->num_edges = num_edges;
+    beta = atan(mu);
 }
 
-float GraspQuality::getEpsilon(std::vector<tf2::Transform> contact_frames_world,
-                               tf2::Vector3 object_com_world,
+float GraspQuality::getEpsilon(const std::vector<tf2::Vector3> &contact_positions,
+                               const std::vector<tf2::Vector3> &contact_normals,
+                               const tf2::Vector3 &object_com_world,
                                bool verbose)
 {
-    int num_contacts = contact_frames_world.size();
+    int num_contacts = contact_positions.size();
+
+    if (num_contacts != contact_normals.size())
+    {
+        ROS_ERROR("Number of contact positions and normals must be equal.");
+        return -1.0;
+    }
 
     // require at least 2 contacts for epsilon
     if (num_contacts < 2)
@@ -38,12 +46,10 @@ float GraspQuality::getEpsilon(std::vector<tf2::Transform> contact_frames_world,
     std::vector<tf2::Vector3> torque_primitives = {};
 
     // beta is opening angle of force cone (defines boundary where slip occurs)
-    double beta = atan(mu);
     tf2::Quaternion q_beta;
     q_beta.setRPY(beta, 0, 0);
-    tf2::Transform rot_beta = tf2::Transform(q_beta, tf2::Vector3{0, 0, 0});
 
-    // phi is angle around contact normal between each force primitives
+    // phi is angle around contact normal between each force primitive
     double phi = 2 * M_PI / num_edges;
     tf2::Quaternion q_phi;
 
@@ -52,37 +58,36 @@ float GraspQuality::getEpsilon(std::vector<tf2::Transform> contact_frames_world,
         ROS_INFO_STREAM("DEBUG: beta: " << beta);
         ROS_INFO_STREAM("DEBUG: num_contacts: " << num_contacts);
         ROS_INFO_STREAM("DEBUG: phi: " << phi);
+        ROS_INFO_STREAM("DEBUG: object COM " << vec2string(object_com_world));
     }
 
     for (int i = 0; i < num_contacts; i++)
     {
         // compute lever arm from object COM to contact position
-        tf2::Vector3 r = contact_frames_world[i].getOrigin() - object_com_world;
+        tf2::Vector3 r = contact_positions[i] - object_com_world;
 
         if (verbose)
         {
+            ROS_INFO_STREAM("DEBUG: contact_positions[i] " << i << " is " << vec2string(contact_positions[i]));
             ROS_INFO_STREAM("DEBUG: lever arm for contact " << i << " is " << vec2string(r));
         }
 
         for (int j = 0; j < num_edges; j++)
         {
             q_phi.setRPY(0, 0, j * phi);
-            tf2::Transform rot_phi = tf2::Transform(q_phi, tf2::Vector3{0, 0, 0});
+            tf2::Quaternion q_tot = q_phi * q_beta;
+            q_tot.normalize();
 
             // turn contact normal by multiples of phi, then tilt around beta and get z axis
-            tf2::Vector3 force_primitive = contact_frames_world[i] * rot_phi * rot_beta * tf2::Vector3{0, 0, 1};
-
-            // TODO I shouldn't hav to normalize here as the contact normal should be len(n)=1 (but it isnt!).
-            // the rotations also shouldnt change length of vector
-            force_primitive.normalize();
+            tf2::Vector3 force_primitive = tf2::quatRotate(q_tot, contact_normals[i]);
 
             force_primitives.push_back(force_primitive);
             torque_primitives.push_back(r.cross(force_primitive));
-            tf2::Vector3 vec = contact_frames_world[i] * tf2::Vector3{0, 0, 1};
 
             if (verbose)
             {
-                ROS_INFO_STREAM("DEBUG: contact normal for contact " << i << "is \t" << vec2string(contact_frames_world[i] * tf2::Vector3{0, 0, 1}));
+                tf2::Vector3 vec = contact_normals[i];
+                ROS_INFO_STREAM("DEBUG: contact normal for contact " << i << "is \t" << vec2string(contact_normals[i]));
                 ROS_INFO_STREAM("DEBUG: contact normal for contact LEN " << i << "is \t" << sqrt(pow(vec[0], 2) + pow(vec[1], 2) + pow(vec[2], 2)));
                 ROS_INFO_STREAM("DEBUG: force prim for contact " << i << " and edge " << j << " is  \t" << vec2string(force_primitive));
                 ROS_INFO_STREAM("DEBUG: force prim for contact LEN " << i << "is \t" << sqrt(pow(force_primitive[0], 2) + pow(force_primitive[1], 2) + pow(force_primitive[2], 2)));
