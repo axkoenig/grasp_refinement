@@ -5,7 +5,7 @@
 
     <!-- object position in world frame (z>0 => object will fall down) -->
     <arg name="origin_x" default="0.0" />
-    <arg name="origin_y" default="0.4" />
+    <arg name="origin_y" default="0.2" />
     <arg name="origin_z" default="0.2" />
     <arg name="object_mass" default="0.2" />
 
