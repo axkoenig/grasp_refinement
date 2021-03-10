@@ -20,9 +20,6 @@ HandState::HandState(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_d
     num_contacts_pub = nh->advertise<std_msgs::Int32>("reflex/num_contacts", 1);
     epsilon_pub = nh->advertise<std_msgs::Float64>("/reflex/epsilon", 1);
 
-    num_sensors_in_contact_per_finger = {0, 0, 0};
-    fingers_in_contact = {0, 0, 0};
-
     getParam(nh, &object_name, "object_name", false);
 }
 
@@ -74,13 +71,14 @@ void HandState::callback(const reflex_msgs::Hand &msg)
 
     if (use_sim_data_hand)
     {
-        updateContactFramesWorldSim();
+        // TODO shift this to wrist_controller broadcast Gazebo wrist pose to ROS tf tree
+        updateContactInfoWorldSim();
         tf2::Transform wrist_measured = getLinkPoseSim(nh, "shell", "world", false);
         broadcastModelState(wrist_measured, "world", "reflex_interface/wrist_measured", &br_reflex_measured);
     }
     else
     {
-        updateContactFramesWorldReal();
+        updateContactInfoWorldReal();
         // measured wrist pose should be published by robot ROS driver!
     }
 
@@ -90,6 +88,7 @@ void HandState::callback(const reflex_msgs::Hand &msg)
 
     if (use_sim_data_obj)
     {
+        // broadcast Gazebo object pose to ROS tf tree
         tf2::Transform obj_measured = getModelPoseSim(nh, object_name, "world", false);
         broadcastModelState(obj_measured, "world", "reflex_interface/obj_measured", &br_obj_measured);
         epsilon_msg.data = getEpsilon(obj_measured.getOrigin());
@@ -128,28 +127,29 @@ HandState::ContactState HandState::getContactState()
     }
 }
 
-void HandState::updateContactFramesWorldSim()
+void HandState::updateContactInfoWorldSim()
 {
     // reset variables
-    contact_frames_world = {};
+    contact_positions_world.clear();
+    contact_normals_world.clear();
     num_sensors_in_contact_per_finger = {0, 0, 0};
     fingers_in_contact = {0, 0, 0};
 
     // iterate over fingers
     for (int i = 0; i < num_fingers; i++)
     {
-        std::vector<tf2::Transform> frames = finger_states[i]->getContactFramesWorldSim();
+        finger_states[i]->fillContactInfoWorldSim(contact_positions_world, contact_normals_world);
+        int num_contacts = contact_positions_world.size(); 
 
-        if (!frames.empty())
+        if (num_contacts > 0)
         {
-            contact_frames_world.insert(contact_frames_world.end(), frames.begin(), frames.end());
-            num_sensors_in_contact_per_finger[i] = contact_frames_world.size();
+            num_sensors_in_contact_per_finger[i] = num_contacts;
             fingers_in_contact[i] = true;
         }
     }
 }
 
-void HandState::updateContactFramesWorldReal()
+void HandState::updateContactInfoWorldReal()
 {
     // TODO: solve with forward kinematics and compare with results we obtain from simulation.
     // because we want this in world coosy we also need the gripper pose.
@@ -159,6 +159,6 @@ void HandState::updateContactFramesWorldReal()
 float HandState::getEpsilon(tf2::Vector3 object_com_world)
 {
     // if epsilon returns with -1 (error occured) we return 0.0 for grasp quality
-    float epsilon = std::max(0.0f, grasp_quality.getEpsilon(contact_frames_world, object_com_world));
+    float epsilon = std::max(0.0f, grasp_quality.getEpsilon(contact_positions_world, contact_normals_world, object_com_world));
     return epsilon;
 }

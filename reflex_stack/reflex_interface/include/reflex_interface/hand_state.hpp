@@ -32,7 +32,8 @@ public:
     int getNumFingersInContact();
     int getFingerIdSingleContact();
     float getEpsilon(tf2::Vector3 object_com_world);
-    std::vector<tf2::Transform> getContactFramesWorld() { return contact_frames_world; };
+    std::vector<tf2::Vector3> getContactPositionsWorld() { return contact_positions_world; };
+    std::vector<tf2::Vector3> getContactNormalsWorld() { return contact_normals_world; };
     std::vector<int> getNumSensorsInContactPerFinger() { return num_sensors_in_contact_per_finger; };
     std::vector<bool> getFingersInContact() { return fingers_in_contact; };
     bool allFingersInContact();
@@ -45,12 +46,13 @@ private:
     const int num_fingers = 3;
     const int num_motors = 4;
     const int num_sensors_per_finger = 9;
-    std::vector<tf2::Transform> contact_frames_world;
-    std::vector<int> num_sensors_in_contact_per_finger; // example: two sensors in contact on finger 1 and one on finger 2: {2, 1, 0}
-    std::vector<bool> fingers_in_contact;               // example: fingers 1 and 3 in contact: {1, 0, 1}
+    std::vector<tf2::Vector3> contact_positions_world;
+    std::vector<tf2::Vector3> contact_normals_world;
+    std::vector<int> num_sensors_in_contact_per_finger = {0, 0, 0}; // example: two sensors in contact on finger 1 and one on finger 2: {2, 1, 0}
+    std::vector<bool> fingers_in_contact = {0, 0, 0};               // example: fingers 1 and 3 in contact: {1, 0, 1}
     void callback(const reflex_msgs::Hand &msg);
-    void updateContactFramesWorldSim();
-    void updateContactFramesWorldReal();
+    void updateContactInfoWorldSim();
+    void updateContactInfoWorldReal();
     void broadcastModelState(tf2::Transform tf, std::string source_frame, std::string target_frame, tf2_ros::TransformBroadcaster *br);
     tf2_ros::TransformBroadcaster br_reflex_measured;
     tf2_ros::TransformBroadcaster br_obj_measured;
