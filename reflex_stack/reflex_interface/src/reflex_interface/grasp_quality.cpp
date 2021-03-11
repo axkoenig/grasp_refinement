@@ -22,28 +22,28 @@ GraspQuality::GraspQuality(float mu, int num_edges)
     beta = atan(mu);
 }
 
-float GraspQuality::getEpsilon(const std::vector<tf2::Vector3> &contact_positions,
-                               const std::vector<tf2::Vector3> &contact_normals,
-                               const tf2::Vector3 &object_com_world,
-                               bool verbose)
+bool GraspQuality::isValidNumContacts()
 {
-    int num_contacts = contact_positions.size();
-
+    num_contacts = contact_positions.size();
     if (num_contacts != contact_normals.size())
     {
         ROS_ERROR("Number of contact positions and normals must be equal.");
-        return -1.0;
+        return false;
     }
 
     // require at least 2 contacts for epsilon
     if (num_contacts < 2)
     {
-        return -1.0;
+        return false;
     }
+    return true;
+}
 
-    // wrench primitives of all contacts
-    std::vector<tf2::Vector3> force_primitives = {};
-    std::vector<tf2::Vector3> torque_primitives = {};
+void GraspQuality::updateGraspWrenchSpace(bool verbose)
+{
+    // clearing old gws results
+    gws.force_primitives.clear();
+    gws.torque_primitives.clear();
 
     // beta is opening angle of force cone (defines boundary where slip occurs)
     tf2::Quaternion q_beta;
@@ -81,8 +81,8 @@ float GraspQuality::getEpsilon(const std::vector<tf2::Vector3> &contact_position
             // turn contact normal by multiples of phi, then tilt around beta and get z axis
             tf2::Vector3 force_primitive = tf2::quatRotate(q_tot, contact_normals[i]);
 
-            force_primitives.push_back(force_primitive);
-            torque_primitives.push_back(r.cross(force_primitive));
+            gws.force_primitives.push_back(force_primitive);
+            gws.torque_primitives.push_back(r.cross(force_primitive));
 
             if (verbose)
             {
@@ -95,6 +95,23 @@ float GraspQuality::getEpsilon(const std::vector<tf2::Vector3> &contact_position
             }
         }
     }
+}
+
+float GraspQuality::getEpsilon(const std::vector<tf2::Vector3> &contact_positions,
+                               const std::vector<tf2::Vector3> &contact_normals,
+                               const tf2::Vector3 &object_com_world,
+                               bool verbose)
+{
+    this->contact_positions = contact_positions;
+    this->contact_normals = contact_normals;
+    this->object_com_world = object_com_world;
+
+    if (!isValidNumContacts())
+    {
+        return -1;
+    }
+
+    updateGraspWrenchSpace(verbose);
 
     // wrench space is 6 dimensional (3 force, 3 torque)
     int dim = 6;
@@ -108,8 +125,8 @@ float GraspQuality::getEpsilon(const std::vector<tf2::Vector3> &contact_position
     {
         ROS_INFO_STREAM("DEBUG: num_points: " << num_points);
         ROS_INFO_STREAM("DEBUG: num_ft_primitives: " << num_ft_primitives);
-        ROS_INFO_STREAM("Size of force primitive is: " << force_primitives.size() << " I expect it to be " << num_ft_primitives);
-        ROS_INFO_STREAM("Size of torque primitive is: " << torque_primitives.size() << " I expect it to be " << num_ft_primitives);
+        ROS_INFO_STREAM("Size of force primitive is: " << gws.force_primitives.size() << " I expect it to be " << num_ft_primitives);
+        ROS_INFO_STREAM("Size of torque primitive is: " << gws.torque_primitives.size() << " I expect it to be " << num_ft_primitives);
     }
 
     // points is a concatenation of all 6D primitive wrenches for each contact
@@ -124,13 +141,13 @@ float GraspQuality::getEpsilon(const std::vector<tf2::Vector3> &contact_position
         // iterate over x,y,z coordinates in Vector3
         for (int j = 0; j < 3; j++)
         {
-            points[dim * i + j] = force_primitives[i][j];
-            points[dim * i + j + 3] = torque_primitives[i][j];
+            points[dim * i + j] = gws.force_primitives[i][j];
+            points[dim * i + j + 3] = gws.torque_primitives[i][j];
 
             if (verbose)
             {
-                ROS_INFO_STREAM("dim * i + j = " << dim * i + j << " is assigned " << force_primitives[i][j]);
-                ROS_INFO_STREAM("dim * i + j + 3 = " << dim * i + j + 3 << " is assigned " << torque_primitives[i][j]);
+                ROS_INFO_STREAM("dim * i + j = " << dim * i + j << " is assigned " << gws.force_primitives[i][j]);
+                ROS_INFO_STREAM("dim * i + j + 3 = " << dim * i + j + 3 << " is assigned " << gws.torque_primitives[i][j]);
             }
         }
     }
