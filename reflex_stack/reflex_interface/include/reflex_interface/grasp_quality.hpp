@@ -4,7 +4,6 @@
 #include <vector>
 
 #include <tf2/LinearMath/Vector3.h>
-#include <tf2/LinearMath/Transform.h>
 
 class GraspWrenchSpace
 {
@@ -35,7 +34,6 @@ public:
                      bool verbose = true);
 
     void updateGraspWrenchSpace(bool verbose);
-    float calcRadiusLargestBall();
     bool isValidNumContacts();
 };
 

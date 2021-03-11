@@ -1,12 +1,12 @@
 #include <math.h>
 
-#include <ros/ros.h>
-#include <tf2/LinearMath/Quaternion.h>
-
 extern "C"
 {
 #include <libqhull_r.h>
 }
+
+#include <ros/ros.h>
+#include <tf2/LinearMath/Quaternion.h>
 
 #include "reflex_interface/grasp_quality.hpp"
 
@@ -97,6 +97,50 @@ void GraspQuality::updateGraspWrenchSpace(bool verbose)
     }
 }
 
+float calcRadiusLargestBall(int dim, int num_ft_primitives, coordT *points, bool verbose)
+{
+
+    // qhull options
+    // Tv = verify result: structure, convexity, and point inclusion
+    // Qt = triangulated output
+    // s = print summary to stderr
+    // n = print hyperplane normals with offsets
+    char flags[] = "qhull Qt";
+    qhT qh_qh;
+    qhT *qh = &qh_qh;
+    qh_zero(qh, NULL);
+    int exitcode = qh_new_qhull(qh, dim, num_ft_primitives, points, true, flags, NULL, NULL);
+
+    if (exitcode != 0)
+    {
+        ROS_WARN("Convex hull creation failed. Returning -1.0.");
+        qh_freeqhull(qh, !qh_ALL);
+        int curlong, totlong;
+        qh_memfreeshort(qh, &curlong, &totlong);
+        return -1.0;
+    }
+
+    // find facet that is closest to origin
+    coordT origin[dim] = {0, 0, 0, 0, 0, 0};
+    boolT bestoutside, isoutside;
+    realT bestdist;
+    qh_findbestfacet(qh, origin, bestoutside, &bestdist, &isoutside);
+
+    if (verbose)
+    {
+        ROS_INFO_STREAM("bestoutside: " << bestoutside);
+        ROS_INFO_STREAM("isoutside: " << isoutside);
+        ROS_INFO_STREAM("==>bestdist: " << bestdist);
+    }
+
+    // free memory
+    qh_freeqhull(qh, !qh_ALL);
+    int curlong, totlong;
+    qh_memfreeshort(qh, &curlong, &totlong);
+
+    return abs(bestdist);
+}
+
 float GraspQuality::getEpsilon(const std::vector<tf2::Vector3> &contact_positions,
                                const std::vector<tf2::Vector3> &contact_normals,
                                const tf2::Vector3 &object_com_world,
@@ -158,44 +202,5 @@ float GraspQuality::getEpsilon(const std::vector<tf2::Vector3> &contact_position
             ROS_INFO_STREAM("points entry " << i << ": " << points[i]);
         }
     }
-
-    // qhull options
-    // Tv = verify result: structure, convexity, and point inclusion
-    // Qt = triangulated output
-    // s = print summary to stderr
-    // n = print hyperplane normals with offsets
-    char flags[] = "qhull Qt";
-    qhT qh_qh;
-    qhT *qh = &qh_qh;
-    qh_zero(qh, NULL);
-    int exitcode = qh_new_qhull(qh, dim, num_ft_primitives, points, true, flags, NULL, NULL);
-
-    if (exitcode != 0)
-    {
-        ROS_WARN("Convex hull creation failed. Returning -1.0.");
-        qh_freeqhull(qh, !qh_ALL);
-        int curlong, totlong;
-        qh_memfreeshort(qh, &curlong, &totlong);
-        return -1.0;
-    }
-
-    // find facet that is closest to origin
-    coordT origin[dim] = {0, 0, 0, 0, 0, 0};
-    boolT bestoutside, isoutside;
-    realT bestdist;
-    qh_findbestfacet(qh, origin, bestoutside, &bestdist, &isoutside);
-
-    if (verbose)
-    {
-        ROS_INFO_STREAM("bestoutside: " << bestoutside);
-        ROS_INFO_STREAM("isoutside: " << isoutside);
-        ROS_INFO_STREAM("==>bestdist: " << bestdist);
-    }
-
-    // free memory
-    qh_freeqhull(qh, !qh_ALL);
-    int curlong, totlong;
-    qh_memfreeshort(qh, &curlong, &totlong);
-
-    return abs(bestdist);
+    return calcRadiusLargestBall(dim, num_ft_primitives, points, verbose);
 }
