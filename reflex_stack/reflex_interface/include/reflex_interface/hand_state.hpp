@@ -14,12 +14,7 @@ class HandState
 {
 public:
     HandState(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_data_obj);
-    ros::NodeHandle *nh;
-    ros::Subscriber state_sub;
-    ros::Publisher epsilon_pub;
-    ros::Publisher num_contacts_pub;
     FingerState *finger_states[3];
-    GraspQuality grasp_quality = GraspQuality();
 
     enum ContactState
     {
@@ -32,6 +27,7 @@ public:
     int getNumFingersInContact();
     int getFingerIdSingleContact();
     float getEpsilon(tf2::Vector3 object_com_world);
+    void fillEpsilonFTSeparate(tf2::Vector3 object_com_world, float &epsilon_force, float &epsilon_torque);
     std::vector<tf2::Vector3> getContactPositionsWorld() { return contact_positions_world; };
     std::vector<tf2::Vector3> getContactNormalsWorld() { return contact_normals_world; };
     std::vector<int> getNumSensorsInContactPerFinger() { return num_sensors_in_contact_per_finger; };
@@ -39,6 +35,14 @@ public:
     bool allFingersInContact();
 
 private:
+    ros::NodeHandle *nh;
+    ros::Subscriber state_sub;
+    ros::Publisher epsilon_pub;
+    ros::Publisher epsilon_f_pub;
+    ros::Publisher epsilon_t_pub;
+    ros::Publisher num_contacts_pub;
+    GraspQuality grasp_quality = GraspQuality();
+    
     std::string object_name;
     ContactState cur_state;
     bool use_sim_data_hand;

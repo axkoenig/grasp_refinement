@@ -19,7 +19,8 @@ HandState::HandState(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_d
     state_sub = nh->subscribe("reflex/hand_state", 1, &HandState::callback, this);
     num_contacts_pub = nh->advertise<std_msgs::Int32>("reflex/num_contacts", 1);
     epsilon_pub = nh->advertise<std_msgs::Float64>("/reflex/epsilon", 1);
-
+    epsilon_f_pub = nh->advertise<std_msgs::Float64>("/reflex/epsilon_force", 1);
+    epsilon_t_pub = nh->advertise<std_msgs::Float64>("/reflex/epsilon_torque", 1);
     getParam(nh, &object_name, "object_name", false);
 }
 
@@ -82,7 +83,8 @@ void HandState::callback(const reflex_msgs::Hand &msg)
         // measured wrist pose should be published by robot ROS driver!
     }
 
-    std_msgs::Float64 epsilon_msg;
+    std_msgs::Float64 epsilon_msg, epsilon_f_msg, epsilon_t_msg;
+    float epsilon_force = 0, epsilon_torque = 0;
     std_msgs::Int32 num_contacts;
     num_contacts.data = std::accumulate(num_sensors_in_contact_per_finger.begin(), num_sensors_in_contact_per_finger.end(), 0);
 
@@ -91,7 +93,11 @@ void HandState::callback(const reflex_msgs::Hand &msg)
         // broadcast Gazebo object pose to ROS tf tree
         tf2::Transform obj_measured = getModelPoseSim(nh, object_name, "world", false);
         broadcastModelState(obj_measured, "world", "reflex_interface/obj_measured", &br_obj_measured);
-        epsilon_msg.data = getEpsilon(obj_measured.getOrigin());
+        fillEpsilonFTSeparate(obj_measured.getOrigin(), epsilon_force, epsilon_torque);
+        epsilon_f_msg.data = epsilon_force;
+        epsilon_t_msg.data = epsilon_torque;
+        // TODO Maybe remove this because unneccessary
+        // epsilon_msg.data = getEpsilon(obj_measured.getOrigin());
     }
     else
     {
@@ -102,6 +108,8 @@ void HandState::callback(const reflex_msgs::Hand &msg)
     }
     num_contacts_pub.publish(num_contacts);
     epsilon_pub.publish(epsilon_msg);
+    epsilon_f_pub.publish(epsilon_f_msg);
+    epsilon_t_pub.publish(epsilon_t_msg);
 }
 
 void HandState::broadcastModelState(tf2::Transform tf, std::string source_frame, std::string target_frame, tf2_ros::TransformBroadcaster *br)
@@ -139,7 +147,7 @@ void HandState::updateContactInfoWorldSim()
     for (int i = 0; i < num_fingers; i++)
     {
         finger_states[i]->fillContactInfoWorldSim(contact_positions_world, contact_normals_world);
-        int num_contacts = contact_positions_world.size(); 
+        int num_contacts = contact_positions_world.size();
 
         if (num_contacts > 0)
         {
@@ -158,7 +166,10 @@ void HandState::updateContactInfoWorldReal()
 
 float HandState::getEpsilon(tf2::Vector3 object_com_world)
 {
-    // if epsilon returns with -1 (error occured) we return 0.0 for grasp quality
-    float epsilon = std::max(0.0f, grasp_quality.getEpsilon(contact_positions_world, contact_normals_world, object_com_world));
-    return epsilon;
+    return grasp_quality.getEpsilon(contact_positions_world, contact_normals_world, object_com_world);
+}
+
+void HandState::fillEpsilonFTSeparate(tf2::Vector3 object_com_world, float &epsilon_force, float &epsilon_torque)
+{
+    grasp_quality.fillEpsilonFTSeparate(contact_positions_world, contact_normals_world, object_com_world, epsilon_force, epsilon_torque);
 }
