@@ -9,9 +9,8 @@
     <arg name="launch_finger_controllers" default="true" />
     <arg name="base_link_name" default="shell" />
 
-    <!-- real reflex sensor rate is 50Hz, but I use lower rate because of performance (I use the sensor
-         data to compute grasp quality metrics, which may be computationally expensive) -->
-    <arg name="reflex_tactile_sensor_rate" default="10" />
+    <!-- real reflex sensor rate is 50Hz -->
+    <arg name="reflex_tactile_sensor_rate" default="50" />
     <param name="reflex_tactile_sensor_rate" value="$(arg reflex_tactile_sensor_rate)" />
 
     <!-- "true" will significantly speed up your simulation as I use simplfied collision meshes. Turn on
