@@ -40,7 +40,7 @@ private:
     std::string pos_cmd_topic = "reflex/pos_cmd";
 
     float tighten_incr = 0.1;
-    float close_until_contact_incr = 0.05;
+    float close_until_contact_incr = 0.2;
     float close_until_contact_time_out = 6;
     float close_until_contact_pub_rate = 100;
 
