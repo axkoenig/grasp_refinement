@@ -48,7 +48,7 @@ void FingerState::setSensorContactsFromMsg(boost::array<unsigned char, 9> sensor
     }
 }
 
-void FingerState::fillContactInfoWorldSim(std::vector<tf2::Vector3> &contact_positions_world, std::vector<tf2::Vector3> &contact_normals_world)
+void FingerState::fillContactInfoWorldSim(std::vector<tf2::Vector3> &contact_positions_world, std::vector<tf2::Vector3> &contact_normals_world, int &num_contacts_on_finger)
 {
     // this method checks each sensor for contact and fills vectors with positions and normals
     // of the virtual sensors. we could also get the contact position and normals directly from
@@ -57,6 +57,7 @@ void FingerState::fillContactInfoWorldSim(std::vector<tf2::Vector3> &contact_pos
     // between getting accurate information from the simulation (the distal and proximal pose) and
     // also outputting values that would be obtainable in real world (the sensor pos and normal).
 
+    num_contacts_on_finger = 0;
     if (contact_positions_world.size() != contact_normals_world.size())
     {
         ROS_ERROR("Number of contact positions and normals must be equal.");
@@ -86,6 +87,7 @@ void FingerState::fillContactInfoWorldSim(std::vector<tf2::Vector3> &contact_pos
     {
         if (sensor_contacts[i])
         {
+            num_contacts_on_finger++;
             // proximal contact
             if (i < 5)
             {
@@ -99,7 +101,6 @@ void FingerState::fillContactInfoWorldSim(std::vector<tf2::Vector3> &contact_pos
 
                 // transform contact position to world coordinates
                 contact_pos = prox_link_pose * contact_pos;
-
                 contact_positions_world.push_back(prox_link_pose.getOrigin() + contact_pos);
             }
             // distal contact

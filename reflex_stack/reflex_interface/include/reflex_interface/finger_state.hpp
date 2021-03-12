@@ -24,7 +24,7 @@ public:
     float getPreshapeAngle() { return preshape_angle; };
     tf2::Vector3 getProximalNormal();
     tf2::Vector3 getDistalNormal();
-    void fillContactInfoWorldSim(std::vector<tf2::Vector3> &contact_positions_world, std::vector<tf2::Vector3> &contact_normals_world);
+    void fillContactInfoWorldSim(std::vector<tf2::Vector3> &contact_positions_world, std::vector<tf2::Vector3> &contact_normals_world, int &num_contacts_on_finger);
     std::array<bool, 9> getSensorContacts() { return sensor_contacts; };
     std::array<float, 9> getSensorPressures() { return sensor_pressures; };
     bool hasContact();

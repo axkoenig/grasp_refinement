@@ -86,6 +86,7 @@ void HandState::callback(const reflex_msgs::Hand &msg)
     std_msgs::Float64 epsilon_msg, epsilon_f_msg, epsilon_t_msg;
     float epsilon_force = 0, epsilon_torque = 0;
     std_msgs::Int32 num_contacts;
+    ROS_INFO_STREAM(num_sensors_in_contact_per_finger[0] << " " << num_sensors_in_contact_per_finger[1] << " " << num_sensors_in_contact_per_finger[2]);
     num_contacts.data = std::accumulate(num_sensors_in_contact_per_finger.begin(), num_sensors_in_contact_per_finger.end(), 0);
 
     if (use_sim_data_obj)
@@ -146,12 +147,12 @@ void HandState::updateContactInfoWorldSim()
     // iterate over fingers
     for (int i = 0; i < num_fingers; i++)
     {
-        finger_states[i]->fillContactInfoWorldSim(contact_positions_world, contact_normals_world);
-        int num_contacts = contact_positions_world.size();
+        int num_contacts_on_finger = 0; 
+        finger_states[i]->fillContactInfoWorldSim(contact_positions_world, contact_normals_world, num_contacts_on_finger);
 
-        if (num_contacts > 0)
+        if (num_contacts_on_finger > 0)
         {
-            num_sensors_in_contact_per_finger[i] = num_contacts;
+            num_sensors_in_contact_per_finger[i] = num_contacts_on_finger;
             fingers_in_contact[i] = true;
         }
     }
