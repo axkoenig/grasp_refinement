@@ -2,6 +2,7 @@
 #include <reflex_msgs/Hand.h>
 
 #include "sensor_listener/reflex_hand.hpp"
+#include "gazebo_interface/gazebo_interface.hpp"
 
 std::string node_name = "sensor_listener";
 std::string topic_name = "reflex/hand_state";
@@ -16,7 +17,10 @@ int main(int argc, char **argv)
 
     ReflexHand hand;
     reflex_msgs::Hand msg;
-    ros::Rate rate(50);
+    
+    float reflex_tactile_sensor_rate; 
+    getParam(&nh, &reflex_tactile_sensor_rate, "reflex_tactile_sensor_rate");
+    ros::Rate rate(reflex_tactile_sensor_rate);
 
     ROS_INFO("Starting to listen to Gazebo sensor values.");
     ROS_INFO("Publishing to %s ...", topic_name.c_str());

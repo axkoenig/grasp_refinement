@@ -9,6 +9,16 @@
     <arg name="launch_finger_controllers" default="true" />
     <arg name="base_link_name" default="shell" />
 
+    <!-- real reflex sensor rate is 50Hz, but I use lower rate because of performance (I use the sensor
+         data to compute grasp quality metrics, which may be computationally expensive) -->
+    <arg name="reflex_tactile_sensor_rate" default="10" />
+    <param name="reflex_tactile_sensor_rate" value="$(arg reflex_tactile_sensor_rate)" />
+
+    <!-- "true" will significantly speed up your simulation as I use simplfied collision meshes. Turn on
+         "view" -> "collisions" in Gazebo to see the collision meshes -->
+    <arg name="simplify_collisions" default="true" />
+    <param name="simplify_collisions" value="$(arg simplify_collisions)" />
+
     <!-- currently supports "sphere", "box", "cylinder" -->
     <arg name="spawn_object" default="true" />
     <arg name="object_name" default="cylinder" />
@@ -41,7 +51,7 @@
     <node name="reflex_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param robot_description -model $(arg robot_name)" />
 
     <param name="robot_description" command="
-        $(find xacro)/xacro '$(find description)/robots/reflex.robot.xacro' only_reflex:=true base_link_name:=$(arg base_link_name)"/>
+        $(find xacro)/xacro '$(find description)/robots/reflex.robot.xacro' only_reflex:=true base_link_name:=$(arg base_link_name) reflex_tactile_sensor_rate:=$(arg reflex_tactile_sensor_rate) simplify_collisions:=$(arg simplify_collisions)"/>
 
     <!-- Keyboard teleoperation node for wrist and fingers-->
     <group if="$(arg run_keyboard_teleop_nodes)">
@@ -61,7 +71,7 @@
     <group if="$(arg run_sensors_node)">
         <node pkg="sensor_listener" type="sensor_listener_node" name="sensor_listener_node" output="screen"/>
     </group>
-    
+
     <!-- Run reflex interface node -->
     <group if="$(arg run_reflex_interface_node)">
         <node pkg="reflex_interface" type="reflex_interface_node" name="reflex_interface_node" output="screen"/>

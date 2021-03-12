@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
+  <xacro:arg name="reflex_tactile_sensor_rate" default="50"/>
 
   <!-- ============================== Transmissions ============================== -->
 
@@ -63,8 +64,7 @@
     <gazebo reference="${link_name}">
       <sensor name="${sensor_name}" type="contact">
         <alwaysOn>true</alwaysOn>
-        <!-- 50 Hz is the real sampling rate of the Reflex tactile sensors -->
-        <update_rate>50</update_rate>
+        <update_rate>$(arg reflex_tactile_sensor_rate)</update_rate>
         <plugin name="${sensor_name}_plugin" filename="libgazebo_ros_bumper.so">
           <bumperTopicName>${sensor_name}_bumper</bumperTopicName>
           <frameName>${link_name}</frameName>
@@ -87,7 +87,7 @@
     <gazebo reference="${link_name}">
       <sensor name="${sensor_name}" type="contact">
         <alwaysOn>true</alwaysOn>
-        <update_rate>50</update_rate>
+        <update_rate>$(arg reflex_tactile_sensor_rate)</update_rate>
         <plugin name="${sensor_name}_plugin" filename="libgazebo_ros_bumper.so">
           <bumperTopicName>${sensor_name}_bumper</bumperTopicName>
           <frameName>${link_name}</frameName>
