@@ -157,7 +157,7 @@ int main(int argc, char **argv)
     // wait before publishing first transform to fix warning from wrist_controller_node
     // ""reflex" passed to lookupTransform argument target_frame does not exist."
     // this also waits for services of reflex interface to spawn
-    ros::Duration(2).sleep();
+    ros::Duration(3).sleep();
 
     // send initial wrist transform
     ts.header.stamp = ros::Time::now();
