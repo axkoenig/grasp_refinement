@@ -20,7 +20,7 @@ tf2::Transform FingerState::getProximalJointFrame()
     case 3:
         return tf2::Transform(tf2::Quaternion{-0.139543, 0, 0.990216, 0}, tf2::Vector3{-0.03, 0, 0.0816});
     default:
-        ROS_WARN("Unsupported finger id.");
+        ROS_WARN("Unsupported finger id. Returning identity transform for proximal joint frame.");
         return tf2::Transform::getIdentity();
     }
 }
