@@ -96,7 +96,7 @@ void HandState::callback(const reflex_msgs::Hand &msg)
         fillEpsilonFTSeparate(obj_measured.getOrigin(), epsilon_force, epsilon_torque);
         epsilon_f_msg.data = epsilon_force;
         epsilon_t_msg.data = epsilon_torque;
-        // TODO Maybe remove this because unneccessary
+        // TODO commented out for now because not using this and heavy computation 
         // epsilon_msg.data = getEpsilon(obj_measured.getOrigin());
     }
     else
