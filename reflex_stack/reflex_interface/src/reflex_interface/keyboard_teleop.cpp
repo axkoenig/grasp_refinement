@@ -156,11 +156,13 @@ int main(int argc, char **argv)
     // TODO find another, more elegant solution for this
     // wait before publishing first transform to fix warning from wrist_controller_node
     // ""reflex" passed to lookupTransform argument target_frame does not exist."
-    ros::Duration(1).sleep();
+    // this also waits for services of reflex interface to spawn
+    ros::Duration(2).sleep();
 
     // send initial wrist transform
     ts.header.stamp = ros::Time::now();
     br.sendTransform(ts);
+    open_client.call(trigger);
 
     ROS_INFO("Listening to keyboard input...");
     char key(' ');
@@ -204,7 +206,7 @@ int main(int argc, char **argv)
             pos_incr.request.f3 = finger_scaling * finger_bindings[key][2];
             pos_incr.request.preshape = finger_scaling * finger_bindings[key][3];
             pos_incr_client.call(pos_incr);
-            ROS_INFO("%s", pos_incr.response.message.c_str());
+            ROS_INFO_STREAM(pos_incr.response.message);
         }
 
         // FINGER CONTROL (PRIMITIVES) ------------------------------------------
@@ -213,41 +215,46 @@ int main(int argc, char **argv)
         case 'y':
         {
             pinch_client.call(trigger);
+            ROS_INFO_STREAM(trigger.response.message);
             break;
         }
         case 'x':
         {
             open_client.call(trigger);
+            ROS_INFO_STREAM(trigger.response.message);
             break;
         }
         case 'c':
         {
             close_client.call(trigger);
+            ROS_INFO_STREAM(trigger.response.message);
             break;
         }
         case 'v':
         {
             sph_open_client.call(trigger);
+            ROS_INFO_STREAM(trigger.response.message);
             break;
         }
         case 'b':
         {
             sph_close_client.call(trigger);
+            ROS_INFO_STREAM(trigger.response.message);
             break;
         }
         case 'n':
         {
             close_until_contact_client.call(trigger);
+            ROS_INFO_STREAM(trigger.response.message);
             break;
         }
         case 't':
         {
             tighten_grip_client.call(trigger);
+            ROS_INFO_STREAM(trigger.response.message);
             break;
         }
         }
-        ROS_INFO("%s", trigger.response.message.c_str());
-
         // EXIT ------------------------------------------
         if (key == '\x03')
         {
