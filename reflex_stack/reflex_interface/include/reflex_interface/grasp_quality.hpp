@@ -19,7 +19,7 @@ private:
     int num_edges;
     int num_contacts;
     double beta;
-    GraspWrenchSpace gws = GraspWrenchSpace(); 
+    GraspWrenchSpace gws = GraspWrenchSpace();
     std::vector<tf2::Vector3> contact_positions;
     std::vector<tf2::Vector3> contact_normals;
     tf2::Vector3 object_com_world;
@@ -31,7 +31,14 @@ public:
     float getEpsilon(const std::vector<tf2::Vector3> &contact_positions,
                      const std::vector<tf2::Vector3> &contact_normals,
                      const tf2::Vector3 &object_com_world,
-                     bool verbose = true);
+                     bool verbose = false);
+
+    void fillEpsilonFTSeparate(const std::vector<tf2::Vector3> &contact_positions,
+                               const std::vector<tf2::Vector3> &contact_normals,
+                               const tf2::Vector3 &object_com_world,
+                               float &epsilon_force,
+                               float &epsilon_torque,
+                               bool verbose = false);
 
     void updateGraspWrenchSpace(bool verbose);
     bool isValidNumContacts();

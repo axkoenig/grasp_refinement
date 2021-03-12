@@ -97,8 +97,20 @@ void GraspQuality::updateGraspWrenchSpace(bool verbose)
     }
 }
 
-float calcRadiusLargestBall(int dim, int num_ft_primitives, coordT *points, bool verbose)
+// TODO this should be a member method.
+float calcRadiusLargestBall(int dim, int num_ft_primitives, coordT *points, int num_points, bool verbose)
 {
+    // sometimes contact positions/normals are nan and hence also the primitives will be nan
+    // the origin of this problem is the Gazebo service with which I get the proximal/distal link pose
+    // TODO is there a nicer solution for this? 
+    for (int i = 0; i < num_points; i++)
+    {
+        if (isnan(points[i]))
+        {
+            ROS_WARN("At least one of your qhull points is nan. Returning 0 for epsilon.");
+            return 0.0;
+        }
+    }
 
     // qhull options
     // Tv = verify result: structure, convexity, and point inclusion
@@ -109,6 +121,7 @@ float calcRadiusLargestBall(int dim, int num_ft_primitives, coordT *points, bool
     qhT qh_qh;
     qhT *qh = &qh_qh;
     qh_zero(qh, NULL);
+
     int exitcode = qh_new_qhull(qh, dim, num_ft_primitives, points, true, flags, NULL, NULL);
 
     if (exitcode != 0)
@@ -117,11 +130,10 @@ float calcRadiusLargestBall(int dim, int num_ft_primitives, coordT *points, bool
         qh_freeqhull(qh, !qh_ALL);
         int curlong, totlong;
         qh_memfreeshort(qh, &curlong, &totlong);
-        return -1.0;
+        return 0.0;
     }
-
     // find facet that is closest to origin
-    coordT origin[dim] = {0, 0, 0, 0, 0, 0};
+    coordT origin[dim] = {0, 0, 0};
     boolT bestoutside, isoutside;
     realT bestdist;
     qh_findbestfacet(qh, origin, bestoutside, &bestdist, &isoutside);
@@ -137,8 +149,54 @@ float calcRadiusLargestBall(int dim, int num_ft_primitives, coordT *points, bool
     qh_freeqhull(qh, !qh_ALL);
     int curlong, totlong;
     qh_memfreeshort(qh, &curlong, &totlong);
-
     return abs(bestdist);
+}
+
+void GraspQuality::fillEpsilonFTSeparate(const std::vector<tf2::Vector3> &contact_positions,
+                                         const std::vector<tf2::Vector3> &contact_normals,
+                                         const tf2::Vector3 &object_com_world,
+                                         float &epsilon_force,
+                                         float &epsilon_torque,
+                                         bool verbose)
+{
+    this->contact_positions = contact_positions;
+    this->contact_normals = contact_normals;
+    this->object_com_world = object_com_world;
+
+    if (!isValidNumContacts())
+    {
+        return;
+    }
+
+    updateGraspWrenchSpace(verbose);
+    // wrench space is 3 dimensional (3 force, 3 torque separately)
+    int dim = 3;
+    int num_ft_primitives = num_contacts * num_edges;
+    int num_points = dim * num_ft_primitives;
+
+    // allocate memory for points
+    coordT *points_force = (coordT *)calloc(num_points, sizeof(coordT));
+    coordT *points_torque = (coordT *)calloc(num_points, sizeof(coordT));
+
+    // points_force is a concatenation of all 3D primitive forces for each contact
+    // format: { f_x_11, f_y_11, f_z_11,  ...
+    //           f_x_ne, f_y_ne, f_z_ne, }
+    // where    n is num_contacts
+    // and      e is num_edges
+    // similar for torque
+
+    // iterate over primitives
+    for (int i = 0; i < num_ft_primitives; i++)
+    {
+        // iterate over x,y,z coordinates in Vector3
+        for (int j = 0; j < 3; j++)
+        {
+            points_force[dim * i + j] = gws.force_primitives[i][j];
+            points_torque[dim * i + j] = gws.torque_primitives[i][j];
+        }
+    }
+    epsilon_force = calcRadiusLargestBall(dim, num_ft_primitives, points_force, num_points, verbose);
+    epsilon_torque = calcRadiusLargestBall(dim, num_ft_primitives, points_torque, num_points, verbose);
 }
 
 float GraspQuality::getEpsilon(const std::vector<tf2::Vector3> &contact_positions,
@@ -152,12 +210,12 @@ float GraspQuality::getEpsilon(const std::vector<tf2::Vector3> &contact_position
 
     if (!isValidNumContacts())
     {
-        return -1;
+        return 0;
     }
 
     updateGraspWrenchSpace(verbose);
 
-    // wrench space is 6 dimensional (3 force, 3 torque)
+    // wrench space is 6 dimensional (3 force + 3 torque)
     int dim = 6;
     int num_ft_primitives = num_contacts * num_edges;
     int num_points = dim * num_ft_primitives;
@@ -202,5 +260,5 @@ float GraspQuality::getEpsilon(const std::vector<tf2::Vector3> &contact_position
             ROS_INFO_STREAM("points entry " << i << ": " << points[i]);
         }
     }
-    return calcRadiusLargestBall(dim, num_ft_primitives, points, verbose);
+    return calcRadiusLargestBall(dim, num_ft_primitives, points, num_points, verbose);
 }
