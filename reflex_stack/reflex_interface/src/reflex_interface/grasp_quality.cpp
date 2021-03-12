@@ -100,9 +100,6 @@ void GraspQuality::updateGraspWrenchSpace(bool verbose)
 // TODO this should be a member method.
 float calcRadiusLargestBall(int dim, int num_ft_primitives, coordT *points, int num_points, bool verbose)
 {
-    // sometimes contact positions/normals are nan and hence also the primitives will be nan
-    // the origin of this problem is the Gazebo service with which I get the proximal/distal link pose
-    // TODO is there a nicer solution for this? 
     for (int i = 0; i < num_points; i++)
     {
         if (isnan(points[i]))
@@ -126,7 +123,7 @@ float calcRadiusLargestBall(int dim, int num_ft_primitives, coordT *points, int 
 
     if (exitcode != 0)
     {
-        ROS_WARN("Convex hull creation failed. Returning -1.0.");
+        ROS_WARN("Convex hull creation failed. Returning 0 for epsilon.");
         qh_freeqhull(qh, !qh_ALL);
         int curlong, totlong;
         qh_memfreeshort(qh, &curlong, &totlong);
