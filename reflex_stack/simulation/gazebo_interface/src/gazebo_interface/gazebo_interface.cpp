@@ -13,7 +13,6 @@
 
 using namespace std;
 
-
 bool setModelPoseSim(ros::NodeHandle *nh, string model_name, tf2::Transform pose, bool verbose)
 {
     tf2::Vector3 t = pose.getOrigin();
@@ -80,7 +79,7 @@ bool objectTouchesGround()
     return false;
 }
 
-tf2::Transform getModelPoseSim(ros::NodeHandle *nh, string model_name, string relative_entity_name, bool verbose)
+tf2::Transform getModelPoseSim(ros::NodeHandle *nh, string model_name, string relative_entity_name, bool verbose, int num_retries)
 {
     // setup service client
     string service_name = "/gazebo/get_model_state";
@@ -93,6 +92,17 @@ tf2::Transform getModelPoseSim(ros::NodeHandle *nh, string model_name, string re
     srv.request.relative_entity_name = relative_entity_name;
 
     client.call(srv);
+    int i = 0;
+    while (!srv.response.success && i < num_retries)
+    {
+        client.call(srv);
+        i++;
+    }
+    if (!srv.response.success)
+    {
+        ROS_WARN("Gazebo service call to GetModelState for model %s failed after %i retries. Returning identity transform.", model_name.c_str(), i);
+        return tf2::Transform::getIdentity();
+    }
 
     tf2::Vector3 t = {srv.response.pose.position.x,
                       srv.response.pose.position.y,
@@ -112,7 +122,7 @@ tf2::Transform getModelPoseSim(ros::NodeHandle *nh, string model_name, string re
     return tf2::Transform(r, t);
 }
 
-tf2::Transform getLinkPoseSim(ros::NodeHandle *nh, string link_name, string reference_frame, bool verbose)
+tf2::Transform getLinkPoseSim(ros::NodeHandle *nh, string link_name, string reference_frame, bool verbose, int num_retries)
 {
     // NOTE we can't simply use the getModelPositionSim function because in Gazebo the Reflex model is
     // rooted in the origin (hence position is always in origin). Rather we have to obtain it via the
@@ -128,8 +138,19 @@ tf2::Transform getLinkPoseSim(ros::NodeHandle *nh, string link_name, string refe
     srv.request.link_name = link_name;
     srv.request.reference_frame = reference_frame;
 
-    // obtain position of reflex
     client.call(srv);
+    int i = 0;
+    while (!srv.response.success && i < num_retries)
+    {
+        client.call(srv);
+        i++;
+    }
+    if (!srv.response.success)
+    {
+        ROS_WARN("Gazebo service call to GetLinkState for link %s failed after %i retries. Returning identity transform.", link_name.c_str(), i);
+        return tf2::Transform::getIdentity();
+    }
+
     tf2::Vector3 t = {srv.response.link_state.pose.position.x,
                       srv.response.link_state.pose.position.y,
                       srv.response.link_state.pose.position.z};

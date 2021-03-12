@@ -10,9 +10,9 @@ bool setModelPoseSim(ros::NodeHandle *nh, string model_name, tf2::Transform pose
 
 bool objectTouchesGround();
 
-tf2::Transform getModelPoseSim(ros::NodeHandle *nh, string model_name, string relative_entity_name = "world", bool verbose = true);
+tf2::Transform getModelPoseSim(ros::NodeHandle *nh, string model_name, string relative_entity_name = "world", bool verbose = true, int num_retries = 10);
 
-tf2::Transform getLinkPoseSim(ros::NodeHandle *nh, string link_name, string reference_frame = "world", bool verbose = true);
+tf2::Transform getLinkPoseSim(ros::NodeHandle *nh, string link_name, string reference_frame = "world", bool verbose = true, int num_retries = 10);
 
 template <typename T>
 void getParam(ros::NodeHandle *nh, T *param, const string param_name, bool verbose = true)
