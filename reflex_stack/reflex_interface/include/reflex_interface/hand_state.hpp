@@ -33,6 +33,9 @@ public:
     std::vector<int> getNumSensorsInContactPerFinger() { return num_sensors_in_contact_per_finger; };
     std::vector<bool> getFingersInContact() { return fingers_in_contact; };
     bool allFingersInContact();
+    const int num_fingers = 3;
+    const int num_motors = 4;
+    const int num_sensors_per_finger = 9;
 
 private:
     ros::NodeHandle *nh;
@@ -47,9 +50,6 @@ private:
     ContactState cur_state;
     bool use_sim_data_hand;
     bool use_sim_data_obj;
-    const int num_fingers = 3;
-    const int num_motors = 4;
-    const int num_sensors_per_finger = 9;
     std::vector<tf2::Vector3> contact_positions_world;
     std::vector<tf2::Vector3> contact_normals_world;
     std::vector<int> num_sensors_in_contact_per_finger = {0, 0, 0}; // example: two sensors in contact on finger 1 and one on finger 2: {2, 1, 0}
