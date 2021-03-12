@@ -42,7 +42,7 @@ private:
     tf2::Vector3 prox_normal_in_shell_frame = tf2::Vector3{0, 0, 0};
     tf2::Vector3 dist_normal_in_shell_frame = tf2::Vector3{0, 0, 0};
     tf2::Transform proximal_joint_frame;
-    void setProximalJointFrame();
+    tf2::Transform getProximalJointFrame();
     void updateFingerNormalsInShellFrame();
 };
 

@@ -1,7 +1,3 @@
-#include <tf2_ros/transform_listener.h>
-#include <geometry_msgs/TransformStamped.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-
 #include "reflex_interface/finger_state.hpp"
 #include "gazebo_interface/gazebo_interface.hpp"
 
@@ -9,32 +5,24 @@ FingerState::FingerState(ros::NodeHandle *nh, int finger_id)
 {
     this->nh = *nh;
     this->finger_id = finger_id;
-    setProximalJointFrame();
+    proximal_joint_frame = getProximalJointFrame();
 }
 
-void FingerState::setProximalJointFrame()
+tf2::Transform FingerState::getProximalJointFrame()
 {
-    // NOTE: we get transform from reflex base (i.e. from the "shell" frame) to center of
-    // proximal joint from the ROS tf tree. This transform will always be constant and is not
-    // modified as Gazebo is moving the joints.
-
-    tf2_ros::Buffer tfBuffer;
-    tf2_ros::TransformListener tfListener(tfBuffer);
-    std::string source_frame = "shell";
-    std::string target_frame = "proximal_" + std::to_string(finger_id);
-
-    while (!tfBuffer.canTransform(source_frame, target_frame, ros::Time(0), ros::Duration(1)))
+    // we obtained this data from the URDF (transforms are from shell frame to respective proximal joint frame)
+    switch (finger_id)
     {
-        ROS_INFO_STREAM("Could not find transform from '" << source_frame << "' to '"
-                                                          << target_frame << "'. Waiting to fill up buffer.");
+    case 1:
+        return tf2::Transform(tf2::Quaternion{0, 0.139543, 0, 0.990216}, tf2::Vector3{0.0603974, -0.026, 0.0816});
+    case 2:
+        return tf2::Transform(tf2::Quaternion{0, 0.139543, 0, 0.990216}, tf2::Vector3{0.0603974, 0.026, 0.0816});
+    case 3:
+        return tf2::Transform(tf2::Quaternion{-0.139543, 0, 0.990216, 0}, tf2::Vector3{-0.03, 0, 0.0816});
+    default:
+        ROS_WARN("Unsupported finger id.");
+        return tf2::Transform::getIdentity();
     }
-    geometry_msgs::TransformStamped ts_msg = tfBuffer.lookupTransform(source_frame, target_frame, ros::Time(0));
-
-    // convert msg to transform stamped
-    tf2::Stamped<tf2::Transform> ts;
-    tf2::fromMsg(ts_msg, ts);
-
-    proximal_joint_frame = tf2::Transform(ts.getRotation(), ts.getOrigin());
 }
 
 void FingerState::setProximalAngleFromMsg(float angle)
@@ -97,7 +85,7 @@ void FingerState::fillContactInfoWorldSim(std::vector<tf2::Vector3> &contact_pos
     for (int i = 0; i < num_sensors; i++)
     {
         if (sensor_contacts[i])
-        {   
+        {
             // proximal contact
             if (i < 5)
             {
