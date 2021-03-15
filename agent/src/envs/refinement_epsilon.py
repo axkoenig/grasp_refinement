@@ -27,7 +27,6 @@ class ObservationSpace(Space):
         self.add_variable(self.num_motors, "prox_angle", 0, 0, self.prox_angle_max)
         self.add_variable(self.num_fingers, "dist_angle", 0, 0, 0.2 * self.prox_angle_max)
         self.add_variable(self.num_contact_pressures, "contact_pressure", 0, 0, 10)
-        self.add_variable(self.num_wrist_obj_dists, "wrist_obj_dist", 0, 0, 0.15)
 
 
 class ActionSpace(Space):
@@ -36,10 +35,8 @@ class ActionSpace(Space):
     def __init__(self):
         super().__init__()
 
-        self.add_variable(3, "finger_incr", 0, deg2rad(-10), deg2rad(10))
-        self.add_variable(1, "wrist_x_abs", 0, -0.02, 0.02)
-        self.add_variable(1, "wrist_y_abs", 0, -0.02, 0.02)
-        self.add_variable(1, "wrist_z_abs", 0, 0, 0.04)
+        self.add_variable(1, "trigger_regrasp", 0, 0, 1)
+        self.add_variable(3, "wrist_incr", 0, -0.01, 0.01)
 
 
 class TensorboardCallback(BaseCallback):
@@ -47,35 +44,41 @@ class TensorboardCallback(BaseCallback):
         super(TensorboardCallback, self).__init__(verbose)
         self.cum_num_contacts = 0
         self.cum_dist_tcp_obj = 0
-        self.cum_epsilon = 0
+        self.cum_epsilon_force = 0
+        self.cum_epsilon_torque = 0
         self.cum_obj_shift = 0
 
     def _on_rollout_end(self) -> None:
         self.logger.record("rollout/cum_num_contacts", self.cum_num_contacts)
         self.logger.record("rollout/cum_dist_tcp_obj", self.cum_dist_tcp_obj)
-        self.logger.record("rollout/cum_epsilon", self.cum_epsilon)
+        self.logger.record("rollout/cum_epsilon_force", self.cum_epsilon_force)
+        self.logger.record("rollout/cum_epsilon_torque", self.cum_epsilon_torque)
         self.logger.record("rollout/cum_obj_shift", self.cum_obj_shift)
 
         # reset vars once recorded
         self.cum_num_contacts = 0
         self.cum_dist_tcp_obj = 0
-        self.cum_epsilon = 0
+        self.cum_epsilon_force = 0
+        self.cum_epsilon_torque = 0
         self.cum_obj_shift = 0
 
     def _on_step(self) -> bool:
         self.cur_num_contacts = self.training_env.get_attr("num_contacts")[0]
         self.cur_dist_tcp_obj = self.training_env.get_attr("dist_tcp_obj")[0]
-        self.cur_epsilon = self.training_env.get_attr("epsilon")[0]
+        self.cur_epsilon_force = self.training_env.get_attr("epsilon_force")[0]
+        self.cur_epsilon_torque = self.training_env.get_attr("epsilon_torque")[0]
         self.cur_obj_shift = self.training_env.get_attr("obj_shift")[0]
 
         self.logger.record("step/cur_num_contacts", self.cur_num_contacts)
         self.logger.record("step/cur_dist_tcp_obj", self.cur_dist_tcp_obj)
-        self.logger.record("step/cur_epsilon", self.cur_epsilon)
+        self.logger.record("step/cur_epsilon_force", self.cur_epsilon_force)
+        self.logger.record("step/cur_epsilon_torque", self.cur_epsilon_torque)
         self.logger.record("step/cur_obj_shift", self.cur_obj_shift)
 
         self.cum_num_contacts += self.cur_num_contacts
         self.cum_dist_tcp_obj += self.cur_dist_tcp_obj
-        self.cum_epsilon += self.cur_epsilon
+        self.cum_epsilon_force += self.cur_epsilon_torque
+        self.cum_epsilon_torque += self.cur_epsilon_force
         self.cum_obj_shift += self.cur_obj_shift
         return True
 
@@ -114,10 +117,12 @@ class GazeboEnv(gym.Env):
         self.reward_pub = rospy.Publisher("agent/reward", Float64, queue_size=5)
         self.hand_sub = rospy.Subscriber("reflex/hand_state", Hand, self.hand_callback, queue_size=5)
         self.num_contacts_sub = rospy.Subscriber("reflex/num_contacts", Int32, self.num_contacts_callback, queue_size=5)
-        self.epsilon_sub = rospy.Subscriber("reflex/epsilon", Float64, self.epsilon_callback, queue_size=5)
+        self.epsilon_force_sub = rospy.Subscriber("reflex/epsilon_force", Float64, self.epsilon_force_callback, queue_size=5)
+        self.epsilon_torque_sub = rospy.Subscriber("reflex/epsilon_torque", Float64, self.epsilon_torque_callback, queue_size=5)
 
         self.num_contacts = 0
-        self.epsilon = 0
+        self.epsilon_force = 0
+        self.epsilon_torque = 0
 
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)
@@ -126,8 +131,11 @@ class GazeboEnv(gym.Env):
     def num_contacts_callback(self, msg):
         self.num_contacts = msg.data
 
-    def epsilon_callback(self, msg):
-        self.epsilon = msg.data
+    def epsilon_force_callback(self, msg):
+        self.epsilon_force = msg.data
+
+    def epsilon_torque_callback(self, msg):
+        self.epsilon_torque = msg.data
 
     def hand_callback(self, msg):
 
@@ -142,30 +150,20 @@ class GazeboEnv(gym.Env):
         # joint pos 4 from motor encoder (there is no magnetic encoder)
         self.obs.vars[3].cur_val = msg.motor[3].joint_angle
 
-        # last three variables are obj position in tcp frame
-        trans = self.gazebo_interface.get_trans_tcp_obj()
-        self.obs.vars[-3].cur_val = trans[0]
-        self.obs.vars[-2].cur_val = trans[1]
-        self.obs.vars[-1].cur_val = trans[2]
-
     def step(self, action):
 
-        # publish incoming actions
-        self.hand_cmd.f1 = self.obs.vars[0].cur_val + action[0]
-        self.hand_cmd.f2 = self.obs.vars[1].cur_val + action[1]
-        self.hand_cmd.f3 = self.obs.vars[2].cur_val + action[2]
-        self.hand_cmd.preshape = 1.570796
-        self.hand_pub.publish(self.hand_cmd)
-        # self.gazebo_interface.cmd_wrist_pos_abs(self.wrist_init_pose, [action[3], action[4], action[5]])
+        if action[0] > 0.5:
+            self.gazebo_interface.regrasp([action[1], action[2], action[3]])
+        else:
+            # run for a short time, and collect new reward
+            self.gazebo_interface.run_for_seconds(0.01)
 
-        cmd_str = f"{self.hand_cmd.f1}, {self.hand_cmd.f2}, {self.hand_cmd.f3}, {action[3]}"
-        self.gazebo_interface.run_for_seconds("Step", self.exec_secs, cmd_str)
-
-        # want to maximise num_contacts, and minimize dist_tcp_obj
+        # get object shift and distance to object (used for logging)
         t_obj, _ = get_tq_from_homo_matrix(self.gazebo_interface.get_object_pose())
         self.obj_shift = np.linalg.norm(t_obj - self.t_obj_init)
         self.dist_tcp_obj = self.gazebo_interface.get_dist_tcp_obj()
-        reward = self.num_contacts
+
+        reward = self.epsilon_force + self.epsilon_torque
         reward_msg = Float64(reward)
         self.reward_pub.publish(reward_msg)
 
