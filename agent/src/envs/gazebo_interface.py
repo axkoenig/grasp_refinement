@@ -183,10 +183,6 @@ class GazeboInterface:
         self.wait_until_reached_pose(mat_shell)
         self.set_model_pose(mat_obj, self.object_name)
 
-        res = self.sph_open_hand(TriggerRequest())
-        rospy.sleep(0.5)
-        rospy.loginfo("Spherical openend reflex fingers: \n" + str(res))
-
         res = self.close_until_contact(TriggerRequest())
         rospy.loginfo("Closed reflex fingers until contact: \n" + str(res))
         rospy.sleep(1)
