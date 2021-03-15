@@ -6,6 +6,7 @@ import geometry_msgs.msg
 from std_srvs.srv import Empty, Trigger, TriggerRequest
 from gazebo_msgs.srv import GetModelState, GetLinkState, SetModelState
 from gazebo_msgs.msg import ModelState
+from reflex_interface.srv import PosIncrement
 
 from .helpers import get_tq_from_homo_matrix
 
@@ -32,6 +33,7 @@ class GazeboInterface:
         self.open_hand = rospy.ServiceProxy("/reflex/open", Trigger)
         self.sph_open_hand = rospy.ServiceProxy("/reflex/spherical_open", Trigger)
         self.close_until_contact = rospy.ServiceProxy("/reflex/close_until_contact", Trigger)
+        self.pos_incr = rospy.ServiceProxy("/reflex/pos_incr", PosIncrement)
 
         # setup listener to measured wrist and object poses
         self.mes_wrist_name = "reflex_interface/wrist_measured"
@@ -59,9 +61,8 @@ class GazeboInterface:
         except rospy.ServiceException as e:
             rospy.loginfo(self.pause_name + " service call failed")
 
-    def run_for_seconds(self, prefix, secs, cmd_str):
+    def run_for_seconds(self, secs):
         self.sim_unpause()
-        rospy.loginfo(f"{prefix}: Executing " + cmd_str + f" for {secs} secs.")
         rospy.sleep(secs)
         self.sim_pause()
 
@@ -166,6 +167,8 @@ class GazeboInterface:
             r.sleep()
 
     def reset_world(self, mat_shell, mat_obj):
+        rospy.loginfo("Resetting world.")
+
         self.sim_unpause()
 
         res = self.open_hand(TriggerRequest())
@@ -173,7 +176,7 @@ class GazeboInterface:
         rospy.loginfo("Opened reflex fingers: \n" + str(res))
 
         rospy.loginfo("Moving object safe distance away s.t. hand can reset.")
-        large_disp = tf.transformations.translation_matrix([0,1,0])
+        large_disp = tf.transformations.translation_matrix([0, 1, 0])
         large_mat = np.dot(mat_obj, large_disp)
         self.set_model_pose(large_mat, self.object_name)
 
@@ -183,7 +186,34 @@ class GazeboInterface:
         self.wait_until_reached_pose(mat_shell)
         self.set_model_pose(mat_obj, self.object_name)
 
+        self.close_until_contact_and_tighten()
+
+        # wait for grasp to stabilize
+        rospy.sleep(0.5)
+
+        self.sim_pause()
+
+    def close_until_contact_and_tighten(self, tighten_incr = 0.1):
         res = self.close_until_contact(TriggerRequest())
         rospy.loginfo("Closed reflex fingers until contact: \n" + str(res))
-        rospy.sleep(1)
+
+        res = self.pos_incr(tighten_incr, tighten_incr, tighten_incr, 0)
+        rospy.loginfo("Tightened fingers by " + str(tighten_incr) + ": \n" + str(res))
+
+    def regrasp(self, wrist_pos_incr, back_off_finger=-0.2):
+        self.sim_unpause()
+        rospy.loginfo("Regrasping.")
+
+        # back off fingers by a small amount
+        res = self.pos_incr(back_off_finger, back_off_finger, back_off_finger, 0)
+        rospy.sleep(0.3)
+        rospy.loginfo("Backed off fingers by " + str(back_off_finger) + ": \n" + str(res))
+
+        # apply relative wrist increment
+        self.cmd_wrist_pos_incr(wrist_pos_incr)
+        self.close_until_contact_and_tighten()
+
+        # wait for grasp to stabilize
+        rospy.sleep(0.5)
+
         self.sim_pause()
