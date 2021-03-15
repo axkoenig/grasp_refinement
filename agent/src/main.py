@@ -19,6 +19,9 @@ def main(args):
     if args.environment == "refinement_6_dof":
         from envs.refinement_6_dof import GazeboEnv, TensorboardCallback
         env = GazeboEnv(args.exec_secs, args.max_ep_len, args.joint_lim, args.obj_shift_tol)
+    elif args.environment == "refinement_epsilon":
+        from envs.refinement_epsilon import GazeboEnv, TensorboardCallback
+        env = GazeboEnv(args.exec_secs, args.max_ep_len, args.joint_lim, args.obj_shift_tol)
     else:
         raise ValueError("Invalid environment name.")
 
@@ -57,7 +60,7 @@ def main(args):
 if __name__ == "__main__":
     parser = ArgumentParser("Trains an RL algorithm for autonomous grasping.")
 
-    parser.add_argument("--environment", type=str, default="refinement_6_dof", help="Environment to load.")
+    parser.add_argument("--environment", type=str, default="refinement_epsilon", help="Environment to load.")
     parser.add_argument("--train", type=int, default=1, help="Whether to train or evaluate the model.")
     parser.add_argument("--max_ep_len", type=float, default=8, help="Maximum episode length in secs sim time.")
     parser.add_argument("--joint_lim", type=float, default=2, help="End episode if joint limit reached.")
