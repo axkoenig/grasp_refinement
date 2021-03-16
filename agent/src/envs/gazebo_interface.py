@@ -61,6 +61,9 @@ class GazeboInterface:
         except rospy.ServiceException as e:
             rospy.loginfo(self.pause_name + " service call failed")
 
+    def ros_vector_to_list(self, ros_vector):
+        return [ros_vector.x, ros_vector.y, ros_vector.z]
+
     def run_for_seconds(self, secs):
         self.sim_unpause()
         rospy.sleep(secs)
