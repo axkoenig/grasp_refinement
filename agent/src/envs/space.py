@@ -43,3 +43,25 @@ class Space:
         if verbose:
             print("Cur values of " + self.__class__.__name__ + f" is {cur_vals}.")
         return cur_vals
+
+    def get_cur_vals_by_name(self, name, verbose=False):
+        "Returns a concatenation of all curent values that match the given name."
+        cur_vals = np.empty((0,))
+        for i in range(self.dim):
+            if self.vars[i].name == name:
+                cur_vals = np.append(cur_vals, self.vars[i].cur_val)
+        if verbose:
+            print("Cur values of " + self.__class__.__name__ + f" that match the name {name} are {cur_vals}.")
+        return cur_vals
+
+    def set_cur_val_by_name(self, name, cur_val):
+        for i in range(self.dim):
+            if self.vars[i].name == name:
+                self.vars[i].cur_val = cur_val
+                return
+        raise ValueError("Variable with name {name} not found.")
+
+    def print_all_cur_vals(self):
+        print("\n=== Cur values of " + self.__class__.__name__ + f" ===")
+        for i in range(self.dim):
+            print(self.vars[i].name + ": " + str(self.vars[i].cur_val))
