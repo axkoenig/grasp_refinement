@@ -11,8 +11,10 @@ int main(int argc, char **argv)
     ROS_INFO("Launched %s.", node_name.c_str());
 
     ros::NodeHandle nh;
-    bool use_sim_data_hand = true; 
-    bool use_sim_data_obj = true; 
+    bool use_sim_data_hand = true;
+    bool use_sim_data_obj = true;
     ReflexInterface ri = ReflexInterface(&nh, use_sim_data_hand, use_sim_data_obj);
-    ros::spin();
+    
+    ros::MultiThreadedSpinner spinner(0);
+    spinner.spin();
 }
