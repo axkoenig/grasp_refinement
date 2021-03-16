@@ -153,8 +153,8 @@ tf2::Vector3 BaselineController::getApproachDirectionSingleContact()
 
     tf2::Vector3 normal;
     prox
-        ? normal = ri->state->finger_states[finger_id]->getProximalNormal()
-        : normal = ri->state->finger_states[finger_id]->getDistalNormal();
+        ? normal = ri->state->finger_states[finger_id]->getProximalNormalInShellFrame()
+        : normal = ri->state->finger_states[finger_id]->getDistalNormalInShellFrame();
 
     float scaling_factor = backoff_factor * step_size;
 
