@@ -169,18 +169,21 @@ reflex_interface::TactileInfoStamped HandState::getTactilePosesMsg()
 
     for (int i = 0; i < num_fingers; i++)
     {
-        std::vector<tf2::Vector3> tactile_pos = finger_states[i]->getTactilePositionsInShellFrame();
-        
         tps.prox_normal[i] = tf2::toMsg(finger_states[i]->getProximalNormalInShellFrame());
         tps.dist_normal[i] = tf2::toMsg(finger_states[i]->getDistalNormalInShellFrame());
         tps.prox_in_contact[i] = finger_states[i]->hasProximalContact();
         tps.dist_in_contact[i] = finger_states[i]->hasDistalContact();
         tps.finger_in_contact[i] = finger_states[i]->hasContact();
 
+        std::vector<tf2::Vector3> tactile_pos = finger_states[i]->getTactilePositionsInShellFrame();
+
         for (int j = 0; j < num_sensors_per_finger; j++)
         {
-            tf2::toMsg(tactile_pos[j], tps.tactile_position[j + i * num_sensors_per_finger]);
-        } 
+            int idx = j + i * num_sensors_per_finger;
+            tf2::toMsg(tactile_pos[j], tps.tactile_position[idx]);
+            tps.sensor_contact[idx] = finger_states[i]->getSensorContacts()[j];
+            tps.sensor_pressure[idx] = finger_states[i]->getSensorPressures()[j];
+        }
     }
     return tps;
 }
