@@ -21,6 +21,7 @@ HandState::HandState(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_d
     epsilon_pub = nh->advertise<std_msgs::Float64>("/reflex/epsilon", 1);
     epsilon_f_pub = nh->advertise<std_msgs::Float64>("/reflex/epsilon_force", 1);
     epsilon_t_pub = nh->advertise<std_msgs::Float64>("/reflex/epsilon_torque", 1);
+    tactile_poses_pub = nh->advertise<reflex_interface::TactilePosesStamped>("/reflex/tactile_poses", 1);
     getParam(nh, &object_name, "object_name", false);
 }
 
@@ -72,15 +73,15 @@ void HandState::callback(const reflex_msgs::Hand &msg)
 
     if (use_sim_data_hand)
     {
+        updateHandStateWorldSim();
+
         // TODO shift this to wrist_controller broadcast Gazebo wrist pose to ROS tf tree
-        updateContactInfoWorldSim();
         tf2::Transform wrist_measured = getLinkPoseSim(nh, "shell", "world", false);
         broadcastModelState(wrist_measured, "world", "reflex_interface/wrist_measured", &br_reflex_measured);
     }
     else
     {
-        updateContactInfoWorldReal();
-        // measured wrist pose should be published by robot ROS driver!
+        updateHandStateWorldReal();
     }
 
     std_msgs::Float64 epsilon_msg, epsilon_f_msg, epsilon_t_msg;
@@ -96,7 +97,7 @@ void HandState::callback(const reflex_msgs::Hand &msg)
         fillEpsilonFTSeparate(obj_measured.getOrigin(), epsilon_force, epsilon_torque);
         epsilon_f_msg.data = epsilon_force;
         epsilon_t_msg.data = epsilon_torque;
-        // TODO commented out for now because not using this and heavy computation 
+        // TODO commented out for now because not using this and heavy computation
         // epsilon_msg.data = getEpsilon(obj_measured.getOrigin());
     }
     else
@@ -110,6 +111,7 @@ void HandState::callback(const reflex_msgs::Hand &msg)
     epsilon_pub.publish(epsilon_msg);
     epsilon_f_pub.publish(epsilon_f_msg);
     epsilon_t_pub.publish(epsilon_t_msg);
+    tactile_poses_pub.publish(getTactilePosesMsg());
 }
 
 void HandState::broadcastModelState(tf2::Transform tf, std::string source_frame, std::string target_frame, tf2_ros::TransformBroadcaster *br)
@@ -135,7 +137,7 @@ HandState::ContactState HandState::getContactState()
     }
 }
 
-void HandState::updateContactInfoWorldSim()
+void HandState::updateHandStateWorldSim()
 {
     // reset variables
     contact_positions_world.clear();
@@ -143,11 +145,11 @@ void HandState::updateContactInfoWorldSim()
     num_sensors_in_contact_per_finger = {0, 0, 0};
     fingers_in_contact = {0, 0, 0};
 
-    // iterate over fingers
     for (int i = 0; i < num_fingers; i++)
     {
-        int num_contacts_on_finger = 0; 
-        finger_states[i]->fillContactInfoWorldSim(contact_positions_world, contact_normals_world, num_contacts_on_finger);
+        finger_states[i]->updateCurLinkFramesInShellFrameSim();
+        int num_contacts_on_finger = 0;
+        finger_states[i]->fillContactInfoInWorldFrameSim(contact_positions_world, contact_normals_world, num_contacts_on_finger);
 
         if (num_contacts_on_finger > 0)
         {
@@ -157,8 +159,35 @@ void HandState::updateContactInfoWorldSim()
     }
 }
 
-void HandState::updateContactInfoWorldReal()
+reflex_interface::TactilePosesStamped HandState::getTactilePosesMsg()
 {
+    // create msg for positions and normals of finger surface above each tactile sensor
+
+    reflex_interface::TactilePosesStamped tps;
+    tps.header.stamp = ros::Time::now();
+    tps.header.frame_id = "shell";
+
+    for (int i = 0; i < num_fingers; i++)
+    {
+        std::vector<tf2::Vector3> tactile_pos = finger_states[i]->getTactilePositionsInShellFrame();
+        
+        tps.prox_finger_normal[i] = tf2::toMsg(finger_states[i]->getProximalNormalInShellFrame());
+        tps.dist_finger_normal[i] = tf2::toMsg(finger_states[i]->getDistalNormalInShellFrame());
+
+        for (int j = 0; j < num_sensors_per_finger; j++)
+        {
+            tf2::toMsg(tactile_pos[j], tps.tactile_position[j + i * num_sensors_per_finger]);
+        } 
+    }
+    return tps;
+}
+
+void HandState::updateHandStateWorldReal()
+{
+    for (int i = 0; i < num_fingers; i++)
+    {
+        finger_states[i]->updateCurLinkFramesInShellFrameReal();
+    }
     // TODO: solve with forward kinematics and compare with results we obtain from simulation.
     // because we want this in world coosy we also need the gripper pose.
     throw "Not implemented.";

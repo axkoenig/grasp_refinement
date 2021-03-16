@@ -6,6 +6,7 @@
 #include <ros/ros.h>
 #include <reflex_msgs/Hand.h>
 #include <tf2_ros/transform_broadcaster.h>
+#include <reflex_interface/TactilePosesStamped.h>
 
 #include "reflex_interface/finger_state.hpp"
 #include "reflex_interface/grasp_quality.hpp"
@@ -44,8 +45,9 @@ private:
     ros::Publisher epsilon_f_pub;
     ros::Publisher epsilon_t_pub;
     ros::Publisher num_contacts_pub;
+    ros::Publisher tactile_poses_pub;
     GraspQuality grasp_quality = GraspQuality();
-    
+
     std::string object_name;
     ContactState cur_state;
     bool use_sim_data_hand;
@@ -55,9 +57,12 @@ private:
     std::vector<int> num_sensors_in_contact_per_finger = {0, 0, 0}; // example: two sensors in contact on finger 1 and one on finger 2: {2, 1, 0}
     std::vector<bool> fingers_in_contact = {0, 0, 0};               // example: fingers 1 and 3 in contact: {1, 0, 1}
     void callback(const reflex_msgs::Hand &msg);
-    void updateContactInfoWorldSim();
-    void updateContactInfoWorldReal();
+    void updateHandStateWorldSim();
+    void updateHandStateWorldReal();
+    void publishTactilePoses();
     void broadcastModelState(tf2::Transform tf, std::string source_frame, std::string target_frame, tf2_ros::TransformBroadcaster *br);
+
+    reflex_interface::TactilePosesStamped getTactilePosesMsg();
     tf2_ros::TransformBroadcaster br_reflex_measured;
     tf2_ros::TransformBroadcaster br_obj_measured;
 };
