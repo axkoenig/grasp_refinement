@@ -11,6 +11,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <std_srvs/Trigger.h>
 
+#include "reflex_interface/GraspPrimitive.h"
 #include "reflex_interface/PosIncrement.h"
 
 std::string node_name = "finger_teleop_node";
@@ -128,11 +129,11 @@ int main(int argc, char **argv)
     ROS_INFO("Launched %s node.", node_name.c_str());
 
     // service clients for hand_command_node
-    ros::ServiceClient open_client = nh.serviceClient<std_srvs::Trigger>(open_srv_name);
-    ros::ServiceClient close_client = nh.serviceClient<std_srvs::Trigger>(close_srv_name);
-    ros::ServiceClient pinch_client = nh.serviceClient<std_srvs::Trigger>(pinch_srv_name);
-    ros::ServiceClient sph_open_client = nh.serviceClient<std_srvs::Trigger>(sph_open_srv_name);
-    ros::ServiceClient sph_close_client = nh.serviceClient<std_srvs::Trigger>(sph_close_srv_name);
+    ros::ServiceClient open_client = nh.serviceClient<reflex_interface::GraspPrimitive>(open_srv_name);
+    ros::ServiceClient close_client = nh.serviceClient<reflex_interface::GraspPrimitive>(close_srv_name);
+    ros::ServiceClient pinch_client = nh.serviceClient<reflex_interface::GraspPrimitive>(pinch_srv_name);
+    ros::ServiceClient sph_open_client = nh.serviceClient<reflex_interface::GraspPrimitive>(sph_open_srv_name);
+    ros::ServiceClient sph_close_client = nh.serviceClient<reflex_interface::GraspPrimitive>(sph_close_srv_name);
     ros::ServiceClient pos_incr_client = nh.serviceClient<reflex_interface::PosIncrement>(pos_incr_srv_name);
     ros::ServiceClient close_until_contact_client = nh.serviceClient<std_srvs::Trigger>(close_until_contact_srv_name);
     ros::ServiceClient tighten_grip_client = nh.serviceClient<std_srvs::Trigger>(tighten_grip_srv_name);
@@ -140,6 +141,7 @@ int main(int argc, char **argv)
     // service messages
     std_srvs::Trigger trigger;
     reflex_interface::PosIncrement pos_incr;
+    reflex_interface::GraspPrimitive gp;
 
     // init transform broadcaster
     static tf2_ros::TransformBroadcaster br;
@@ -162,7 +164,7 @@ int main(int argc, char **argv)
     // send initial wrist transform
     ts.header.stamp = ros::Time::now();
     br.sendTransform(ts);
-    open_client.call(trigger);
+    open_client.call(gp);
 
     ROS_INFO("Listening to keyboard input...");
     char key(' ');
@@ -214,32 +216,32 @@ int main(int argc, char **argv)
         {
         case 'y':
         {
-            pinch_client.call(trigger);
-            ROS_INFO_STREAM(trigger.response.message);
+            pinch_client.call(gp);
+            ROS_INFO_STREAM(gp.response.message);
             break;
         }
         case 'x':
         {
-            open_client.call(trigger);
-            ROS_INFO_STREAM(trigger.response.message);
+            open_client.call(gp);
+            ROS_INFO_STREAM(gp.response.message);
             break;
         }
         case 'c':
         {
-            close_client.call(trigger);
-            ROS_INFO_STREAM(trigger.response.message);
+            close_client.call(gp);
+            ROS_INFO_STREAM(gp.response.message);
             break;
         }
         case 'v':
         {
-            sph_open_client.call(trigger);
-            ROS_INFO_STREAM(trigger.response.message);
+            sph_open_client.call(gp);
+            ROS_INFO_STREAM(gp.response.message);
             break;
         }
         case 'b':
         {
-            sph_close_client.call(trigger);
-            ROS_INFO_STREAM(trigger.response.message);
+            sph_close_client.call(gp);
+            ROS_INFO_STREAM(gp.response.message);
             break;
         }
         case 'n':
