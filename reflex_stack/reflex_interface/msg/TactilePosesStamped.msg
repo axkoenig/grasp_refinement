@@ -6,8 +6,8 @@
 std_msgs/Header header
 
 # order is [finger_1, finger_2, finger_3]
-geometry_msgs/Vector3[3] prox_finger_normal
-geometry_msgs/Vector3[3] dist_finger_normal
+geometry_msgs/Vector3[3] prox_normal
+geometry_msgs/Vector3[3] dist_normal
 
 # boolean flags if link is in contact
 #order is [finger_1, finger_2, finger_3]
