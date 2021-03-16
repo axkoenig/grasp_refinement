@@ -128,8 +128,9 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
                                     msg.states[num_contact_states - 1].contact_positions[i].z};
 
         // transform contact_pos from world frame to pad origin
-        contact_pos = world_to_link.inverse() * contact_pos - link_to_pad_origin;
-        tf2::Vector3 contact_in_link_frame = world_to_link.inverse() * contact_pos;
+        tf2::Transform link_to_world = world_to_link.inverse();
+        contact_pos = link_to_world * contact_pos - link_to_pad_origin;
+        tf2::Vector3 contact_in_link_frame = link_to_world * contact_pos;
 
         // stop if contact on back of finger
         if (contact_pos[2] < 0.0)
