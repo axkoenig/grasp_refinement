@@ -9,6 +9,7 @@
 #include <reflex_msgs/PoseCommand.h>
 
 #include "reflex_interface/PosIncrement.h"
+#include "reflex_interface/GraspPrimitive.h"
 #include "reflex_interface/hand_state.hpp"
 
 class HandCommand
@@ -24,7 +25,7 @@ public:
         SphericalOpen,
         SphericalClose
     };
-    void executePrimitive(Primitive primitive, bool verbose = true);
+    bool executePrimitive(Primitive primitive, bool blocking = false, float tolerance = 0.1, float time_out = 4, std::string *status_msg = nullptr);
 
 private:
     HandState *state;
@@ -67,17 +68,18 @@ private:
 
     std::string getStatusMsg();
 
-    bool callbackOpen(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-    bool callbackClose(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-    bool callbackPinch(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-    bool callbackSphOpen(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-    bool callbackSphClose(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
+    bool callbackOpen(reflex_interface::GraspPrimitive::Request &req, reflex_interface::GraspPrimitive::Response &res);
+    bool callbackClose(reflex_interface::GraspPrimitive::Request &req, reflex_interface::GraspPrimitive::Response &res);
+    bool callbackPinch(reflex_interface::GraspPrimitive::Request &req, reflex_interface::GraspPrimitive::Response &res);
+    bool callbackSphOpen(reflex_interface::GraspPrimitive::Request &req, reflex_interface::GraspPrimitive::Response &res);
+    bool callbackSphClose(reflex_interface::GraspPrimitive::Request &req, reflex_interface::GraspPrimitive::Response &res);
     bool callbackPosIncr(reflex_interface::PosIncrement::Request &req, reflex_interface::PosIncrement::Response &res);
     bool callbackCloseUntilContact(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
     bool callbackTightenGrip(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
 
-    void executePosIncrement(float increment[4]);
-    void sendCommands();
+    bool executePosIncrement(float increment[4], bool blocking = false, float tolerance = 0.1, float time_out = 4);
+    void publishCommand();
+    bool waitUntilFinished(float tolerance, float time_out);
 };
 
 #endif

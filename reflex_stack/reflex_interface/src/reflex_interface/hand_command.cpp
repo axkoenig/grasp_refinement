@@ -1,3 +1,6 @@
+#include <algorithm>
+#include <bits/stdc++.h>
+
 #include "reflex_interface/PosIncrement.h"
 #include "reflex_interface/hand_command.hpp"
 
@@ -28,11 +31,11 @@ std::string HandCommand::getStatusMsg()
             str += ", ";
         }
     }
-    std::string msg = "Sent [" + str + "] to " + pos_cmd_topic;
+    std::string msg = "Sent [" + str + "] to " + pos_cmd_topic + ". ";
     return msg;
 }
 
-void HandCommand::executePrimitive(HandCommand::Primitive primitive, bool verbose)
+bool HandCommand::executePrimitive(HandCommand::Primitive primitive, bool blocking, float tolerance, float time_out, std::string *status_msg)
 {
     switch (primitive)
     {
@@ -62,50 +65,78 @@ void HandCommand::executePrimitive(HandCommand::Primitive primitive, bool verbos
         break;
     }
     }
-    this->sendCommands();
-    if (verbose)
+    this->publishCommand();
+    *status_msg = getStatusMsg();
+
+    if (!blocking)
     {
-        ROS_INFO_STREAM(getStatusMsg());
+        return true;
+    }
+    if (waitUntilFinished(tolerance, time_out))
+    {
+        *status_msg += "All fingers reached their desired positions.";
+        return true;
+    }
+    else
+    {
+        *status_msg += "Not all fingers reached their desired positions of within a time out of " +
+                       std::to_string(time_out) + " secs and a tolerance of " + std::to_string(tolerance) + ".";
+        return false;
     }
 }
 
-bool HandCommand::callbackOpen(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
+bool HandCommand::waitUntilFinished(float tolerance, float time_out)
 {
-    this->executePrimitive(Open);
-    res.success = true;
-    res.message = this->getStatusMsg();
+    ros::Duration allowed_duration(time_out);
+    ros::Time start_time = ros::Time::now();
+    ros::Rate rate(20);
+    std::array<float, 4> diff = {0, 0, 0, 0};
+
+    while (allowed_duration > (ros::Time::now() - start_time))
+    {
+        diff[0] = abs(cur_cmd[0] - state->finger_states[0]->getProximalAngle());
+        diff[1] = abs(cur_cmd[1] - state->finger_states[1]->getProximalAngle());
+        diff[2] = abs(cur_cmd[2] - state->finger_states[2]->getProximalAngle());
+        diff[3] = abs(cur_cmd[3] - state->finger_states[0]->getPreshapeAngle() * 2);
+
+        if (std::all_of(diff.begin(), diff.end(), [tolerance](float x) { return x < tolerance; }))
+        {
+            return true;
+        }
+
+        ros::spinOnce();
+        rate.sleep();
+    }
+    return false;
+}
+
+bool HandCommand::callbackOpen(reflex_interface::GraspPrimitive::Request &req, reflex_interface::GraspPrimitive::Response &res)
+{
+    res.success = executePrimitive(Open, req.blocking, req.tolerance, req.time_out, &res.message);
     return true;
 }
 
-bool HandCommand::callbackClose(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
+bool HandCommand::callbackClose(reflex_interface::GraspPrimitive::Request &req, reflex_interface::GraspPrimitive::Response &res)
 {
-    this->executePrimitive(Close);
-    res.success = true;
-    res.message = this->getStatusMsg();
+    res.success = executePrimitive(Close, req.blocking, req.tolerance, req.time_out, &res.message);
     return true;
 }
 
-bool HandCommand::callbackPinch(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
+bool HandCommand::callbackPinch(reflex_interface::GraspPrimitive::Request &req, reflex_interface::GraspPrimitive::Response &res)
 {
-    this->executePrimitive(Pinch);
-    res.success = true;
-    res.message = this->getStatusMsg();
+    res.success = executePrimitive(Pinch, req.blocking, req.tolerance, req.time_out, &res.message);
     return true;
 }
 
-bool HandCommand::callbackSphOpen(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
+bool HandCommand::callbackSphOpen(reflex_interface::GraspPrimitive::Request &req, reflex_interface::GraspPrimitive::Response &res)
 {
-    this->executePrimitive(SphericalOpen);
-    res.success = true;
-    res.message = this->getStatusMsg();
+    res.success = executePrimitive(SphericalOpen, req.blocking, req.tolerance, req.time_out, &res.message);
     return true;
 }
 
-bool HandCommand::callbackSphClose(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
+bool HandCommand::callbackSphClose(reflex_interface::GraspPrimitive::Request &req, reflex_interface::GraspPrimitive::Response &res)
 {
-    this->executePrimitive(SphericalClose);
-    res.success = true;
-    res.message = this->getStatusMsg();
+    res.success = executePrimitive(SphericalClose, req.blocking, req.tolerance, req.time_out, &res.message);
     return true;
 }
 
@@ -115,18 +146,23 @@ bool HandCommand::callbackPosIncr(reflex_interface::PosIncrement::Request &req, 
                           (float)req.f2,
                           (float)req.f3,
                           (float)req.preshape};
-    this->executePosIncrement(increment);
-    res.success = true;
+    res.success = executePosIncrement(increment, req.blocking, req.tolerance, req.time_out);
     res.message = this->getStatusMsg();
+    if (res.success == false)
+    {
+        res.message += "Not all fingers reached their desired positions of within a time out of " +
+                       std::to_string(req.time_out) + " secs and a tolerance of " + std::to_string(req.tolerance) + ".";
+    }
     return true;
 }
 
 bool HandCommand::callbackCloseUntilContact(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
 {
+    // this service is blocking by default
     ros::Duration allowed_duration(close_until_contact_time_out);
     ros::Time start_time = ros::Time::now();
-    std::vector<bool> fingers_in_contact = {0, 0, 0};   // example: finger 1 in contact {1, 0, 0}
-    std::vector<bool> contact_memory = {0, 0, 0};       // example: finger 1 and 2 were in contact throughout this service call {1, 1, 0}
+    std::vector<bool> fingers_in_contact = {0, 0, 0}; // example: finger 1 in contact {1, 0, 0}
+    std::vector<bool> contact_memory = {0, 0, 0};     // example: finger 1 and 2 were in contact throughout this service call {1, 1, 0}
 
     ros::Rate rate(close_until_contact_pub_rate);
 
@@ -184,7 +220,7 @@ bool HandCommand::callbackTightenGrip(std_srvs::Trigger::Request &req, std_srvs:
     return true;
 }
 
-void HandCommand::executePosIncrement(float increment[4])
+bool HandCommand::executePosIncrement(float increment[4], bool blocking, float tolerance, float time_out)
 {
     float cur_state[4] = {state->finger_states[0]->getProximalAngle(),
                           state->finger_states[1]->getProximalAngle(),
@@ -199,10 +235,15 @@ void HandCommand::executePosIncrement(float increment[4])
             cur_cmd[i] = val;
         }
     }
-    this->sendCommands();
+    this->publishCommand();
+    if (!blocking)
+    {
+        return true;
+    }
+    return waitUntilFinished(tolerance, time_out);
 }
 
-void HandCommand::sendCommands()
+void HandCommand::publishCommand()
 {
     pos_cmd.f1 = cur_cmd[0];
     pos_cmd.f2 = cur_cmd[1];
