@@ -6,7 +6,7 @@
 #include <ros/ros.h>
 #include <reflex_msgs/Hand.h>
 #include <tf2_ros/transform_broadcaster.h>
-#include <reflex_interface/TactileInfoStamped.h>
+#include <reflex_interface/HandStateStamped.h>
 
 #include "reflex_interface/finger_state.hpp"
 #include "reflex_interface/grasp_quality.hpp"
@@ -62,7 +62,7 @@ private:
     void publishTactilePoses();
     void broadcastModelState(tf2::Transform tf, std::string source_frame, std::string target_frame, tf2_ros::TransformBroadcaster *br);
 
-    reflex_interface::TactileInfoStamped getTactilePosesMsg();
+    reflex_interface::HandStateStamped getHandStateMsg();
     tf2_ros::TransformBroadcaster br_reflex_measured;
     tf2_ros::TransformBroadcaster br_obj_measured;
 };

@@ -21,7 +21,7 @@ HandState::HandState(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_d
     epsilon_pub = nh->advertise<std_msgs::Float64>("/reflex/epsilon", 1);
     epsilon_f_pub = nh->advertise<std_msgs::Float64>("/reflex/epsilon_force", 1);
     epsilon_t_pub = nh->advertise<std_msgs::Float64>("/reflex/epsilon_torque", 1);
-    tactile_poses_pub = nh->advertise<reflex_interface::TactileInfoStamped>("/reflex/tactile_poses", 1);
+    tactile_poses_pub = nh->advertise<reflex_interface::HandStateStamped>("/reflex/ri_hand_state", 1);
     getParam(nh, &object_name, "object_name", false);
 }
 
@@ -111,7 +111,7 @@ void HandState::callback(const reflex_msgs::Hand &msg)
     epsilon_pub.publish(epsilon_msg);
     epsilon_f_pub.publish(epsilon_f_msg);
     epsilon_t_pub.publish(epsilon_t_msg);
-    tactile_poses_pub.publish(getTactilePosesMsg());
+    tactile_poses_pub.publish(getHandStateMsg());
 }
 
 void HandState::broadcastModelState(tf2::Transform tf, std::string source_frame, std::string target_frame, tf2_ros::TransformBroadcaster *br)
@@ -159,33 +159,35 @@ void HandState::updateHandStateWorldSim()
     }
 }
 
-reflex_interface::TactileInfoStamped HandState::getTactilePosesMsg()
+reflex_interface::HandStateStamped HandState::getHandStateMsg()
 {
     // create msg for positions and normals of finger surface above each tactile sensor
 
-    reflex_interface::TactileInfoStamped tps;
-    tps.header.stamp = ros::Time::now();
-    tps.header.frame_id = "shell";
+    reflex_interface::HandStateStamped hss;
+    hss.header.stamp = ros::Time::now();
+    hss.header.frame_id = "shell";
+    hss.preshape_angle = 2 * finger_states[0]->getPreshapeAngle();
 
     for (int i = 0; i < num_fingers; i++)
     {
-        tps.prox_normal[i] = tf2::toMsg(finger_states[i]->getProximalNormalInShellFrame());
-        tps.dist_normal[i] = tf2::toMsg(finger_states[i]->getDistalNormalInShellFrame());
-        tps.prox_in_contact[i] = finger_states[i]->hasProximalContact();
-        tps.dist_in_contact[i] = finger_states[i]->hasDistalContact();
-        tps.finger_in_contact[i] = finger_states[i]->hasContact();
+        hss.finger_state[i].prox_normal = tf2::toMsg(finger_states[i]->getProximalNormalInShellFrame());
+        hss.finger_state[i].dist_normal = tf2::toMsg(finger_states[i]->getDistalNormalInShellFrame());
+        hss.finger_state[i].prox_in_contact = finger_states[i]->hasProximalContact();
+        hss.finger_state[i].dist_in_contact = finger_states[i]->hasDistalContact();
+        hss.finger_state[i].finger_in_contact = finger_states[i]->hasContact();
+        hss.finger_state[i].proximal_angle = finger_states[i]->getProximalAngle();
+        hss.finger_state[i].distal_angle = finger_states[i]->getDistalAngle();
 
         std::vector<tf2::Vector3> tactile_pos = finger_states[i]->getTactilePositionsInShellFrame();
 
         for (int j = 0; j < num_sensors_per_finger; j++)
         {
-            int idx = j + i * num_sensors_per_finger;
-            tf2::toMsg(tactile_pos[j], tps.tactile_position[idx]);
-            tps.sensor_contact[idx] = finger_states[i]->getSensorContacts()[j];
-            tps.sensor_pressure[idx] = finger_states[i]->getSensorPressures()[j];
+            tf2::toMsg(tactile_pos[j], hss.finger_state[i].tactile_position[j]);
+            hss.finger_state[i].sensor_contact[j] = finger_states[i]->getSensorContacts()[j];
+            hss.finger_state[i].sensor_pressure[j] = finger_states[i]->getSensorPressures()[j];
         }
     }
-    return tps;
+    return hss;
 }
 
 void HandState::updateHandStateWorldReal()
