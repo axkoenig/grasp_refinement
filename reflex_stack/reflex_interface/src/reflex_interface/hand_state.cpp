@@ -21,7 +21,7 @@ HandState::HandState(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_d
     epsilon_pub = nh->advertise<std_msgs::Float64>("/reflex/epsilon", 1);
     epsilon_f_pub = nh->advertise<std_msgs::Float64>("/reflex/epsilon_force", 1);
     epsilon_t_pub = nh->advertise<std_msgs::Float64>("/reflex/epsilon_torque", 1);
-    tactile_poses_pub = nh->advertise<reflex_interface::TactilePosesStamped>("/reflex/tactile_poses", 1);
+    tactile_poses_pub = nh->advertise<reflex_interface::TactileInfoStamped>("/reflex/tactile_poses", 1);
     getParam(nh, &object_name, "object_name", false);
 }
 
@@ -159,11 +159,11 @@ void HandState::updateHandStateWorldSim()
     }
 }
 
-reflex_interface::TactilePosesStamped HandState::getTactilePosesMsg()
+reflex_interface::TactileInfoStamped HandState::getTactilePosesMsg()
 {
     // create msg for positions and normals of finger surface above each tactile sensor
 
-    reflex_interface::TactilePosesStamped tps;
+    reflex_interface::TactileInfoStamped tps;
     tps.header.stamp = ros::Time::now();
     tps.header.frame_id = "shell";
 
