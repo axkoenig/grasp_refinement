@@ -173,6 +173,9 @@ reflex_interface::TactilePosesStamped HandState::getTactilePosesMsg()
         
         tps.prox_finger_normal[i] = tf2::toMsg(finger_states[i]->getProximalNormalInShellFrame());
         tps.dist_finger_normal[i] = tf2::toMsg(finger_states[i]->getDistalNormalInShellFrame());
+        tps.prox_in_contact[i] = finger_states[i]->hasProximalContact();
+        tps.dist_in_contact[i] = finger_states[i]->hasDistalContact();
+        tps.finger_in_contact[i] = finger_states[i]->hasContact();
 
         for (int j = 0; j < num_sensors_per_finger; j++)
         {

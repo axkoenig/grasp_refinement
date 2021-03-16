@@ -9,5 +9,11 @@ std_msgs/Header header
 geometry_msgs/Vector3[3] prox_finger_normal
 geometry_msgs/Vector3[3] dist_finger_normal
 
+# boolean flags if link is in contact
+#order is [finger_1, finger_2, finger_3]
+bool[3] prox_in_contact
+bool[3] dist_in_contact
+bool[3] finger_in_contact
+
 # order is [9*finger_1, 9*finger_2, 9*finger_3]
 geometry_msgs/Point[27] tactile_position
