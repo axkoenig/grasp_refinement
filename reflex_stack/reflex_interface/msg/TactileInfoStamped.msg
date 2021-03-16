@@ -20,4 +20,4 @@ geometry_msgs/Point[27] tactile_position
 
 # for sake of completeness we also re-publish the sensor readings from reflex driver
 bool[27] sensor_contact
-float[27] sensor_pressure
+float64[27] sensor_pressure
