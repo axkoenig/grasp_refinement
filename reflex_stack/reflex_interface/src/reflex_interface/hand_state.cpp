@@ -17,11 +17,7 @@ HandState::HandState(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_d
     this->use_sim_data_hand = use_sim_data_hand;
     this->use_sim_data_obj = use_sim_data_obj;
     state_sub = nh->subscribe("reflex/hand_state", 1, &HandState::callback, this);
-    num_contacts_pub = nh->advertise<std_msgs::Int32>("reflex/num_contacts", 1);
-    epsilon_pub = nh->advertise<std_msgs::Float64>("/reflex/epsilon", 1);
-    epsilon_f_pub = nh->advertise<std_msgs::Float64>("/reflex/epsilon_force", 1);
-    epsilon_t_pub = nh->advertise<std_msgs::Float64>("/reflex/epsilon_torque", 1);
-    tactile_poses_pub = nh->advertise<reflex_interface::HandStateStamped>("/reflex/ri_hand_state", 1);
+    hand_state_pub = nh->advertise<reflex_interface::HandStateStamped>("/reflex_interface/hand_state", 1);
     getParam(nh, &object_name, "object_name", false);
 }
 
@@ -84,10 +80,7 @@ void HandState::callback(const reflex_msgs::Hand &msg)
         updateHandStateWorldReal();
     }
 
-    std_msgs::Float64 epsilon_msg, epsilon_f_msg, epsilon_t_msg;
-    float epsilon_force = 0, epsilon_torque = 0;
-    std_msgs::Int32 num_contacts;
-    num_contacts.data = std::accumulate(num_sensors_in_contact_per_finger.begin(), num_sensors_in_contact_per_finger.end(), 0);
+    num_contacts = std::accumulate(num_sensors_in_contact_per_finger.begin(), num_sensors_in_contact_per_finger.end(), 0);
 
     if (use_sim_data_obj)
     {
@@ -95,10 +88,8 @@ void HandState::callback(const reflex_msgs::Hand &msg)
         tf2::Transform obj_measured = getModelPoseSim(nh, object_name, "world", false);
         broadcastModelState(obj_measured, "world", "reflex_interface/obj_measured", &br_obj_measured);
         fillEpsilonFTSeparate(obj_measured.getOrigin(), epsilon_force, epsilon_torque);
-        epsilon_f_msg.data = epsilon_force;
-        epsilon_t_msg.data = epsilon_torque;
         // TODO commented out for now because not using this and heavy computation
-        // epsilon_msg.data = getEpsilon(obj_measured.getOrigin());
+        // epsilon = getEpsilon(obj_measured.getOrigin());
     }
     else
     {
@@ -107,11 +98,7 @@ void HandState::callback(const reflex_msgs::Hand &msg)
         // epsilon_msg.data = getEpsilon(object_com_world)
         throw "Not implemented.";
     }
-    num_contacts_pub.publish(num_contacts);
-    epsilon_pub.publish(epsilon_msg);
-    epsilon_f_pub.publish(epsilon_f_msg);
-    epsilon_t_pub.publish(epsilon_t_msg);
-    tactile_poses_pub.publish(getHandStateMsg());
+    hand_state_pub.publish(getHandStateMsg());
 }
 
 void HandState::broadcastModelState(tf2::Transform tf, std::string source_frame, std::string target_frame, tf2_ros::TransformBroadcaster *br)
@@ -167,6 +154,10 @@ reflex_interface::HandStateStamped HandState::getHandStateMsg()
     hss.header.stamp = ros::Time::now();
     hss.header.frame_id = "shell";
     hss.preshape_angle = 2 * finger_states[0]->getPreshapeAngle();
+    hss.num_contacts = num_contacts;
+    hss.epsilon = epsilon;
+    hss.epsilon_force = epsilon_force;
+    hss.epsilon_torque = epsilon_torque;
 
     for (int i = 0; i < num_fingers; i++)
     {

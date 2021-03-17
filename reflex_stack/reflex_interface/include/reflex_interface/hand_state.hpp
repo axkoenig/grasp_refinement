@@ -41,21 +41,22 @@ public:
 private:
     ros::NodeHandle *nh;
     ros::Subscriber state_sub;
-    ros::Publisher epsilon_pub;
-    ros::Publisher epsilon_f_pub;
-    ros::Publisher epsilon_t_pub;
-    ros::Publisher num_contacts_pub;
-    ros::Publisher tactile_poses_pub;
+    ros::Publisher hand_state_pub;
     GraspQuality grasp_quality = GraspQuality();
-
     std::string object_name;
     ContactState cur_state;
     bool use_sim_data_hand;
     bool use_sim_data_obj;
+
+    int num_contacts = 0;
+    float epsilon = 0;
+    float epsilon_force = 0;
+    float epsilon_torque = 0;
     std::vector<tf2::Vector3> contact_positions_world;
     std::vector<tf2::Vector3> contact_normals_world;
     std::vector<int> num_sensors_in_contact_per_finger = {0, 0, 0}; // example: two sensors in contact on finger 1 and one on finger 2: {2, 1, 0}
     std::vector<bool> fingers_in_contact = {0, 0, 0};               // example: fingers 1 and 3 in contact: {1, 0, 1}
+    
     void callback(const reflex_msgs::Hand &msg);
     void updateHandStateWorldSim();
     void updateHandStateWorldReal();
