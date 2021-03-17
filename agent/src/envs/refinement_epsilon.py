@@ -126,10 +126,7 @@ class GazeboEnv(gym.Env):
 
         self.hand_pub = rospy.Publisher("reflex/pos_cmd", PoseCommand, queue_size=5)
         self.reward_pub = rospy.Publisher("agent/reward", Float64, queue_size=5)
-        self.num_contacts_sub = rospy.Subscriber("reflex/num_contacts", Int32, self.num_contacts_callback, queue_size=5)
-        self.epsilon_force_sub = rospy.Subscriber("reflex/epsilon_force", Float64, self.epsilon_force_callback, queue_size=5)
-        self.epsilon_torque_sub = rospy.Subscriber("reflex/epsilon_torque", Float64, self.epsilon_torque_callback, queue_size=5)
-        self.hand_state_sub = rospy.Subscriber("reflex/ri_hand_state", HandStateStamped, self.hand_state_callback, queue_size=5)
+        self.hand_state_sub = rospy.Subscriber("reflex_interface/hand_state", HandStateStamped, self.hand_state_callback, queue_size=5)
 
         self.num_contacts = 0
         self.epsilon_force = 0
@@ -139,16 +136,10 @@ class GazeboEnv(gym.Env):
         self.np_random, seed = gym.utils.seeding.np_random(seed)
         return [seed]
 
-    def num_contacts_callback(self, msg):
-        self.num_contacts = msg.data
-
-    def epsilon_force_callback(self, msg):
-        self.epsilon_force = msg.data
-
-    def epsilon_torque_callback(self, msg):
-        self.epsilon_torque = msg.data
-
     def hand_state_callback(self, msg):
+        self.num_contacts = msg.num_contacts
+        self.epsilon_force = msg.epsilon_force
+        self.epsilon_torque = msg.epsilon_torque
 
         self.obs.set_cur_val_by_name("preshape_angle", msg.preshape_angle)
 
@@ -180,22 +171,34 @@ class GazeboEnv(gym.Env):
                 else:
                     self.obs.set_cur_val_by_name("tactile_positions" + id_str, [0, 0, 0])
 
-    def step(self, action):
+    def collect_reward(self, time_steps=20, tot_duration=0.5):
+        # records epsilon over tot_duration and returns average
+        sleep_time = tot_duration / time_steps
+        reward = 0
+        self.gi.sim_unpause()
+        for i in range(time_steps):
+            reward += self.epsilon_force + self.epsilon_torque
+            rospy.sleep(sleep_time)
+        self.gi.sim_pause()
+        return reward / time_steps
 
-        if action[0] > 0.5:
+    def step(self, action):
+        # draw from a bernoulli distribution
+        if np.random.rand() <= action[0]:
+            rospy.loginfo("Regrasping.")
             self.gi.regrasp([action[1], action[2], action[3]])
         else:
-            # run for a short time, and collect new reward
-            self.gi.run_for_seconds(0.01)
+            rospy.loginfo("Staying.")
+
+        reward = self.collect_reward()
+        print(reward)
+        reward_msg = Float64(reward)
+        self.reward_pub.publish(reward_msg)
 
         # get object shift and distance to object (used for logging)
         t_obj, _ = get_tq_from_homo_matrix(self.gi.get_object_pose())
         self.obj_shift = np.linalg.norm(t_obj - self.t_obj_init)
         self.dist_tcp_obj = self.gi.get_dist_tcp_obj()
-
-        reward = self.epsilon_force + self.epsilon_torque
-        reward_msg = Float64(reward)
-        self.reward_pub.publish(reward_msg)
 
         done = False
         logs = {}
@@ -217,9 +220,10 @@ class GazeboEnv(gym.Env):
             done = True
             rospy.loginfo(f"Episode lasted {self.max_ep_len} secs. Setting done = True.")
 
-        return self.obs.get_cur_vals(True), reward, done, logs
+        return self.obs.get_cur_vals(), reward, done, logs
 
     def reset(self):
+        rospy.loginfo("Resetting world.")
         self.gi.reset_world(self.wrist_init_pose, self.obj_init_pose)
 
         # reset vars
@@ -229,4 +233,3 @@ class GazeboEnv(gym.Env):
 
     def close(self):
         rospy.signal_shutdown("Gym is now closing.")
-        rospy.loginfo("Done! Have a nice day.")
