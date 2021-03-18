@@ -2,6 +2,16 @@ import numpy as np
 import tf
 
 
+def get_homo_matrix_from_msg(transform, name, frame, verbose=False):
+    t = [transform.translation.x, transform.translation.y, transform.translation.z]
+    q = [transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w]
+    if verbose:
+        print("Pose of {} relative to {} frame is \n t={}, q={}".format(name, frame, t, q))
+    mat_t = tf.transformations.translation_matrix(t)
+    mat_q = tf.transformations.quaternion_matrix(q)
+    return np.dot(mat_t, mat_q)
+
+
 def get_homo_matrix_from_tq(t, q):
     mat_t = tf.transformations.translation_matrix(t)
     mat_q = tf.transformations.quaternion_matrix(q)
