@@ -21,7 +21,7 @@ def main(args):
         env = GazeboEnv(args.exec_secs, args.max_ep_len, args.joint_lim, args.obj_shift_tol)
     elif args.environment == "refinement_epsilon":
         from envs.refinement_epsilon import GazeboEnv, TensorboardCallback
-        env = GazeboEnv(args.exec_secs, args.max_ep_len, args.joint_lim, args.obj_shift_tol)
+        env = GazeboEnv(args.exec_secs, args.max_ep_len, args.joint_lim, args.obj_shift_tol, args.reward_weight)
     else:
         raise ValueError("Invalid environment name.")
 
@@ -67,6 +67,7 @@ if __name__ == "__main__":
     parser.add_argument("--exec_secs", type=float, default=0.3, help="How long to execute same command on hand.")
     parser.add_argument("--obj_shift_tol", type=float, default=0.03, help="How far object is allowed to shift.")
     parser.add_argument("--time_steps", type=float, default=2000, help="How many time steps to train.")
+    parser.add_argument("--reward_weight", type=float, default=1, help="Weight in reward function.")
     parser.add_argument("--log_name", type=str, default="test", help="Name for log.")
     parser.add_argument("--output_dir", type=str, default="./", help="Path of output directory.")
     parser.add_argument("--chkpt_freq", type=int, default=300, help="Save model every n training steps.")
