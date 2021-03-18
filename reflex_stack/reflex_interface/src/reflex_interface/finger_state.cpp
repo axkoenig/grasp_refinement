@@ -100,8 +100,7 @@ void FingerState::fillContactInfoInWorldFrameSim(std::vector<tf2::Vector3> &cont
                 tf2::Vector3 contact_pos = {0.008 + 0.0097 * (i + 1), 0, 0.014};
 
                 // transform contact position to world coordinates
-                contact_pos = prox_link_pose * contact_pos;
-                contact_positions_world.push_back(prox_link_pose.getOrigin() + contact_pos);
+                contact_positions_world.push_back(prox_link_pose * contact_pos);
             }
             // distal contact
             else
@@ -110,8 +109,7 @@ void FingerState::fillContactInfoInWorldFrameSim(std::vector<tf2::Vector3> &cont
                 normal.normalize();
                 contact_normals_world.push_back(normal);
                 tf2::Vector3 contact_pos = {-0.004 + 0.0091 * (i - 4), 0, 0.0155};
-                contact_pos = dist_link_pose * contact_pos;
-                contact_positions_world.push_back(dist_link_pose.getOrigin() + contact_pos);
+                contact_positions_world.push_back(dist_link_pose * contact_pos);
             }
         }
     }
