@@ -66,8 +66,10 @@ class GazeboInterface:
     def ros_vector_to_list(self, ros_vector):
         return [ros_vector.x, ros_vector.y, ros_vector.z]
 
-    def run_for_seconds(self, secs):
+    def run_for_seconds(self, secs, print_string=""):
         self.sim_unpause()
+        if len(print_string)>0:
+            rospy.loginfo(print_string)
         rospy.sleep(secs)
         self.sim_pause()
 
@@ -175,28 +177,27 @@ class GazeboInterface:
         
         self.sim_unpause()
 
-        res = self.open_hand(True, self.srv_tolerance, self.srv_time_out)
-        # rospy.loginfo("Opened reflex fingers: \n" + str(res))
-
         # move object safe distance away s.t. hand can reset
         large_disp = tf.transformations.translation_matrix([0, 1, 0])
         large_mat = np.dot(mat_obj, large_disp)
         self.set_model_pose(large_mat, self.object_name)
 
-        # move wrist to start position
+        # move wrist to start position and open fingers
         self.last_wrist_pose = mat_shell
         self.send_transform(mat_shell)
-        self.wait_until_reached_pose(mat_shell)
+        self.wait_until_reached_pose(mat_shell)        
+        self.open_hand(True, self.srv_tolerance, self.srv_time_out)
+
+        # reset cylinder and close
         self.set_model_pose(mat_obj, self.object_name)
-
         self.close_until_contact_and_tighten()
-
+        
         # wait for grasp to stabilize
         rospy.sleep(0.2)
 
         self.sim_pause()
 
-    def close_until_contact_and_tighten(self, tighten_incr = 0.1):
+    def close_until_contact_and_tighten(self, tighten_incr = 0.3):
         res = self.close_until_contact(TriggerRequest())
         if self.verbose: 
             rospy.loginfo("Closed reflex fingers until contact: \n" + str(res))
