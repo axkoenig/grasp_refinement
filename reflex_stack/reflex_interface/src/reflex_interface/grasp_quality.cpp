@@ -66,6 +66,10 @@ void GraspQuality::updateGraspWrenchSpace(bool verbose)
         // compute lever arm from object COM to contact position
         tf2::Vector3 r = contact_positions[i] - object_com_world;
 
+        // compute rotation between world z and contact normal
+        tf2::Vector3 world_z = tf2::Vector3(0, 0, 1);
+        tf2::Quaternion rot_to_world_z = tf2::shortestArcQuatNormalize2(contact_normals[i], world_z);
+
         if (verbose)
         {
             ROS_INFO_STREAM("DEBUG: contact_positions[i] " << i << " is " << vec2string(contact_positions[i]));
@@ -75,7 +79,7 @@ void GraspQuality::updateGraspWrenchSpace(bool verbose)
         for (int j = 0; j < num_edges; j++)
         {
             q_phi.setRPY(0, 0, j * phi);
-            tf2::Quaternion q_tot = q_phi * q_beta;
+            tf2::Quaternion q_tot = rot_to_world_z * q_phi * q_beta * rot_to_world_z.inverse();
             q_tot.normalize();
 
             // turn contact normal by multiples of phi, then tilt around beta and get z axis
@@ -105,7 +109,7 @@ float calcRadiusLargestBall(int dim, int num_ft_primitives, coordT *points, int 
         if (isnan(points[i]))
         {
             ROS_WARN("At least one of your qhull points is nan. Returning 0 for epsilon.");
-            return 0.0;
+            return 0;
         }
     }
 
@@ -127,12 +131,14 @@ float calcRadiusLargestBall(int dim, int num_ft_primitives, coordT *points, int 
         qh_freeqhull(qh, !qh_ALL);
         int curlong, totlong;
         qh_memfreeshort(qh, &curlong, &totlong);
-        return 0.0;
+        return 0;
     }
     // find facet that is closest to origin
     coordT origin[dim] = {0, 0, 0};
     boolT bestoutside, isoutside;
     realT bestdist;
+
+    // this qhull routine returns distance from point (here: origin) to nearest facet
     qh_findbestfacet(qh, origin, bestoutside, &bestdist, &isoutside);
 
     if (verbose)
@@ -146,7 +152,9 @@ float calcRadiusLargestBall(int dim, int num_ft_primitives, coordT *points, int 
     qh_freeqhull(qh, !qh_ALL);
     int curlong, totlong;
     qh_memfreeshort(qh, &curlong, &totlong);
-    return abs(bestdist);
+
+    // origin must be within convex hull (force closure!), else return 0
+    return isoutside ? 0 : abs(bestdist);
 }
 
 void GraspQuality::fillEpsilonFTSeparate(const std::vector<tf2::Vector3> &contact_positions,
