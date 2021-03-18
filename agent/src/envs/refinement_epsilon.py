@@ -47,7 +47,12 @@ class ActionSpace(Space):
         super().__init__()
 
         self.add_variable(1, "trigger_regrasp", 0, 0, 1)
-        self.add_variable(3, "wrist_incr", 0, -0.01, 0.01)
+        self.add_variable(2, "wrist_incr", 0, -0.001, 0.001)
+        self.add_variable(1, "wrist_incr_z", 0, -0.005, 0.02)
+
+        # self.add_variable(3, "finger_incr", 0, -0.01, 0.1)
+        # self.add_variable(2, "wrist_incr", 0, -0.0001, 0.0001)
+        # self.add_variable(1, "wrist_incr_z", 0, -0.0005, 0.003)
 
 
 class TensorboardCallback(BaseCallback):
@@ -74,12 +79,14 @@ class TensorboardCallback(BaseCallback):
         self.cum_obj_shift = 0
 
     def _on_step(self) -> bool:
+        self.cur_num_regrasps = self.training_env.get_attr("num_regrasps")[0]
         self.cur_num_contacts = self.training_env.get_attr("num_contacts")[0]
         self.cur_dist_tcp_obj = self.training_env.get_attr("dist_tcp_obj")[0]
         self.cur_epsilon_force = self.training_env.get_attr("epsilon_force")[0]
         self.cur_epsilon_torque = self.training_env.get_attr("epsilon_torque")[0]
         self.cur_obj_shift = self.training_env.get_attr("obj_shift")[0]
 
+        self.logger.record("step/cur_num_regrasps", self.cur_num_regrasps)
         self.logger.record("step/cur_num_contacts", self.cur_num_contacts)
         self.logger.record("step/cur_dist_tcp_obj", self.cur_dist_tcp_obj)
         self.logger.record("step/cur_epsilon_force", self.cur_epsilon_force)
@@ -95,12 +102,13 @@ class TensorboardCallback(BaseCallback):
 
 
 class GazeboEnv(gym.Env):
-    def __init__(self, exec_secs, max_ep_len, joint_lim, obj_shift_tol):
+    def __init__(self, exec_secs, max_ep_len, joint_lim, obj_shift_tol, reward_weight):
 
         self.exec_secs = exec_secs
         self.max_ep_len = max_ep_len
         self.joint_lim = joint_lim
         self.obj_shift_tol = obj_shift_tol
+        self.reward_weight = reward_weight
 
         rospy.init_node("agent", anonymous=True)
 
@@ -131,6 +139,7 @@ class GazeboEnv(gym.Env):
         self.num_contacts = 0
         self.epsilon_force = 0
         self.epsilon_torque = 0
+        self.num_regrasps = 0
 
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)
@@ -171,7 +180,7 @@ class GazeboEnv(gym.Env):
                 else:
                     self.obs.set_cur_val_by_name("tactile_positions" + id_str, [0, 0, 0])
 
-    def collect_reward(self, time_steps=20, tot_duration=0.5):
+    def collect_reward(self, tot_duration=0.5, time_steps=20):
         # records epsilon over tot_duration and returns average
         sleep_time = tot_duration / time_steps
         reward = 0
@@ -183,15 +192,33 @@ class GazeboEnv(gym.Env):
         return reward / time_steps
 
     def step(self, action):
+        #### REGRASPING
         # draw from a bernoulli distribution
         if np.random.rand() <= action[0]:
             rospy.loginfo("Regrasping.")
             self.gi.regrasp([action[1], action[2], action[3]])
+            self.num_regrasps += 1
         else:
             rospy.loginfo("Staying.")
+        ### REGRASPING END
 
-        reward = self.collect_reward()
-        print(reward)
+        prox_angles = [
+            self.obs.get_cur_vals_by_name("prox_angle_f1"),
+            self.obs.get_cur_vals_by_name("prox_angle_f2"),
+            self.obs.get_cur_vals_by_name("prox_angle_f3"),
+        ]
+
+        # # send finger position increment
+        # self.hand_cmd.f1 = prox_angles[0] + action[0]
+        # self.hand_cmd.f2 = prox_angles[1] + action[1]
+        # self.hand_cmd.f3 = prox_angles[2] + action[2]
+        # self.hand_pub.publish(self.hand_cmd)
+
+        # # send wrist position increment
+        # self.gi.cmd_wrist_pos_incr([action[3], action[4], action[5]])
+
+        # rospy.loginfo(f"Actions were {action[0]}, {action[1]}, {action[2]}, {action[3]}, {action[4]}, {action[5]}")
+        reward = self.collect_reward(self.exec_secs) - self.reward_weight * self.num_regrasps
         reward_msg = Float64(reward)
         self.reward_pub.publish(reward_msg)
 
@@ -202,12 +229,6 @@ class GazeboEnv(gym.Env):
 
         done = False
         logs = {}
-
-        prox_angles = [
-            self.obs.get_cur_vals_by_name("prox_angle_f1"),
-            self.obs.get_cur_vals_by_name("prox_angle_f2"),
-            self.obs.get_cur_vals_by_name("prox_angle_f3"),
-        ]
 
         # check if should end episode
         if self.obj_shift > self.obj_shift_tol:
@@ -229,6 +250,7 @@ class GazeboEnv(gym.Env):
         # reset vars
         obs = np.zeros(self.observation_space.shape)
         self.last_reset_time = rospy.get_rostime()
+        self.num_regrasps = 0
         return obs
 
     def close(self):
