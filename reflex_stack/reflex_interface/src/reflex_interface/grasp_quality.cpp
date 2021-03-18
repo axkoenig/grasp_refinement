@@ -55,10 +55,10 @@ void GraspQuality::updateGraspWrenchSpace(bool verbose)
 
     if (verbose)
     {
-        ROS_INFO_STREAM("DEBUG: beta: " << beta);
-        ROS_INFO_STREAM("DEBUG: num_contacts: " << num_contacts);
-        ROS_INFO_STREAM("DEBUG: phi: " << phi);
-        ROS_INFO_STREAM("DEBUG: object COM " << vec2string(object_com_world));
+        ROS_INFO_STREAM("DEBUG: Beta: " << beta);
+        ROS_INFO_STREAM("DEBUG: Phi: " << phi);
+        ROS_INFO_STREAM("DEBUG: Num contacts: " << num_contacts);
+        ROS_INFO_STREAM("DEBUG: Object COM " << vec2string(object_com_world));
     }
 
     for (int i = 0; i < num_contacts; i++)
@@ -72,8 +72,10 @@ void GraspQuality::updateGraspWrenchSpace(bool verbose)
 
         if (verbose)
         {
-            ROS_INFO_STREAM("DEBUG: contact_positions[i] " << i << " is " << vec2string(contact_positions[i]));
-            ROS_INFO_STREAM("DEBUG: lever arm for contact " << i << " is " << vec2string(r));
+            ROS_INFO_STREAM("DEBUG: Contact[" << i << "] position: \t" << vec2string(contact_positions[i]));
+            ROS_INFO_STREAM("DEBUG: Contact[" << i << "] normal: \t" << vec2string(contact_normals[i]));
+            ROS_INFO_STREAM("DEBUG: Contact[" << i << "] normal length: \t" << contact_normals[i].length());
+            ROS_INFO_STREAM("DEBUG: Contact[" << i << "] lever arm: \t" << vec2string(r));
         }
 
         for (int j = 0; j < num_edges; j++)
@@ -82,20 +84,20 @@ void GraspQuality::updateGraspWrenchSpace(bool verbose)
             tf2::Quaternion q_tot = rot_to_world_z * q_phi * q_beta * rot_to_world_z.inverse();
             q_tot.normalize();
 
-            // turn contact normal by multiples of phi, then tilt around beta and get z axis
+            // turn contact normal by multiples of phi, then tilt around beta
             tf2::Vector3 force_primitive = tf2::quatRotate(q_tot, contact_normals[i]);
+            tf2::Vector3 torque_primitive = r.cross(force_primitive);
 
             gws.force_primitives.push_back(force_primitive);
-            gws.torque_primitives.push_back(r.cross(force_primitive));
+            gws.torque_primitives.push_back(torque_primitive);
 
             if (verbose)
             {
                 tf2::Vector3 vec = contact_normals[i];
-                ROS_INFO_STREAM("DEBUG: contact normal for contact " << i << "is \t" << vec2string(contact_normals[i]));
-                ROS_INFO_STREAM("DEBUG: contact normal for contact LEN " << i << "is \t" << sqrt(pow(vec[0], 2) + pow(vec[1], 2) + pow(vec[2], 2)));
-                ROS_INFO_STREAM("DEBUG: force prim for contact " << i << " and edge " << j << " is  \t" << vec2string(force_primitive));
-                ROS_INFO_STREAM("DEBUG: force prim for contact LEN " << i << "is \t" << sqrt(pow(force_primitive[0], 2) + pow(force_primitive[1], 2) + pow(force_primitive[2], 2)));
-                ROS_INFO_STREAM("DEBUG: torque prim for contact " << i << " and edge " << j << " is  \t" << vec2string(r.cross(force_primitive)));
+                ROS_INFO_STREAM("DEBUG: Contact[" << i << "], Edge[" << j << "] force primitive: \t" << vec2string(force_primitive));
+                ROS_INFO_STREAM("DEBUG: Contact[" << i << "], Edge[" << j << "] torque primitive: \t" << vec2string(torque_primitive));
+                ROS_INFO_STREAM("DEBUG: Contact[" << i << "], Edge[" << j << "] force primitive length: \t" << force_primitive.length());
+                ROS_INFO_STREAM("DEBUG: Contact[" << i << "], Edge[" << j << "] torque primitive length: \t" << torque_primitive.length());
             }
         }
     }
@@ -143,9 +145,9 @@ float calcRadiusLargestBall(int dim, int num_ft_primitives, coordT *points, int 
 
     if (verbose)
     {
-        ROS_INFO_STREAM("bestoutside: " << bestoutside);
-        ROS_INFO_STREAM("isoutside: " << isoutside);
-        ROS_INFO_STREAM("==>bestdist: " << bestdist);
+        ROS_INFO_STREAM("DEBUG: qhull 'bestoutside': \t" << bestoutside);
+        ROS_INFO_STREAM("DEBUG: qhull 'isoutside': \t" << isoutside);
+        ROS_INFO_STREAM("DEBUG: qhull 'bestdist': \t" << bestdist);
     }
 
     // free memory
@@ -232,8 +234,8 @@ float GraspQuality::getEpsilon(const std::vector<tf2::Vector3> &contact_position
     {
         ROS_INFO_STREAM("DEBUG: num_points: " << num_points);
         ROS_INFO_STREAM("DEBUG: num_ft_primitives: " << num_ft_primitives);
-        ROS_INFO_STREAM("Size of force primitive is: " << gws.force_primitives.size() << " I expect it to be " << num_ft_primitives);
-        ROS_INFO_STREAM("Size of torque primitive is: " << gws.torque_primitives.size() << " I expect it to be " << num_ft_primitives);
+        ROS_INFO_STREAM("DEBUG: Size of force primitive is: " << gws.force_primitives.size() << " I expect it to be " << num_ft_primitives);
+        ROS_INFO_STREAM("DEBUG: Size of torque primitive is: " << gws.torque_primitives.size() << " I expect it to be " << num_ft_primitives);
     }
 
     // points is a concatenation of all 6D primitive wrenches for each contact
