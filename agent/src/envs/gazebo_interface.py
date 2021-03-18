@@ -9,7 +9,7 @@ from gazebo_msgs.srv import GetModelState, GetLinkState, SetModelState
 from gazebo_msgs.msg import ModelState
 from reflex_interface.srv import PosIncrement
 
-from .helpers import get_tq_from_homo_matrix
+from .helpers import get_tq_from_homo_matrix, get_homo_matrix_from_msg
 
 
 class GazeboInterface:
@@ -18,17 +18,14 @@ class GazeboInterface:
 
         self.unpause_name = "/gazebo/unpause_physics"
         self.pause_name = "/gazebo/pause_physics"
-        self.get_model_state_name = "/gazebo/get_model_state"
-        self.get_link_state_name = "/gazebo/get_link_state"
         self.set_model_state_name = "/gazebo/set_model_state"
         self.object_name = rospy.get_param("/object_name")
 
         # gazebo services
         self.unpause = rospy.ServiceProxy(self.unpause_name, Empty)
         self.pause = rospy.ServiceProxy(self.pause_name, Empty)
-        self.get_model_state = rospy.ServiceProxy(self.get_model_state_name, GetModelState)
-        self.get_link_state = rospy.ServiceProxy(self.get_link_state_name, GetLinkState)
         self.set_model_state = rospy.ServiceProxy(self.set_model_state_name, SetModelState)
+        self.num_srv_tries = 0
 
         # reflex services
         self.open_hand = rospy.ServiceProxy("/reflex/open", GraspPrimitive)
@@ -52,16 +49,10 @@ class GazeboInterface:
         rospy.sleep(1)  # broadcaster needs some time to start
 
     def sim_unpause(self):
-        try:
-            self.unpause()
-        except rospy.ServiceException as e:
-            rospy.loginfo(self.unpause_name + " service call failed with exception: " + str(e))
+        self.service_call_with_retries(self.unpause, None, self.unpause_name)
 
     def sim_pause(self):
-        try:
-            self.pause()
-        except rospy.ServiceException as e:
-            rospy.loginfo(self.pause_name + " service call failed")
+        self.service_call_with_retries(self.pause, None, self.pause_name)
 
     def ros_vector_to_list(self, ros_vector):
         return [ros_vector.x, ros_vector.y, ros_vector.z]
@@ -73,15 +64,6 @@ class GazeboInterface:
         rospy.sleep(secs)
         self.sim_pause()
 
-    def get_homo_matrix_from_msg(self, transform, name, frame):
-        t = [transform.translation.x, transform.translation.y, transform.translation.z]
-        q = [transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w]
-        if self.verbose:
-            print("Pose of {} relative to {} frame is \n t={}, q={}".format(name, frame, t, q))
-        mat_t = tf.transformations.translation_matrix(t)
-        mat_q = tf.transformations.quaternion_matrix(q)
-        return np.dot(mat_t, mat_q)
-
     def get_object_pose(self):
         return self.get_measured_pose(self.mes_obj_buf, self.mes_obj_name)
 
@@ -91,7 +73,7 @@ class GazeboInterface:
     def get_measured_pose(self, buffer, name, frame="world"):
         try:
             trans = buffer.lookup_transform(frame, name, rospy.Time())
-            return self.get_homo_matrix_from_msg(trans.transform, name, frame)
+            return get_homo_matrix_from_msg(trans.transform, name, frame)
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
             rospy.loginfo("Couldn't look up object pose. Exception: " + str(e))
 
@@ -110,6 +92,22 @@ class GazeboInterface:
     def get_dist_tcp_obj(self):
         return np.linalg.norm(self.get_trans_tcp_obj())
 
+    def service_call(self, service, request, service_name):
+        rospy.wait_for_service(service_name)
+        try:
+            service(request) if request else service()
+            return True, f"Service call to {service_name} succeeded."
+        except rospy.ServiceException as e:
+            return False, f"Service call to {service_name} failed with exception: {str(e)}"
+
+    def service_call_with_retries(self, service, request, service_name, max_retries=10):
+        tries = 0
+        while tries < max_retries:
+            success, msg = self.service_call(service, request, service_name)
+            if success: return
+            tries += 1
+        rospy.loginfo(f"Service call to {service_name} failed even after {max_retries}. Exception was: {msg}.")
+
     def set_model_pose(self, pose, model_name, reference_frame="world"):
         t, q = get_tq_from_homo_matrix(pose)
         state = ModelState()
@@ -122,13 +120,7 @@ class GazeboInterface:
         state.pose.orientation.y = q[1]
         state.pose.orientation.z = q[2]
         state.pose.orientation.w = q[3]
-        rospy.wait_for_service(self.set_model_state_name)
-        try:
-            res = self.set_model_state(state)
-            if self.verbose:
-                rospy.loginfo(f"Successfully set state of {model_name}.")
-        except rospy.ServiceException:
-            rospy.loginfo(f"{self.set_model_state_name} service call failed.")
+        self.service_call_with_retries(self.set_model_state, state, self.set_model_state_name)
 
     def send_transform(self, pose):
         t, q = get_tq_from_homo_matrix(pose)
