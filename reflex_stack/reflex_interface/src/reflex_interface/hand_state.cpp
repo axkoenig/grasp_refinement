@@ -53,6 +53,12 @@ int HandState::getFingerIdSingleContact()
 
 void HandState::callback(const reflex_msgs::Hand &msg)
 {
+    // reset variables
+    num_contacts = 0;
+    epsilon = 0;
+    epsilon_force = 0;
+    epsilon_torque = 0;
+
     for (int i = 0; i < num_fingers; i++)
     {
         finger_states[i]->setProximalAngleFromMsg(msg.finger[i].proximal);
