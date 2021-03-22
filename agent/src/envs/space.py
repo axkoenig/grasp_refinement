@@ -39,9 +39,9 @@ class Space:
     def get_cur_vals(self, verbose=False):
         cur_vals = np.empty((0,))
         for i in range(self.dim):
+            if verbose:
+                print("Cur value of " + self.vars[i].name + f" is {self.vars[i].cur_val}.")
             cur_vals = np.append(cur_vals, self.vars[i].cur_val)
-        if verbose:
-            print("Cur values of " + self.__class__.__name__ + f" is {cur_vals}.")
         return cur_vals
 
     def get_cur_vals_by_name(self, name, verbose=False):
