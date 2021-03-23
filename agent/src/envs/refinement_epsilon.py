@@ -29,8 +29,8 @@ class ObservationSpace(Space):
             id_str = "_f" + str(i + 1)
             self.add_variable(1, "prox_angle" + id_str, 0, 0, self.prox_angle_max)
             self.add_variable(1, "dist_angle" + id_str, 0, 0, 0.2 * self.prox_angle_max)
-            self.add_variable(1, "prox_contact_normal" + id_str, [0, 0, 0], [-1, -1, -1], [1, 1, 1])
-            self.add_variable(1, "dist_contact_normal" + id_str, [0, 0, 0], [-1, -1, -1], [1, 1, 1])
+            self.add_variable(1, "prox_normal" + id_str, [0, 0, 0], [-1, -1, -1], [1, 1, 1])
+            self.add_variable(1, "dist_normal" + id_str, [0, 0, 0], [-1, -1, -1], [1, 1, 1])
 
             for j in range(self.num_sensors):
                 id_str = "_f" + str(i + 1) + "_s" + str(j + 1)
@@ -140,8 +140,11 @@ class GazeboEnv(gym.Env):
         self.epsilon_force = 0
         self.epsilon_torque = 0
         self.num_regrasps = 0
+        self.last_quality = 0
 
     def seed(self, seed=None):
+        import pdb; pdb.set_trace()
+        
         self.np_random, seed = gym.utils.seeding.np_random(seed)
         return [seed]
 
@@ -153,22 +156,17 @@ class GazeboEnv(gym.Env):
         self.obs.set_cur_val_by_name("preshape_angle", msg.preshape_angle)
 
         for i in range(self.obs.num_fingers):
+            # joint positions
             id_str = "_f" + str(i + 1)
             self.obs.set_cur_val_by_name("prox_angle" + id_str, msg.finger_state[i].proximal_angle)
             self.obs.set_cur_val_by_name("dist_angle" + id_str, msg.finger_state[i].distal_angle)
 
             # normals
-            if msg.finger_state[i].prox_in_contact:
-                normal = self.gi.ros_vector_to_list(msg.finger_state[i].prox_normal)
-                self.obs.set_cur_val_by_name("prox_contact_normal" + id_str, normal)
-            else:
-                self.obs.set_cur_val_by_name("prox_contact_normal" + id_str, [0, 0, 0])
-            if msg.finger_state[i].dist_in_contact:
-                normal = self.gi.ros_vector_to_list(msg.finger_state[i].dist_normal)
-                self.obs.set_cur_val_by_name("dist_contact_normal" + id_str, normal)
-            else:
-                self.obs.set_cur_val_by_name("dist_contact_normal" + id_str, [0, 0, 0])
-
+            normal = self.gi.ros_vector_to_list(msg.finger_state[i].prox_normal)
+            self.obs.set_cur_val_by_name("prox_normal" + id_str, normal)
+            normal = self.gi.ros_vector_to_list(msg.finger_state[i].dist_normal)
+            self.obs.set_cur_val_by_name("dist_normal" + id_str, normal)
+            
             # tactile feedback
             for j in range(self.obs.num_sensors):
                 id_str = "_f" + str(i + 1) + "_s" + str(j + 1)
@@ -186,21 +184,27 @@ class GazeboEnv(gym.Env):
         reward = 0
         self.gi.sim_unpause()
         for i in range(time_steps):
-            reward += self.epsilon_force + self.epsilon_torque
+            # multiplying by 10 because size of torque epsilon is approx 1/10 of force epsilon
+            reward += self.get_reward()
             rospy.sleep(sleep_time)
         self.gi.sim_pause()
         return reward / time_steps
+    
+    def get_reward(self):
+        return self.epsilon_force + 10 * self.epsilon_torque
 
     def step(self, action):
         #### REGRASPING
-        # draw from a bernoulli distribution
-        if np.random.rand() <= action[0]:
+        rospy.loginfo(f"Action is {action[0]}")
+
+        if 0.5 <= action[0]:
             rospy.loginfo("Regrasping.")
             self.gi.regrasp([action[1], action[2], action[3]])
             self.num_regrasps += 1
         else:
             rospy.loginfo("Staying.")
         ### REGRASPING END
+
 
         prox_angles = [
             self.obs.get_cur_vals_by_name("prox_angle_f1"),
@@ -218,7 +222,9 @@ class GazeboEnv(gym.Env):
         # self.gi.cmd_wrist_pos_incr([action[3], action[4], action[5]])
 
         # rospy.loginfo(f"Actions were {action[0]}, {action[1]}, {action[2]}, {action[3]}, {action[4]}, {action[5]}")
-        reward = self.collect_reward(self.exec_secs) - self.reward_weight * self.num_regrasps
+        cur_reward = self.collect_reward(self.exec_secs)
+        reward = cur_reward - self.last_reward
+        rospy.loginfo(f"Relative reward is {reward}")
         reward_msg = Float64(reward)
         self.reward_pub.publish(reward_msg)
 
@@ -246,6 +252,7 @@ class GazeboEnv(gym.Env):
     def reset(self):
         rospy.loginfo("Resetting world.")
         self.gi.reset_world(self.wrist_init_pose, self.obj_init_pose)
+        self.last_reward = self.collect_reward(self.exec_secs)
 
         # reset vars
         obs = np.zeros(self.observation_space.shape)
