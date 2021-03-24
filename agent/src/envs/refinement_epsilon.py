@@ -2,6 +2,7 @@ import gym
 import numpy as np
 
 import rospy
+import tf
 from std_msgs.msg import Float64, Int32
 from reflex_interface.msg import HandStateStamped
 from reflex_msgs.msg import PoseCommand
@@ -49,6 +50,11 @@ class ActionSpace(Space):
         self.add_variable(1, "trigger_regrasp", 0, 0, 1)
         self.add_variable(2, "wrist_incr", 0, -0.001, 0.001)
         self.add_variable(1, "wrist_incr_z", 0, -0.005, 0.02)
+
+        # if we introduce error 
+        # self.add_variable(1, "wrist_incr_x", 0, -0.02, 0.02)
+        # self.add_variable(1, "wrist_incr_y", 0, -0.01, 0.01)
+        # self.add_variable(1, "wrist_incr_z", 0, -0.005, 0.02)
 
         # self.add_variable(3, "finger_incr", 0, -0.01, 0.1)
         # self.add_variable(2, "wrist_incr", 0, -0.0001, 0.0001)
@@ -102,13 +108,16 @@ class TensorboardCallback(BaseCallback):
 
 
 class GazeboEnv(gym.Env):
-    def __init__(self, exec_secs, max_ep_len, joint_lim, obj_shift_tol, reward_weight):
+    def __init__(self, exec_secs, max_ep_len, joint_lim, obj_shift_tol, reward_weight, pos_error):
 
         self.exec_secs = exec_secs
         self.max_ep_len = max_ep_len
         self.joint_lim = joint_lim
         self.obj_shift_tol = obj_shift_tol
         self.reward_weight = reward_weight
+        self.x_error = pos_error[0]
+        self.y_error = pos_error[1]
+        self.z_error = pos_error[2]
 
         rospy.init_node("agent", anonymous=True)
 
@@ -143,8 +152,6 @@ class GazeboEnv(gym.Env):
         self.last_quality = 0
 
     def seed(self, seed=None):
-        import pdb; pdb.set_trace()
-        
         self.np_random, seed = gym.utils.seeding.np_random(seed)
         return [seed]
 
@@ -250,8 +257,16 @@ class GazeboEnv(gym.Env):
         return self.obs.get_cur_vals(), reward, done, logs
 
     def reset(self):
+        # generate random offset from initial wrist pose 
+        x_offset = np.random.uniform(- self.x_error, self.x_error)
+        y_offset = np.random.uniform(- self.y_error, self.y_error)
+        z_offset = np.random.uniform(- self.z_error, self.z_error)
+        rospy.loginfo(f"Random offset for init wrist pose is [x: {x_offset}, y: {y_offset}, z: {z_offset}].")
+        mat_offset = tf.transformations.translation_matrix([x_offset, y_offset, z_offset])
+        wrist_init_pose_err = np.dot(self.wrist_init_pose, mat_offset)
+        
         rospy.loginfo("Resetting world.")
-        self.gi.reset_world(self.wrist_init_pose, self.obj_init_pose)
+        self.gi.reset_world(wrist_init_pose_err, self.obj_init_pose)
         self.last_reward = self.collect_reward(self.exec_secs)
 
         # reset vars
