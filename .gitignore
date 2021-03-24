@@ -5,6 +5,9 @@ brain/experiments/figures/*
 # ignore saved RL models
 /agent/src/models
 
+# ignore singularity images 
+*.img
+
 devel/
 logs/
 build/
