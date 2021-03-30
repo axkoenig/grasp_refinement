@@ -48,17 +48,13 @@ class ActionSpace(Space):
         super().__init__()
 
         self.add_variable(1, "trigger_regrasp", 0, 0, 1)
-        self.add_variable(2, "wrist_incr", 0, -0.001, 0.001)
-        self.add_variable(1, "wrist_incr_z", 0, -0.005, 0.02)
-
-        # if we introduce error 
-        # self.add_variable(1, "wrist_incr_x", 0, -0.02, 0.02)
-        # self.add_variable(1, "wrist_incr_y", 0, -0.01, 0.01)
+        # self.add_variable(2, "wrist_incr", 0, -0.001, 0.001)
         # self.add_variable(1, "wrist_incr_z", 0, -0.005, 0.02)
 
-        # self.add_variable(3, "finger_incr", 0, -0.01, 0.1)
-        # self.add_variable(2, "wrist_incr", 0, -0.0001, 0.0001)
-        # self.add_variable(1, "wrist_incr_z", 0, -0.0005, 0.003)
+        # if we introduce error 
+        self.add_variable(1, "wrist_incr_x", 0, -0.02, 0.02)
+        self.add_variable(1, "wrist_incr_y", 0, -0.001, 0.001)
+        self.add_variable(1, "wrist_incr_z", 0, -0.005, 0.02)
 
 
 class TensorboardCallback(BaseCallback):
@@ -150,6 +146,7 @@ class GazeboEnv(gym.Env):
         self.epsilon_torque = 0
         self.num_regrasps = 0
         self.last_quality = 0
+        self.cur_time_step = 0
 
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)
@@ -201,8 +198,9 @@ class GazeboEnv(gym.Env):
         return self.epsilon_force + 10 * self.epsilon_torque
 
     def step(self, action):
+        self.cur_time_step += 1
         #### REGRASPING
-        rospy.loginfo(f"Action is {action[0]}")
+        rospy.loginfo(f"Action is {action[0]}, {action[1]}, {action[2]}, {action[3]}")
 
         if 0.5 <= action[0]:
             rospy.loginfo("Regrasping.")
@@ -211,7 +209,6 @@ class GazeboEnv(gym.Env):
         else:
             rospy.loginfo("Staying.")
         ### REGRASPING END
-
 
         prox_angles = [
             self.obs.get_cur_vals_by_name("prox_angle_f1"),
@@ -250,9 +247,9 @@ class GazeboEnv(gym.Env):
         elif not all(prox_angle < self.joint_lim for prox_angle in prox_angles):
             done = True
             rospy.loginfo(f"One angle is above {self.joint_lim} rad. Setting done = True.")
-        elif rospy.get_rostime().secs - self.last_reset_time.secs > self.max_ep_len:
+        elif self.cur_time_step == self.max_ep_len:
             done = True
-            rospy.loginfo(f"Episode lasted {self.max_ep_len} secs. Setting done = True.")
+            rospy.loginfo(f"Episode lasted {self.cur_time_step} time steps. Setting done = True.")
 
         return self.obs.get_cur_vals(), reward, done, logs
 
@@ -273,6 +270,7 @@ class GazeboEnv(gym.Env):
         obs = np.zeros(self.observation_space.shape)
         self.last_reset_time = rospy.get_rostime()
         self.num_regrasps = 0
+        self.cur_time_step = 0
         return obs
 
     def close(self):
