@@ -146,9 +146,11 @@ class GazeboInterface:
         mat_shell = np.dot(origin_pose, mat_offset)
         self.send_transform(mat_shell)
 
-    def cmd_wrist_pos_incr(self, increment):
-        mat_increment = tf.transformations.translation_matrix(increment)
-        self.last_wrist_pose = np.dot(self.last_wrist_pose, mat_increment)
+    def cmd_wrist_pose_incr(self, p_incr, q_incr):
+        mat_t_incr = tf.transformations.translation_matrix(p_incr)
+        mat_q_incr = tf.transformations.quaternion_matrix(q_incr)
+        mat_homo = np.dot(mat_t_incr, mat_q_incr)
+        self.last_wrist_pose = np.dot(self.last_wrist_pose, mat_homo)
         self.send_transform(self.last_wrist_pose)
 
     def wait_until_reached_pose(self, pose, t_tol=0.01, q_tol=0.02):
@@ -197,14 +199,14 @@ class GazeboInterface:
         if self.verbose: 
             rospy.loginfo("Tightened fingers by " + str(tighten_incr) + ": \n" + str(res))
 
-    def regrasp(self, wrist_pos_incr, back_off_finger=-0.2):
+    def regrasp(self, wrist_p_incr, wrist_q_incr, back_off_finger=-0.2):
         self.sim_unpause()
 
         # back off fingers by a small amount
         res = self.pos_incr(back_off_finger, back_off_finger, back_off_finger, 0, True, self.srv_tolerance, self.srv_time_out)
 
         # apply relative wrist increment
-        self.cmd_wrist_pos_incr(wrist_pos_incr)
+        self.cmd_wrist_pose_incr(wrist_p_incr, wrist_q_incr)
         self.close_until_contact_and_tighten()
 
         # wait for grasp to stabilize
