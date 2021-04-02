@@ -87,8 +87,11 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
                                           const tf2::Vector3 &link_to_pad_origin)
 {
     // number of intermediate collision results (usually around 20)
-    // we only take the latest result to decrease compuational load
     int num_contact_states = msg.states.size();
+
+    // we only take the second latest result to decrease compuational load. (latest result is
+    // sometimes not filled by Gazebo and results in error)
+    int states_idx = num_contact_states - 1;
 
     // no contacts on link, set all sensors zero
     if (num_contact_states == 0)
@@ -106,14 +109,14 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
     bool contacts[num_sensors_on_link] = {0};
     int num_real_contacts[num_sensors_on_link] = {0};
 
-    int num_contacts = msg.states[num_contact_states - 1].wrenches.size();
+    int num_contacts = msg.states[states_idx].wrenches.size();
     for (int i = 0; i < num_contacts; i++)
     {
         // obtain magnitude of contact force
         float f[3] = {0, 0, 0};
-        f[0] = msg.states[num_contact_states - 1].wrenches[i].force.x;
-        f[1] = msg.states[num_contact_states - 1].wrenches[i].force.y;
-        f[2] = msg.states[num_contact_states - 1].wrenches[i].force.z;
+        f[0] = msg.states[states_idx].wrenches[i].force.x;
+        f[1] = msg.states[states_idx].wrenches[i].force.y;
+        f[2] = msg.states[states_idx].wrenches[i].force.z;
         float f_norm = calc_l2_norm(f);
 
         // stop if force is smaller than thresh (we are doing this since
@@ -123,9 +126,9 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
             continue;
         }
 
-        tf2::Vector3 contact_pos = {msg.states[num_contact_states - 1].contact_positions[i].x,
-                                    msg.states[num_contact_states - 1].contact_positions[i].y,
-                                    msg.states[num_contact_states - 1].contact_positions[i].z};
+        tf2::Vector3 contact_pos = {msg.states[states_idx].contact_positions[i].x,
+                                    msg.states[states_idx].contact_positions[i].y,
+                                    msg.states[states_idx].contact_positions[i].z};
 
         // transform contact_pos from world frame to pad origin
         tf2::Transform link_to_world = world_to_link.inverse();
