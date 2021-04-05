@@ -5,7 +5,7 @@
 geometry_msgs/Transform contact_frame
 
 # this is already included in contact_frame, but still publishing for completeness
-geometry_msgs/Vector3 contact_pos 
+geometry_msgs/Vector3 contact_position 
 geometry_msgs/Vector3 contact_normal
 
 # on which Reflex finger is the contact (ranges from 0 to 2) 

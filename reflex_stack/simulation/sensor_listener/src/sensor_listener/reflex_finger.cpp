@@ -129,19 +129,19 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
             continue;
         }
 
-        // transform contact_pos from world frame to pad origin
-        tf2::Vector3 contact_pos = create_vec_from_msg(msg.states[states_idx].contact_positions[i]);
-        contact_pos = world_to_link.inverse() * contact_pos - link_to_pad_origin;
+        // transform contact_position from world frame to pad origin
+        tf2::Vector3 contact_position = create_vec_from_msg(msg.states[states_idx].contact_positions[i]);
+        contact_position = world_to_link.inverse() * contact_position - link_to_pad_origin;
 
         // stop if contact on back of finger
-        if (contact_pos[2] < 0.0)
+        if (contact_position[2] < 0.0)
         {
             ROS_WARN("Ignoring contact on back of finger.");
             continue;
         }
 
         // find out which sensor this contact would belong to and save results
-        int sensor_id = which_sensor(contact_pos[0], sensor_boundaries, num_sensors_on_link - 1);
+        int sensor_id = which_sensor(contact_position[0], sensor_boundaries, num_sensors_on_link - 1);
         pressures[sensor_id] += cf_msg.contact_force_magnitude;
         contacts[sensor_id] = true;
         num_real_contacts[sensor_id] += 1;
@@ -153,7 +153,7 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
         // calculate rotation of contact frame (z must align with contact normal)
         tf2::Vector3 world_z = tf2::Vector3{0, 0, 1};
         tf2::Quaternion rot_z_to_normal = tf2::shortestArcQuatNormalize2(world_z, contact_normal);
-        tf2::Transform contact_frame = tf2::Transform(rot_z_to_normal, contact_pos);
+        tf2::Transform contact_frame = tf2::Transform(rot_z_to_normal, contact_position);
 
         // fill remaining message
         cf_msg.sensor_id = first_sensor_idx + sensor_id + 1; // ranges from 1 to 9
@@ -162,7 +162,7 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
         cf_msg.contact_wrench.force = tf2::toMsg(-contact_force_world);     // invert to get force from hand to object
         cf_msg.contact_wrench.torque = tf2::toMsg(-contact_torque_world);
         cf_msg.contact_frame = tf2::toMsg(contact_frame);
-        cf_msg.contact_pos = tf2::toMsg(contact_pos);
+        cf_msg.contact_position = tf2::toMsg(contact_position);
         cf_msg.contact_normal = tf2::toMsg(contact_normal);
 
         // all is well, add contact frame to vector
