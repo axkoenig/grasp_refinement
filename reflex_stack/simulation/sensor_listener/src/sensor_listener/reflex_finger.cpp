@@ -147,6 +147,7 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
         num_real_contacts[sensor_id] += 1;
 
         tf2::Vector3 contact_normal = create_vec_from_msg(msg.states[states_idx].contact_normals[i]);
+        contact_normal *= -1; // invert to get normal from hand to object
         tf2::Vector3 contact_torque_world = create_vec_from_msg(msg.states[states_idx].wrenches[i].torque);
 
         // calculate rotation of contact frame (z must align with contact normal)
@@ -158,8 +159,8 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
         cf_msg.sensor_id = first_sensor_idx + sensor_id + 1; // ranges from 1 to 9
         cf_msg.finger_id = finger_id;                        // ranges from 1 to 3
         cf_msg.contact_torque_magnitude = contact_torque_world.length();
-        cf_msg.contact_wrench.force = tf2::toMsg(contact_force_world);
-        cf_msg.contact_wrench.torque = tf2::toMsg(contact_torque_world);
+        cf_msg.contact_wrench.force = tf2::toMsg(-contact_force_world);     // invert to get force from hand to object
+        cf_msg.contact_wrench.torque = tf2::toMsg(-contact_torque_world);
         cf_msg.contact_frame = tf2::toMsg(contact_frame);
         cf_msg.contact_pos = tf2::toMsg(contact_pos);
         cf_msg.contact_normal = tf2::toMsg(contact_normal);
