@@ -183,6 +183,7 @@ include_directories(
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
   src/${PROJECT_NAME}/hand_command.cpp
+  src/${PROJECT_NAME}/hand_state_variables.cpp
   src/${PROJECT_NAME}/hand_state.cpp
   src/${PROJECT_NAME}/finger_state.cpp
   src/${PROJECT_NAME}/grasp_quality.cpp
