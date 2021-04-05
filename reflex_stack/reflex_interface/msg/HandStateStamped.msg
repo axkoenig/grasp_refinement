@@ -7,5 +7,7 @@ float64 preshape_angle
 float64 epsilon
 float64 epsilon_force
 float64 epsilon_torque
+float64 delta_cur
+float64 delta_task
 
 int32 num_contacts
