@@ -48,7 +48,7 @@ void FingerState::setSensorContactsFromMsg(boost::array<unsigned char, 9> sensor
     }
 }
 
-void FingerState::fillContactInfoInWorldFrameSim(std::vector<tf2::Vector3> &contact_positions_world, std::vector<tf2::Vector3> &contact_normals_world, int &num_contacts_on_finger)
+void FingerState::fillContactInfoInWorldFrameSim(std::vector<tf2::Vector3> &contact_positions, std::vector<tf2::Vector3> &contact_normals, int &num_contacts_on_finger)
 {
     // this method checks each sensor for contact and fills vectors with positions and normals
     // of the virtual sensors. we could also get the contact position and normals directly from
@@ -58,7 +58,7 @@ void FingerState::fillContactInfoInWorldFrameSim(std::vector<tf2::Vector3> &cont
     // also outputting values that would be obtainable in real world (the sensor pos and normal).
 
     num_contacts_on_finger = 0;
-    if (contact_positions_world.size() != contact_normals_world.size())
+    if (contact_positions.size() != contact_normals.size())
     {
         ROS_ERROR("Number of contact positions and normals must be equal.");
         return;
@@ -94,22 +94,22 @@ void FingerState::fillContactInfoInWorldFrameSim(std::vector<tf2::Vector3> &cont
                 // contact normal is z axis of link frame
                 tf2::Vector3 normal = prox_link_pose * tf2::Vector3{0, 0, 1};
                 normal.normalize();
-                contact_normals_world.push_back(normal);
+                contact_normals.push_back(normal);
 
                 // contact position defined in link frame (lies on surface of finger above the sensor)
                 tf2::Vector3 contact_pos = {0.008 + 0.0097 * (i + 1), 0, 0.014};
 
                 // transform contact position to world coordinates
-                contact_positions_world.push_back(prox_link_pose * contact_pos);
+                contact_positions.push_back(prox_link_pose * contact_pos);
             }
             // distal contact
             else
             {
                 tf2::Vector3 normal = dist_link_pose * tf2::Vector3{0, 0, 1};
                 normal.normalize();
-                contact_normals_world.push_back(normal);
+                contact_normals.push_back(normal);
                 tf2::Vector3 contact_pos = {-0.004 + 0.0091 * (i - 4), 0, 0.0155};
-                contact_positions_world.push_back(dist_link_pose * contact_pos);
+                contact_positions.push_back(dist_link_pose * contact_pos);
             }
         }
     }

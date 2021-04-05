@@ -133,8 +133,8 @@ HandState::ContactState HandState::getContactState()
 void HandState::updateHandStateWorldSim()
 {
     // reset variables
-    vars.contact_positions_world.clear();
-    vars.contact_normals_world.clear();
+    vars.contact_positions.clear();
+    vars.contact_normals.clear();
     vars.num_sensors_in_contact_per_finger = {0, 0, 0};
     vars.fingers_in_contact = {0, 0, 0};
 
@@ -142,7 +142,7 @@ void HandState::updateHandStateWorldSim()
     {
         finger_states[i]->updateCurLinkFramesInShellFrameSim();
         int num_contacts_on_finger = 0;
-        finger_states[i]->fillContactInfoInWorldFrameSim(vars.contact_positions_world, vars.contact_normals_world, num_contacts_on_finger);
+        finger_states[i]->fillContactInfoInWorldFrameSim(vars.contact_positions, vars.contact_normals, num_contacts_on_finger);
 
         if (num_contacts_on_finger > 0)
         {
@@ -200,10 +200,10 @@ void HandState::updateHandStateWorldReal()
 
 float HandState::getEpsilon(tf2::Vector3 object_com_world)
 {
-    return grasp_quality.getEpsilon(vars.contact_positions_world, vars.contact_normals_world, object_com_world);
+    return grasp_quality.getEpsilon(vars.contact_positions, vars.contact_normals, object_com_world);
 }
 
 void HandState::fillEpsilonFTSeparate(tf2::Vector3 object_com_world, float &epsilon_force, float &epsilon_torque)
 {
-    grasp_quality.fillEpsilonFTSeparate(vars.contact_positions_world, vars.contact_normals_world, object_com_world, vars.epsilon_force, vars.epsilon_torque);
+    grasp_quality.fillEpsilonFTSeparate(vars.contact_positions, vars.contact_normals, object_com_world, vars.epsilon_force, vars.epsilon_torque);
 }

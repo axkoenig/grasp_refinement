@@ -18,10 +18,15 @@ public:
     float epsilon = 0;
     float epsilon_force = 0;
     float epsilon_torque = 0;
-    std::vector<tf2::Vector3> contact_positions_world;
-    std::vector<tf2::Vector3> contact_normals_world;
     std::vector<int> num_sensors_in_contact_per_finger = {0, 0, 0}; // example: two sensors in contact on finger 1 and one on finger 2: {2, 1, 0}
     std::vector<bool> fingers_in_contact = {0, 0, 0};               // example: fingers 1 and 3 in contact: {1, 0, 1}
+
+    // all variables in world frame!
+    std::vector<tf2::Transform> contact_frames;
+    std::vector<tf2::Vector3> contact_forces;
+    std::vector<tf2::Vector3> contact_torques;
+    std::vector<tf2::Vector3> contact_positions;
+    std::vector<tf2::Vector3> contact_normals;
 };
 
 class HandState

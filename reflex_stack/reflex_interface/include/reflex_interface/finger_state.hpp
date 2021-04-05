@@ -29,7 +29,7 @@ public:
     bool hasContact();
     bool hasProximalContact();
     bool hasDistalContact();
-    void fillContactInfoInWorldFrameSim(std::vector<tf2::Vector3> &contact_positions_world, std::vector<tf2::Vector3> &contact_normals_world, int &num_contacts_on_finger);
+    void fillContactInfoInWorldFrameSim(std::vector<tf2::Vector3> &contact_positions, std::vector<tf2::Vector3> &contact_normals, int &num_contacts_on_finger);
     std::vector<tf2::Vector3> getTactilePositionsInShellFrame();
     void updateCurLinkFramesInShellFrameReal();
     void updateCurLinkFramesInShellFrameSim();
