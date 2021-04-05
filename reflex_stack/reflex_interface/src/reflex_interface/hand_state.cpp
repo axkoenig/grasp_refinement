@@ -16,14 +16,14 @@ HandState::HandState(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_d
     this->nh = nh;
     this->use_sim_data_hand = use_sim_data_hand;
     this->use_sim_data_obj = use_sim_data_obj;
-    state_sub = nh->subscribe("reflex/hand_state", 1, &HandState::callback, this);
+    state_sub = nh->subscribe("reflex/hand_state", 1, &HandState::reflex_callback, this);
     hand_state_pub = nh->advertise<reflex_interface::HandStateStamped>("/reflex_interface/hand_state", 1);
     getParam(nh, &object_name, "object_name", false);
 }
 
 bool HandState::allFingersInContact()
 {
-    return std::all_of(fingers_in_contact.begin(), fingers_in_contact.end(), [](bool v) { return v; });
+    return std::all_of(vars.fingers_in_contact.begin(), vars.fingers_in_contact.end(), [](bool v) { return v; });
 }
 
 int HandState::getNumFingersInContact()
@@ -51,13 +51,13 @@ int HandState::getFingerIdSingleContact()
     return -1;
 }
 
-void HandState::callback(const reflex_msgs::Hand &msg)
+void HandState::reflex_callback(const reflex_msgs::Hand &msg)
 {
     // reset variables
-    num_contacts = 0;
-    epsilon = 0;
-    epsilon_force = 0;
-    epsilon_torque = 0;
+    vars.num_contacts = 0;
+    vars.epsilon = 0;
+    vars.epsilon_force = 0;
+    vars.epsilon_torque = 0;
 
     for (int i = 0; i < num_fingers; i++)
     {
@@ -86,14 +86,14 @@ void HandState::callback(const reflex_msgs::Hand &msg)
         updateHandStateWorldReal();
     }
 
-    num_contacts = std::accumulate(num_sensors_in_contact_per_finger.begin(), num_sensors_in_contact_per_finger.end(), 0);
+    vars.num_contacts = std::accumulate(vars.num_sensors_in_contact_per_finger.begin(), vars.num_sensors_in_contact_per_finger.end(), 0);
 
     if (use_sim_data_obj)
     {
         // broadcast Gazebo object pose to ROS tf tree
         tf2::Transform obj_measured = getModelPoseSim(nh, object_name, "world", false);
         broadcastModelState(obj_measured, "world", "reflex_interface/obj_measured", &br_obj_measured);
-        fillEpsilonFTSeparate(obj_measured.getOrigin(), epsilon_force, epsilon_torque);
+        fillEpsilonFTSeparate(obj_measured.getOrigin(), vars.epsilon_force, vars.epsilon_torque);
         // TODO commented out for now because not using this and heavy computation
         // epsilon = getEpsilon(obj_measured.getOrigin());
     }
@@ -133,21 +133,21 @@ HandState::ContactState HandState::getContactState()
 void HandState::updateHandStateWorldSim()
 {
     // reset variables
-    contact_positions_world.clear();
-    contact_normals_world.clear();
-    num_sensors_in_contact_per_finger = {0, 0, 0};
-    fingers_in_contact = {0, 0, 0};
+    vars.contact_positions_world.clear();
+    vars.contact_normals_world.clear();
+    vars.num_sensors_in_contact_per_finger = {0, 0, 0};
+    vars.fingers_in_contact = {0, 0, 0};
 
     for (int i = 0; i < num_fingers; i++)
     {
         finger_states[i]->updateCurLinkFramesInShellFrameSim();
         int num_contacts_on_finger = 0;
-        finger_states[i]->fillContactInfoInWorldFrameSim(contact_positions_world, contact_normals_world, num_contacts_on_finger);
+        finger_states[i]->fillContactInfoInWorldFrameSim(vars.contact_positions_world, vars.contact_normals_world, num_contacts_on_finger);
 
         if (num_contacts_on_finger > 0)
         {
-            num_sensors_in_contact_per_finger[i] = num_contacts_on_finger;
-            fingers_in_contact[i] = true;
+            vars.num_sensors_in_contact_per_finger[i] = num_contacts_on_finger;
+            vars.fingers_in_contact[i] = true;
         }
     }
 }
@@ -160,10 +160,10 @@ reflex_interface::HandStateStamped HandState::getHandStateMsg()
     hss.header.stamp = ros::Time::now();
     hss.header.frame_id = "shell";
     hss.preshape_angle = 2 * finger_states[0]->getPreshapeAngle();
-    hss.num_contacts = num_contacts;
-    hss.epsilon = epsilon;
-    hss.epsilon_force = epsilon_force;
-    hss.epsilon_torque = epsilon_torque;
+    hss.num_contacts = vars.num_contacts;
+    hss.epsilon = vars.epsilon;
+    hss.epsilon_force = vars.epsilon_force;
+    hss.epsilon_torque = vars.epsilon_torque;
 
     for (int i = 0; i < num_fingers; i++)
     {
@@ -200,10 +200,10 @@ void HandState::updateHandStateWorldReal()
 
 float HandState::getEpsilon(tf2::Vector3 object_com_world)
 {
-    return grasp_quality.getEpsilon(contact_positions_world, contact_normals_world, object_com_world);
+    return grasp_quality.getEpsilon(vars.contact_positions_world, vars.contact_normals_world, object_com_world);
 }
 
 void HandState::fillEpsilonFTSeparate(tf2::Vector3 object_com_world, float &epsilon_force, float &epsilon_torque)
 {
-    grasp_quality.fillEpsilonFTSeparate(contact_positions_world, contact_normals_world, object_com_world, epsilon_force, epsilon_torque);
+    grasp_quality.fillEpsilonFTSeparate(vars.contact_positions_world, vars.contact_normals_world, object_com_world, vars.epsilon_force, vars.epsilon_torque);
 }

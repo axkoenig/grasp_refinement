@@ -179,7 +179,7 @@ bool HandCommand::callbackCloseUntilContact(std_srvs::Trigger::Request &req, std
             return true;
         }
 
-        fingers_in_contact = state->getFingersInContact();
+        fingers_in_contact = state->getVars().fingers_in_contact;
         float increment[4] = {0, 0, 0, 0};
 
         for (int i = 0; i < state->num_fingers; i++)

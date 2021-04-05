@@ -11,6 +11,19 @@
 #include "reflex_interface/finger_state.hpp"
 #include "reflex_interface/grasp_quality.hpp"
 
+class HandStateVariables
+{
+public:
+    int num_contacts = 0;
+    float epsilon = 0;
+    float epsilon_force = 0;
+    float epsilon_torque = 0;
+    std::vector<tf2::Vector3> contact_positions_world;
+    std::vector<tf2::Vector3> contact_normals_world;
+    std::vector<int> num_sensors_in_contact_per_finger = {0, 0, 0}; // example: two sensors in contact on finger 1 and one on finger 2: {2, 1, 0}
+    std::vector<bool> fingers_in_contact = {0, 0, 0};               // example: fingers 1 and 3 in contact: {1, 0, 1}
+};
+
 class HandState
 {
 public:
@@ -29,10 +42,7 @@ public:
     int getFingerIdSingleContact();
     float getEpsilon(tf2::Vector3 object_com_world);
     void fillEpsilonFTSeparate(tf2::Vector3 object_com_world, float &epsilon_force, float &epsilon_torque);
-    std::vector<tf2::Vector3> getContactPositionsWorld() { return contact_positions_world; };
-    std::vector<tf2::Vector3> getContactNormalsWorld() { return contact_normals_world; };
-    std::vector<int> getNumSensorsInContactPerFinger() { return num_sensors_in_contact_per_finger; };
-    std::vector<bool> getFingersInContact() { return fingers_in_contact; };
+    HandStateVariables getVars() { return vars; };
     bool allFingersInContact();
     const int num_fingers = 3;
     const int num_motors = 4;
@@ -43,24 +53,15 @@ private:
     ros::Subscriber state_sub;
     ros::Publisher hand_state_pub;
     GraspQuality grasp_quality = GraspQuality();
+    HandStateVariables vars = HandStateVariables();
     std::string object_name;
     ContactState cur_state;
     bool use_sim_data_hand;
     bool use_sim_data_obj;
 
-    int num_contacts = 0;
-    float epsilon = 0;
-    float epsilon_force = 0;
-    float epsilon_torque = 0;
-    std::vector<tf2::Vector3> contact_positions_world;
-    std::vector<tf2::Vector3> contact_normals_world;
-    std::vector<int> num_sensors_in_contact_per_finger = {0, 0, 0}; // example: two sensors in contact on finger 1 and one on finger 2: {2, 1, 0}
-    std::vector<bool> fingers_in_contact = {0, 0, 0};               // example: fingers 1 and 3 in contact: {1, 0, 1}
-    
-    void callback(const reflex_msgs::Hand &msg);
+    void reflex_callback(const reflex_msgs::Hand &msg);
     void updateHandStateWorldSim();
     void updateHandStateWorldReal();
-    void publishTactilePoses();
     void broadcastModelState(tf2::Transform tf, std::string source_frame, std::string target_frame, tf2_ros::TransformBroadcaster *br);
 
     reflex_interface::HandStateStamped getHandStateMsg();
