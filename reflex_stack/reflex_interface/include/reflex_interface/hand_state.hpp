@@ -9,25 +9,9 @@
 #include <reflex_interface/HandStateStamped.h>
 
 #include "reflex_interface/finger_state.hpp"
+#include "reflex_interface/hand_state_variables.hpp"
 #include "reflex_interface/grasp_quality.hpp"
-
-class HandStateVariables
-{
-public:
-    int num_contacts = 0;
-    float epsilon = 0;
-    float epsilon_force = 0;
-    float epsilon_torque = 0;
-    std::vector<int> num_sensors_in_contact_per_finger = {0, 0, 0}; // example: two sensors in contact on finger 1 and one on finger 2: {2, 1, 0}
-    std::vector<bool> fingers_in_contact = {0, 0, 0};               // example: fingers 1 and 3 in contact: {1, 0, 1}
-
-    // all variables in world frame!
-    std::vector<tf2::Transform> contact_frames;
-    std::vector<tf2::Vector3> contact_forces;
-    std::vector<tf2::Vector3> contact_torques;
-    std::vector<tf2::Vector3> contact_positions;
-    std::vector<tf2::Vector3> contact_normals;
-};
+#include "sensor_listener/ContactFrames.h"
 
 class HandState
 {
@@ -54,10 +38,12 @@ public:
 private:
     ros::NodeHandle *nh;
     ros::Subscriber reflex_state_sub;
+    ros::Subscriber sim_state_sub;
     ros::Publisher hand_state_pub;
     tf2_ros::TransformBroadcaster br_reflex_measured;
     tf2_ros::TransformBroadcaster br_obj_measured;
     std::string object_name;
+    tf2::Transform obj_measured;
     bool use_sim_data_hand;
     bool use_sim_data_obj;
 
@@ -65,11 +51,14 @@ private:
     HandStateVariables vars = HandStateVariables();
     ContactState cur_state;
 
+    void sim_state_callback(const sensor_listener::ContactFrames &msg);
     void reflex_state_callback(const reflex_msgs::Hand &msg);
     void updateHandStateWorldSim();
     void updateHandStateWorldReal();
+    void updateFingerStatesWorldSim();
     void broadcastModelState(tf2::Transform tf, std::string source_frame, std::string target_frame, tf2_ros::TransformBroadcaster *br);
     reflex_interface::HandStateStamped getHandStateMsg();
+    tf2::Vector3 create_vec_from_msg(const geometry_msgs::Vector3 &msg);
 };
 
 #endif

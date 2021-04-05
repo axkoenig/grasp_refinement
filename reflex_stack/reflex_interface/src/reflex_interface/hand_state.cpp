@@ -19,6 +19,11 @@ HandState::HandState(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_d
     reflex_state_sub = nh->subscribe("reflex/hand_state", 1, &HandState::reflex_state_callback, this);
     hand_state_pub = nh->advertise<reflex_interface::HandStateStamped>("/reflex_interface/hand_state", 1);
     getParam(nh, &object_name, "object_name", false);
+
+    if (use_sim_data_hand)
+    {
+        sim_state_sub = nh->subscribe("reflex/sim_contact_frames", 1, &HandState::sim_state_callback, this);
+    }
 }
 
 bool HandState::allFingersInContact()
@@ -51,14 +56,38 @@ int HandState::getFingerIdSingleContact()
     return -1;
 }
 
-void HandState::reflex_state_callback(const reflex_msgs::Hand &msg)
+tf2::Vector3 HandState::create_vec_from_msg(const geometry_msgs::Vector3 &msg)
+{
+    return tf2::Vector3{msg.x, msg.y, msg.z};
+}
+
+void HandState::sim_state_callback(const sensor_listener::ContactFrames &msg)
 {
     // reset variables
-    vars.num_contacts = 0;
-    vars.epsilon = 0;
-    vars.epsilon_force = 0;
-    vars.epsilon_torque = 0;
+    vars.clear_all();
+    vars.num_contacts = msg.contact_frames.size();
 
+    for (int i = 0; i < vars.num_contacts; i++)
+    {
+        int finger_id = msg.contact_frames[i].finger_id;
+        tf2::Transform transform;
+        tf2::fromMsg(msg.contact_frames[i].contact_frame, transform);
+        vars.contact_frames.push_back(transform);
+        vars.contact_forces.push_back(create_vec_from_msg(msg.contact_frames[i].contact_wrench.force));
+        vars.contact_torques.push_back(create_vec_from_msg(msg.contact_frames[i].contact_wrench.torque));
+        vars.contact_positions.push_back(create_vec_from_msg(msg.contact_frames[i].contact_position));
+        vars.contact_normals.push_back(create_vec_from_msg(msg.contact_frames[i].contact_normal));
+        vars.finger_ids.push_back(finger_id);
+        vars.sensor_ids.push_back(msg.contact_frames[i].sensor_id);
+        vars.contact_force_magnitudes.push_back(msg.contact_frames[i].contact_force_magnitude);
+        vars.contact_torque_magnitudes.push_back(msg.contact_frames[i].contact_torque_magnitude);
+        vars.fingers_in_contact[finger_id - 1] = true;
+        vars.num_sensors_in_contact_per_finger[finger_id - 1] += 1; // TODO actually this variable now represents num_sim_contacts_per_finger
+    }
+}
+
+void HandState::reflex_state_callback(const reflex_msgs::Hand &msg)
+{
     for (int i = 0; i < num_fingers; i++)
     {
         finger_states[i]->setProximalAngleFromMsg(msg.finger[i].proximal);
@@ -75,9 +104,9 @@ void HandState::reflex_state_callback(const reflex_msgs::Hand &msg)
 
     if (use_sim_data_hand)
     {
-        updateHandStateWorldSim();
-
-        // TODO shift this to wrist_controller broadcast Gazebo wrist pose to ROS tf tree
+        updateFingerStatesWorldSim();
+        // TODO shift this to wrist_controller
+        // broadcast Gazebo wrist pose to ROS tf tree
         tf2::Transform wrist_measured = getLinkPoseSim(nh, "shell", "world", false);
         broadcastModelState(wrist_measured, "world", "reflex_interface/wrist_measured", &br_reflex_measured);
     }
@@ -86,14 +115,11 @@ void HandState::reflex_state_callback(const reflex_msgs::Hand &msg)
         updateHandStateWorldReal();
     }
 
-    vars.num_contacts = std::accumulate(vars.num_sensors_in_contact_per_finger.begin(), vars.num_sensors_in_contact_per_finger.end(), 0);
-
     if (use_sim_data_obj)
     {
         // broadcast Gazebo object pose to ROS tf tree
-        tf2::Transform obj_measured = getModelPoseSim(nh, object_name, "world", false);
+        obj_measured = getModelPoseSim(nh, object_name, "world", false);
         broadcastModelState(obj_measured, "world", "reflex_interface/obj_measured", &br_obj_measured);
-        grasp_quality.fillEpsilonFTSeparate(vars.contact_positions, vars.contact_normals, obj_measured.getOrigin(), vars.epsilon_force, vars.epsilon_torque);
     }
     else
     {
@@ -101,6 +127,9 @@ void HandState::reflex_state_callback(const reflex_msgs::Hand &msg)
         // could listen to a ROS topic here to obtain object_com_world and then:
         throw "Not implemented.";
     }
+    // calculate quality metrics
+    grasp_quality.fillEpsilonFTSeparate(vars.contact_positions, vars.contact_normals, obj_measured.getOrigin(), vars.epsilon_force, vars.epsilon_torque);
+
     hand_state_pub.publish(getHandStateMsg());
 }
 
@@ -127,13 +156,19 @@ HandState::ContactState HandState::getContactState()
     }
 }
 
+void HandState::updateFingerStatesWorldSim()
+{
+    for (int i = 0; i < num_fingers; i++)
+    {
+        finger_states[i]->updateCurLinkFramesInShellFrameSim();
+    }
+}
+
 void HandState::updateHandStateWorldSim()
 {
+    // TODO this method should become our new updateHandStateWorldReal
     // reset variables
-    vars.contact_positions.clear();
-    vars.contact_normals.clear();
-    vars.num_sensors_in_contact_per_finger = {0, 0, 0};
-    vars.fingers_in_contact = {0, 0, 0};
+    vars.clear_all();
 
     for (int i = 0; i < num_fingers; i++)
     {
@@ -147,6 +182,7 @@ void HandState::updateHandStateWorldSim()
             vars.fingers_in_contact[i] = true;
         }
     }
+    vars.num_contacts = std::accumulate(vars.num_sensors_in_contact_per_finger.begin(), vars.num_sensors_in_contact_per_finger.end(), 0);
 }
 
 reflex_interface::HandStateStamped HandState::getHandStateMsg()
