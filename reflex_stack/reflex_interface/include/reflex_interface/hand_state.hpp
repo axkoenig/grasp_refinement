@@ -32,9 +32,9 @@ public:
 class HandState
 {
 public:
-    HandState(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_data_obj);
-    FingerState *finger_states[3];
-
+    const int num_fingers = 3;
+    const int num_motors = 4;
+    const int num_sensors_per_finger = 9;
     enum ContactState
     {
         NoContact,
@@ -42,36 +42,34 @@ public:
         MultipleFingerContact
     };
 
+    HandState(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_data_obj);
+    FingerState *finger_states[3];
+
     ContactState getContactState();
     int getNumFingersInContact();
     int getFingerIdSingleContact();
-    float getEpsilon(tf2::Vector3 object_com_world);
-    void fillEpsilonFTSeparate(tf2::Vector3 object_com_world, float &epsilon_force, float &epsilon_torque);
-    HandStateVariables getVars() { return vars; };
     bool allFingersInContact();
-    const int num_fingers = 3;
-    const int num_motors = 4;
-    const int num_sensors_per_finger = 9;
+    HandStateVariables getVars() { return vars; };
 
 private:
     ros::NodeHandle *nh;
-    ros::Subscriber state_sub;
+    ros::Subscriber reflex_state_sub;
     ros::Publisher hand_state_pub;
-    GraspQuality grasp_quality = GraspQuality();
-    HandStateVariables vars = HandStateVariables();
+    tf2_ros::TransformBroadcaster br_reflex_measured;
+    tf2_ros::TransformBroadcaster br_obj_measured;
     std::string object_name;
-    ContactState cur_state;
     bool use_sim_data_hand;
     bool use_sim_data_obj;
 
-    void reflex_callback(const reflex_msgs::Hand &msg);
+    GraspQuality grasp_quality = GraspQuality();
+    HandStateVariables vars = HandStateVariables();
+    ContactState cur_state;
+
+    void reflex_state_callback(const reflex_msgs::Hand &msg);
     void updateHandStateWorldSim();
     void updateHandStateWorldReal();
     void broadcastModelState(tf2::Transform tf, std::string source_frame, std::string target_frame, tf2_ros::TransformBroadcaster *br);
-
     reflex_interface::HandStateStamped getHandStateMsg();
-    tf2_ros::TransformBroadcaster br_reflex_measured;
-    tf2_ros::TransformBroadcaster br_obj_measured;
 };
 
 #endif

@@ -16,7 +16,7 @@ HandState::HandState(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_d
     this->nh = nh;
     this->use_sim_data_hand = use_sim_data_hand;
     this->use_sim_data_obj = use_sim_data_obj;
-    state_sub = nh->subscribe("reflex/hand_state", 1, &HandState::reflex_callback, this);
+    reflex_state_sub = nh->subscribe("reflex/hand_state", 1, &HandState::reflex_state_callback, this);
     hand_state_pub = nh->advertise<reflex_interface::HandStateStamped>("/reflex_interface/hand_state", 1);
     getParam(nh, &object_name, "object_name", false);
 }
@@ -51,7 +51,7 @@ int HandState::getFingerIdSingleContact()
     return -1;
 }
 
-void HandState::reflex_callback(const reflex_msgs::Hand &msg)
+void HandState::reflex_state_callback(const reflex_msgs::Hand &msg)
 {
     // reset variables
     vars.num_contacts = 0;
@@ -93,15 +93,12 @@ void HandState::reflex_callback(const reflex_msgs::Hand &msg)
         // broadcast Gazebo object pose to ROS tf tree
         tf2::Transform obj_measured = getModelPoseSim(nh, object_name, "world", false);
         broadcastModelState(obj_measured, "world", "reflex_interface/obj_measured", &br_obj_measured);
-        fillEpsilonFTSeparate(obj_measured.getOrigin(), vars.epsilon_force, vars.epsilon_torque);
-        // TODO commented out for now because not using this and heavy computation
-        // epsilon = getEpsilon(obj_measured.getOrigin());
+        grasp_quality.fillEpsilonFTSeparate(vars.contact_positions, vars.contact_normals, obj_measured.getOrigin(), vars.epsilon_force, vars.epsilon_torque);
     }
     else
     {
         // we could obtain center of mass from computer vision or manual estimates.
         // could listen to a ROS topic here to obtain object_com_world and then:
-        // epsilon_msg.data = getEpsilon(object_com_world)
         throw "Not implemented.";
     }
     hand_state_pub.publish(getHandStateMsg());
@@ -196,14 +193,4 @@ void HandState::updateHandStateWorldReal()
     // TODO: solve with forward kinematics and compare with results we obtain from simulation.
     // because we want this in world coosy we also need the gripper pose.
     throw "Not implemented.";
-}
-
-float HandState::getEpsilon(tf2::Vector3 object_com_world)
-{
-    return grasp_quality.getEpsilon(vars.contact_positions, vars.contact_normals, object_com_world);
-}
-
-void HandState::fillEpsilonFTSeparate(tf2::Vector3 object_com_world, float &epsilon_force, float &epsilon_torque)
-{
-    grasp_quality.fillEpsilonFTSeparate(vars.contact_positions, vars.contact_normals, object_com_world, vars.epsilon_force, vars.epsilon_torque);
 }
