@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   reflex_msgs
   gazebo_msgs
   roscpp
+  tf2_geometry_msgs
   std_msgs
   control_msgs
   gazebo_interface
