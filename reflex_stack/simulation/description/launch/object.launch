@@ -7,7 +7,7 @@
     <arg name="origin_x" default="0.0" />
     <arg name="origin_y" default="0.2" />
     <arg name="origin_z" default="0.2" />
-    <arg name="object_mass" default="0.4" />
+    <arg name="object_mass" default="10" />
 
     <!-- currently supports "sphere", "box", "cylinder" -->
     <arg name="object_name" default="sphere" />
