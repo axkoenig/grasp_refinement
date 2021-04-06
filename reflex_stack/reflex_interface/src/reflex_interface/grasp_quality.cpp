@@ -269,3 +269,55 @@ float GraspQuality::getEpsilon(const std::vector<tf2::Vector3> &contact_position
     }
     return calcRadiusLargestBall(dim, num_ft_primitives, points, num_points, verbose);
 }
+
+float GraspQuality::getSlipMargin(std::vector<tf2::Vector3> &contact_normals,
+                                  const std::vector<tf2::Vector3> &contact_forces,
+                                  const std::vector<float> &contact_force_magnitudes,
+                                  const int &num_contacts,
+                                  bool verbose)
+{
+    float min_delta = 0;
+
+    for (int i = 0; i < num_contacts; i++)
+    {
+        // calc measured normal force by scalar projection
+        float f_norm_m = contact_forces[i].dot(contact_normals[i].normalize());
+
+        // calc measured tangential force
+        float f_tang_m = sqrt(pow(contact_force_magnitudes[i], 2) - pow(f_norm_m, 2));
+
+        // calc allowed tangential force using Coulomb
+        float f_tang_allow = mu * f_norm_m;
+
+        // calc margin and only update if smaller than previous delta
+        float f_tang_margin = f_tang_allow - f_tang_m;
+
+        if (i == 0)
+        {
+            // save first f_tang_margin in min_delta
+            min_delta = f_tang_margin;
+        }
+        else if (min_delta > f_tang_margin)
+        {
+            // if we have a new smallest f_tang_margin, save it
+            min_delta = f_tang_margin;
+        }
+
+        if (verbose)
+        {
+
+            ROS_WARN("===============");
+            ROS_INFO_STREAM("DEBUG: contact_forces[" << i << "]: \t" << vec2string(contact_forces[i]));
+            ROS_INFO_STREAM("DEBUG: contact_normals[" << i << "]: \t" << vec2string(contact_normals[i]));
+            ROS_INFO_STREAM("DEBUG: contact_force_magnitudes[" << i << "]: \t" << contact_force_magnitudes[i]);
+            ROS_INFO_STREAM("f_norm_m is " << f_norm_m);
+            ROS_INFO_STREAM("f_tang_m is " << f_tang_m);
+            ROS_INFO_STREAM("f_tang_margin is " << f_tang_margin);
+        }
+    }
+    if (verbose)
+    {
+        ROS_INFO_STREAM("==> final min_delta is " << min_delta);
+    }
+    return min_delta;
+}
