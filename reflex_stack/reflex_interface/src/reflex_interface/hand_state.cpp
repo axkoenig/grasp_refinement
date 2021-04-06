@@ -129,7 +129,7 @@ void HandState::reflex_state_callback(const reflex_msgs::Hand &msg)
     }
     // calculate quality metrics
     grasp_quality.fillEpsilonFTSeparate(vars.contact_positions, vars.contact_normals, obj_measured.getOrigin(), vars.epsilon_force, vars.epsilon_torque);
-
+    vars.delta_cur = grasp_quality.getSlipMargin(vars.contact_normals, vars.contact_forces, vars.contact_force_magnitudes, vars.num_contacts);
     hand_state_pub.publish(getHandStateMsg());
 }
 
@@ -196,6 +196,8 @@ reflex_interface::HandStateStamped HandState::getHandStateMsg()
     hss.num_contacts = vars.num_contacts;
     hss.epsilon = vars.epsilon;
     hss.epsilon_force = vars.epsilon_force;
+    hss.delta_cur = vars.delta_cur;
+    hss.delta_task = vars.delta_task;
     hss.epsilon_torque = vars.epsilon_torque;
 
     for (int i = 0; i < num_fingers; i++)
