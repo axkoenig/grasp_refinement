@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include "gazebo_interface/gazebo_interface.hpp"
@@ -114,6 +116,14 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
     bool contacts[num_sensors_on_link] = {0};
     int num_real_contacts[num_sensors_on_link] = {0};
 
+    // Gazebo has a weird bug where it randomly switches signs for contact normals and
+    // contact forces (see here https://github.com/dartsim/dart/issues/1425)
+    // we want our contact normals (and forces) to point away from the finger, towards
+    // the object. for now we fix this issue by looking at the z axis of the finger link,
+    // which we know points away from the inner finger surface, and measuring the angle
+    // to the contact normal reported by Gazebo.
+    tf2::Vector3 link_z = world_to_link * tf2::Vector3(0, 0, 1);
+
     int num_contacts = msg.states[states_idx].wrenches.size();
     for (int i = 0; i < num_contacts; i++)
     {
@@ -147,8 +157,16 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
         num_real_contacts[sensor_id] += 1;
 
         tf2::Vector3 contact_normal = create_vec_from_msg(msg.states[states_idx].contact_normals[i]);
-        contact_normal *= -1; // invert to get normal from hand to object
         tf2::Vector3 contact_torque_world = create_vec_from_msg(msg.states[states_idx].wrenches[i].torque);
+
+        // this is our dirty fix for the Gazebo bug (see description above)
+        float angle = acos(link_z.dot(contact_normal) / (contact_normal.length() * link_z.length()));
+        float invert_or_leave = 1;
+        if (abs(angle) > M_PI / 2)
+        {
+            invert_or_leave = -1;
+            contact_normal *= invert_or_leave;
+        }
 
         // calculate rotation of contact frame (z must align with contact normal)
         tf2::Vector3 world_z = tf2::Vector3{0, 0, 1};
@@ -159,8 +177,8 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
         cf_msg.sensor_id = first_sensor_idx + sensor_id + 1; // ranges from 1 to 9
         cf_msg.finger_id = finger_id;                        // ranges from 1 to 3
         cf_msg.contact_torque_magnitude = contact_torque_world.length();
-        cf_msg.contact_wrench.force = tf2::toMsg(-contact_force_world);     // invert to get force from hand to object
-        cf_msg.contact_wrench.torque = tf2::toMsg(-contact_torque_world);
+        cf_msg.contact_wrench.force = tf2::toMsg(invert_or_leave * contact_force_world);
+        cf_msg.contact_wrench.torque = tf2::toMsg(invert_or_leave * contact_torque_world);
         cf_msg.contact_frame = tf2::toMsg(contact_frame);
         cf_msg.contact_position = tf2::toMsg(contact_position);
         cf_msg.contact_normal = tf2::toMsg(contact_normal);
