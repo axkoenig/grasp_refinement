@@ -7,7 +7,6 @@
 #include <tf2/LinearMath/Transform.h>
 #include <tf2/LinearMath/Vector3.h>
 
-
 class HandStateVariables
 {
 public:
@@ -15,6 +14,8 @@ public:
     float epsilon = 0;
     float epsilon_force = 0;
     float epsilon_torque = 0;
+    float delta_cur = 0;
+    float delta_task = 0;
     std::vector<int> num_sensors_in_contact_per_finger = {0, 0, 0}; // example: two sensors in contact on finger 1 and one on finger 2: {2, 1, 0}
     std::vector<bool> fingers_in_contact = {0, 0, 0};               // example: fingers 1 and 3 in contact: {1, 0, 1}
 
