@@ -21,6 +21,9 @@ GraspQuality::GraspQuality(float mu, int num_edges, ContactModel contact_model)
     this->num_edges = num_edges;
     this->contact_model = contact_model;
     beta = atan(mu);
+
+    // define task wrenches (how much total task wrench has to be applied from fingers to object)
+    tp.add_task_wrench(tf2::Vector3(0, 0, 5), tf2::Vector3(0, 0, 0));
 }
 
 bool GraspQuality::isValidNumContacts()
@@ -337,9 +340,7 @@ Eigen::MatrixXd GraspQuality::getGraspMatrix(const std::vector<tf2::Transform> &
     return G;
 }
 
-float GraspQuality::getSlipMarginWithTaskWrenches(const std::vector<tf2::Vector3> &task_forces,
-                                                  const std::vector<tf2::Vector3> &task_torques,
-                                                  std::vector<tf2::Vector3> &contact_forces,
+float GraspQuality::getSlipMarginWithTaskWrenches(std::vector<tf2::Vector3> &contact_forces,
                                                   std::vector<tf2::Vector3> &contact_normals,
                                                   const std::vector<tf2::Transform> &contact_frames,
                                                   const tf2::Vector3 &object_position,
@@ -347,13 +348,6 @@ float GraspQuality::getSlipMarginWithTaskWrenches(const std::vector<tf2::Vector3
 {
     if (!num_contacts)
     {
-        return 0;
-    }
-
-    int num_task_forces = task_forces.size();
-    if (num_task_forces != task_torques.size())
-    {
-        ROS_ERROR("Number of task forces and torques must be equal.");
         return 0;
     }
 
@@ -372,13 +366,13 @@ float GraspQuality::getSlipMarginWithTaskWrenches(const std::vector<tf2::Vector3
     std::vector<float> contact_force_magnitudes;
 
     // for each task wrench compute the slip margin
-    for (int i = 0; i < num_task_forces; i++)
+    for (int i = 0; i < tp.num_task_wrenches; i++)
     {
         contact_force_magnitudes.clear();
 
         Eigen::MatrixXd task_wrench_i(6, 1);
-        task_wrench_i << task_forces[i][0], task_forces[i][1], task_forces[i][2],
-            task_torques[i][0], task_torques[i][1], task_torques[i][2];
+        task_wrench_i << tp.task_forces[i][0], tp.task_forces[i][1], tp.task_forces[i][2],
+            tp.task_torques[i][0], tp.task_torques[i][1], tp.task_torques[i][2];
 
         // map task wrench onto contact frames and obtain wrench intensity vector lambda expressed in contact frames
         Eigen::MatrixXd lambda(6 * num_contacts, 1);

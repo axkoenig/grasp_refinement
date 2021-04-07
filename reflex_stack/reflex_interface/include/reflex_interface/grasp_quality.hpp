@@ -7,6 +7,8 @@
 #include <tf2/LinearMath/Vector3.h>
 #include <tf2/LinearMath/Transform.h>
 
+#include "reflex_interface/task_polytope.hpp"
+
 class GraspWrenchSpace
 {
 public:
@@ -52,9 +54,7 @@ public:
     Eigen::MatrixXd getGraspMatrix(const std::vector<tf2::Transform> &contact_frames,
                                    const tf2::Vector3 &object_position,
                                    const int &num_contacts);
-    float getSlipMarginWithTaskWrenches(const std::vector<tf2::Vector3> &task_forces,
-                                        const std::vector<tf2::Vector3> &task_torques,
-                                        std::vector<tf2::Vector3> &contact_forces,
+    float getSlipMarginWithTaskWrenches(std::vector<tf2::Vector3> &contact_forces,
                                         std::vector<tf2::Vector3> &contact_normals,
                                         const std::vector<tf2::Transform> &contact_frames,
                                         const tf2::Vector3 &object_position,
@@ -66,6 +66,7 @@ private:
     int num_contacts;
     double beta;
     GraspWrenchSpace gws = GraspWrenchSpace();
+    TaskPolytope tp = TaskPolytope();
     std::vector<tf2::Vector3> contact_positions;
     std::vector<tf2::Vector3> contact_normals;
     tf2::Vector3 object_com_world;
