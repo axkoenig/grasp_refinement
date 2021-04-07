@@ -3,7 +3,9 @@
 
 #include <vector>
 
+#include <Eigen/Dense>
 #include <tf2/LinearMath/Vector3.h>
+#include <tf2/LinearMath/Transform.h>
 
 class GraspWrenchSpace
 {
@@ -14,18 +16,15 @@ public:
 
 class GraspQuality
 {
-private:
-    float mu;
-    int num_edges;
-    int num_contacts;
-    double beta;
-    GraspWrenchSpace gws = GraspWrenchSpace();
-    std::vector<tf2::Vector3> contact_positions;
-    std::vector<tf2::Vector3> contact_normals;
-    tf2::Vector3 object_com_world;
-
 public:
-    GraspQuality(float mu = 1, int num_edges = 4);
+    enum ContactModel
+    {
+        PointContactWithoutFriction,
+        HardFinger,
+        SoftFinger
+    };
+
+    GraspQuality(float mu = 1, int num_edges = 4, ContactModel contact_model = HardFinger);
 
     // all args have to be in same coordinate system!
     float getEpsilon(const std::vector<tf2::Vector3> &contact_positions,
@@ -48,6 +47,29 @@ public:
 
     void updateGraspWrenchSpace(bool verbose);
     bool isValidNumContacts();
+    Eigen::MatrixXd getCrossProductMatrix(const tf2::Vector3 &r);
+    Eigen::MatrixXd getPartialGraspMatrix(const tf2::Transform &contact_frame, const tf2::Vector3 &object_position);
+    Eigen::MatrixXd getGraspMatrix(const std::vector<tf2::Transform> &contact_frames,
+                                   const tf2::Vector3 &object_position,
+                                   const int &num_contacts);
+    float getSlipMarginWithTaskWrenches(const std::vector<tf2::Vector3> &task_forces,
+                                        const std::vector<tf2::Vector3> &task_torques,
+                                        std::vector<tf2::Vector3> &contact_forces,
+                                        std::vector<tf2::Vector3> &contact_normals,
+                                        const std::vector<tf2::Transform> &contact_frames,
+                                        const tf2::Vector3 &object_position,
+                                        const int &num_contacts);
+
+private:
+    float mu;
+    int num_edges;
+    int num_contacts;
+    double beta;
+    GraspWrenchSpace gws = GraspWrenchSpace();
+    std::vector<tf2::Vector3> contact_positions;
+    std::vector<tf2::Vector3> contact_normals;
+    tf2::Vector3 object_com_world;
+    ContactModel contact_model;
 };
 
 #endif

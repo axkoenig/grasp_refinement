@@ -15,10 +15,11 @@ std::string vec2string(tf2::Vector3 vec)
     return std::to_string(vec[0]) + ", " + std::to_string(vec[1]) + ", " + std::to_string(vec[2]);
 }
 
-GraspQuality::GraspQuality(float mu, int num_edges)
+GraspQuality::GraspQuality(float mu, int num_edges, ContactModel contact_model)
 {
     this->mu = mu;
     this->num_edges = num_edges;
+    this->contact_model = contact_model;
     beta = atan(mu);
 }
 
@@ -270,6 +271,150 @@ float GraspQuality::getEpsilon(const std::vector<tf2::Vector3> &contact_position
     return calcRadiusLargestBall(dim, num_ft_primitives, points, num_points, verbose);
 }
 
+Eigen::MatrixXd GraspQuality::getCrossProductMatrix(const tf2::Vector3 &r)
+{
+    Eigen::MatrixXd m(3, 3);
+    m << 0, -r[2], r[1],
+        r[2], 0, -r[0],
+        -r[1], r[0], 0;
+    return m;
+}
+
+Eigen::MatrixXd GraspQuality::getPartialGraspMatrix(const tf2::Transform &contact_frame, const tf2::Vector3 &object_position)
+{
+    // dist from world frame to i_th contact point
+    tf2::Vector3 dist_to_contact_i = contact_frame.getOrigin() - object_position;
+
+    // compute cross product matrix
+    Eigen::MatrixXd S_i = getCrossProductMatrix(dist_to_contact_i);
+
+    // assemble P_i
+    Eigen::MatrixXd P_i(6, 6);
+    P_i.topLeftCorner(3, 3) = Eigen::MatrixXd::Identity(3, 3);
+    P_i.topRightCorner(3, 3) = Eigen::MatrixXd::Zero(3, 3);
+    P_i.bottomLeftCorner(3, 3) = S_i;
+    P_i.bottomRightCorner(3, 3) = Eigen::MatrixXd::Identity(3, 3);
+
+    // compute R_i (which is the basis of the contact frame)
+    tf2::Vector3 n_i = contact_frame * tf2::Vector3(1, 0, 0);
+    tf2::Vector3 t_i = contact_frame * tf2::Vector3(0, 1, 0);
+    tf2::Vector3 o_i = contact_frame * tf2::Vector3(0, 0, 1);
+    Eigen::MatrixXd R_i(3, 3);
+    R_i << n_i[0], t_i[0], o_i[0],
+        n_i[1], t_i[1], o_i[1],
+        n_i[2], t_i[2], o_i[2];
+
+    // assemble R_i_bar
+    Eigen::MatrixXd R_i_bar(6, 6);
+    R_i_bar.topLeftCorner(3, 3) = R_i;
+    R_i_bar.topRightCorner(3, 3) = Eigen::MatrixXd::Zero(3, 3);
+    R_i_bar.bottomLeftCorner(3, 3) = Eigen::MatrixXd::Zero(3, 3);
+    R_i_bar.bottomRightCorner(3, 3) = R_i;
+
+    // compute partial grasp matrix G_i
+    Eigen::MatrixXd G_i(6, 6);
+    G_i = P_i * R_i_bar;
+    return G_i;
+}
+
+Eigen::MatrixXd GraspQuality::getGraspMatrix(const std::vector<tf2::Transform> &contact_frames,
+                                             const tf2::Vector3 &object_position,
+                                             const int &num_contacts)
+{
+    // NOTE: for all calculations regarding the grasp matrix, we follow the notation in "Springer Handbook
+    // of Robotics, Chapter 38 - Grasping, Second Edition, by Prattichizzo and Trinkle"
+
+    // define grasp matrix G and partial grasp matrix G_i
+    Eigen::MatrixXd G(6, num_contacts * 6);
+    Eigen::MatrixXd G_i(6, 6);
+
+    for (int i = 0; i < num_contacts; i++)
+    {
+        G_i = getPartialGraspMatrix(contact_frames[i], object_position);
+        // insert G_i into G at correct column index
+        G.block<6, 6>(0, i * 6) = G_i;
+    }
+    return G;
+}
+
+float GraspQuality::getSlipMarginWithTaskWrenches(const std::vector<tf2::Vector3> &task_forces,
+                                                  const std::vector<tf2::Vector3> &task_torques,
+                                                  std::vector<tf2::Vector3> &contact_forces,
+                                                  std::vector<tf2::Vector3> &contact_normals,
+                                                  const std::vector<tf2::Transform> &contact_frames,
+                                                  const tf2::Vector3 &object_position,
+                                                  const int &num_contacts)
+{
+    if (!num_contacts)
+    {
+        return 0;
+    }
+
+    int num_task_forces = task_forces.size();
+    if (num_task_forces != task_torques.size())
+    {
+        ROS_ERROR("Number of task forces and torques must be equal.");
+        return 0;
+    }
+
+    // compute grasp matrix (nxm)
+    Eigen::MatrixXd G(6, num_contacts * 6);
+    G = getGraspMatrix(contact_frames, object_position, num_contacts);
+
+    // TODO
+    // assemble selection matrix
+    // calculate effective grasp matrix
+
+    // compute grasp matrix pseudoinverse (mxn)
+    Eigen::MatrixXd G_pinv = G.completeOrthogonalDecomposition().pseudoInverse();
+
+    float lowest_slip_margin = 0;
+    std::vector<float> contact_force_magnitudes;
+
+    // for each task wrench compute the slip margin
+    for (int i = 0; i < num_task_forces; i++)
+    {
+        contact_force_magnitudes.clear();
+
+        Eigen::MatrixXd task_wrench_i(6, 1);
+        task_wrench_i << task_forces[i][0], task_forces[i][1], task_forces[i][2],
+            task_torques[i][0], task_torques[i][1], task_torques[i][2];
+
+        // map task wrench onto contact frames and obtain wrench intensity vector lambda expressed in contact frames
+        Eigen::MatrixXd lambda(6 * num_contacts, 1);
+        lambda = G_pinv * task_wrench_i;
+
+        // iterate over each contact
+        for (int j = 0; j < num_contacts; j++)
+        {
+            // lambda is [fx0,fy0,fz0,tx0,ty0,tz0,fx1,fy1,fz1,tx2 ... ]. lambda_j_start_idx points to fxj
+            int lambda_j_start_idx = i * 6;
+
+            // hard contact model: only pull out contact forces from lambda
+            tf2::Vector3 task_force_j = tf2::Vector3(lambda(lambda_j_start_idx, 0),
+                                                     lambda(lambda_j_start_idx + 1, 0),
+                                                     lambda(lambda_j_start_idx + 2, 0));
+
+            // transform contact task force from contact to world frame
+            task_force_j = contact_frames[j].inverse() * task_force_j;
+
+            // add contact task forces to currently measured contact forces
+            contact_forces[j] += task_force_j;
+            contact_force_magnitudes.push_back(contact_forces[j].length());
+        }
+
+        // compute slip margin with this task force
+        float slip_margin = getSlipMargin(contact_normals, contact_forces, contact_force_magnitudes, num_contacts);
+
+        // save first or new lowest slip_margin
+        if (i = 0 || slip_margin < lowest_slip_margin)
+        {
+            lowest_slip_margin = slip_margin;
+        }
+    }
+    return lowest_slip_margin;
+}
+
 float GraspQuality::getSlipMargin(std::vector<tf2::Vector3> &contact_normals,
                                   const std::vector<tf2::Vector3> &contact_forces,
                                   const std::vector<float> &contact_force_magnitudes,
@@ -292,14 +437,9 @@ float GraspQuality::getSlipMargin(std::vector<tf2::Vector3> &contact_normals,
         // calc margin and only update if smaller than previous delta
         float f_tang_margin = f_tang_allow - f_tang_m;
 
-        if (i == 0)
+        // save first or new lowest f_tang_margin
+        if (i == 0 || f_tang_margin < min_delta)
         {
-            // save first f_tang_margin in min_delta
-            min_delta = f_tang_margin;
-        }
-        else if (min_delta > f_tang_margin)
-        {
-            // if we have a new smallest f_tang_margin, save it
             min_delta = f_tang_margin;
         }
 
