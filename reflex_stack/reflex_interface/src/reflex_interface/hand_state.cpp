@@ -127,9 +127,12 @@ void HandState::reflex_state_callback(const reflex_msgs::Hand &msg)
         // could listen to a ROS topic here to obtain object_com_world and then:
         throw "Not implemented.";
     }
+
     // calculate quality metrics
     grasp_quality.fillEpsilonFTSeparate(vars.contact_positions, vars.contact_normals, obj_measured.getOrigin(), vars.epsilon_force, vars.epsilon_torque);
     vars.delta_cur = grasp_quality.getSlipMargin(vars.contact_normals, vars.contact_forces, vars.contact_force_magnitudes, vars.num_contacts);
+    vars.delta_task = grasp_quality.getSlipMarginWithTaskWrenches(vars.contact_forces, vars.contact_normals, vars.contact_frames, obj_measured.getOrigin(), vars.num_contacts);
+
     hand_state_pub.publish(getHandStateMsg());
 }
 
