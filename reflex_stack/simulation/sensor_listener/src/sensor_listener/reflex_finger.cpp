@@ -168,10 +168,10 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
             contact_normal *= invert_or_leave;
         }
 
-        // calculate rotation of contact frame (z must align with contact normal)
-        tf2::Vector3 world_z = tf2::Vector3{0, 0, 1};
-        tf2::Quaternion rot_z_to_normal = tf2::shortestArcQuatNormalize2(world_z, contact_normal);
-        tf2::Transform contact_frame = tf2::Transform(rot_z_to_normal, contact_position);
+        // calculate rotation of contact frame (x must align with contact normal)
+        tf2::Vector3 world_x = tf2::Vector3{1, 0, 0};
+        tf2::Quaternion rot_x_to_normal = tf2::shortestArcQuatNormalize2(world_x, contact_normal);
+        tf2::Transform contact_frame = tf2::Transform(rot_x_to_normal, contact_position);
 
         // fill remaining message
         cf_msg.sensor_id = first_sensor_idx + sensor_id + 1; // ranges from 1 to 9
