@@ -76,7 +76,9 @@
         "regex": "cpp",
         "shared_mutex": "cpp",
         "*.ipp": "cpp",
-        "enc.h": "c"
+        "enc.h": "c",
+        "core": "cpp",
+        "valarray": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled",
     "ros.distro": "noetic",
