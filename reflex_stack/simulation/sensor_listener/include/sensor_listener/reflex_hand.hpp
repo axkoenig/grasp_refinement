@@ -3,6 +3,7 @@
 
 #include "sensor_listener/reflex_finger.hpp"
 #include "sensor_listener/reflex_motor.hpp"
+#include "sensor_listener/reflex_palm.hpp"
 
 class ReflexHand
 {
@@ -11,6 +12,7 @@ public:
     int num_sensors = 9;
     int num_motors = 4;
 
+    ReflexPalm palm;
     ReflexFinger fingers[3] = {ReflexFinger(1), ReflexFinger(2), ReflexFinger(3)};
     ReflexMotor *motors[4];
 
