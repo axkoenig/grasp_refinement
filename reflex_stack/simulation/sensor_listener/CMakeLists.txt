@@ -134,6 +134,7 @@ add_library(${PROJECT_NAME}
   src/${PROJECT_NAME}/reflex_finger.cpp
   src/${PROJECT_NAME}/reflex_motor.cpp
   src/${PROJECT_NAME}/reflex_sensor.cpp
+  src/${PROJECT_NAME}/reflex_palm.cpp
 )
 
 ## Declare a C++ executable

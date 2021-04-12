@@ -14,6 +14,9 @@ int32 finger_id
 # to which Reflex sensor would this contact belong (ranges from 0 to 8) 
 int32 sensor_id
 
+# whether the contact is on the palm (contact is either on finger or palm)
+bool palm_contact
+
 # measured contact wrench in world frame
 geometry_msgs/Wrench contact_wrench
 
