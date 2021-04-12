@@ -96,7 +96,7 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
     // number of intermediate collision results (usually around 20)
     int num_contact_states = msg.states.size();
 
-    // we only take the second latest result to decrease compuational load. (latest result is
+    // we only take the second latest result to decrease computational load. (latest result is
     // sometimes not filled by Gazebo and results in error)
     int states_idx = num_contact_states - 1;
 
