@@ -132,8 +132,8 @@
     <xacro:tactile_sensor location="distal" finger_id="${id}" sensor_id="3"/>
     <xacro:tactile_sensor location="distal" finger_id="${id}" sensor_id="4"/>
 
-    <xacro:link_sensor link_name="proximal_${id}"/>
-    <xacro:link_sensor link_name="distal_${id}"/>
+    <xacro:link_sensor link_name="proximal_${id}_pad"/>
+    <xacro:link_sensor link_name="distal_${id}_pad"/>
 
     <xacro:preserve_fixed location="proximal" finger_id="${id}" sensor_id="1"/>
     <xacro:preserve_fixed location="proximal" finger_id="${id}" sensor_id="2"/>
