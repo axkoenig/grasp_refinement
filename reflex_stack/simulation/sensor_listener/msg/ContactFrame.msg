@@ -8,10 +8,10 @@ geometry_msgs/Transform contact_frame
 geometry_msgs/Vector3 contact_position 
 geometry_msgs/Vector3 contact_normal
 
-# on which Reflex finger is the contact (ranges from 0 to 2) 
+# on which Reflex finger is the contact (ranges from 0 to 3, 0 means palm contact) 
 int32 finger_id
 
-# to which Reflex sensor would this contact belong (ranges from 0 to 8) 
+# to which Reflex sensor would this contact belong (ranges from 0 to 9, 0 means palm contact) 
 int32 sensor_id
 
 # whether the contact is on the palm (contact is either on finger or palm)
