@@ -31,32 +31,23 @@ int main(int argc, char **argv)
     {
         sensor_listener::ContactFrames cfs_msg;
 
-        // iterate over fingers
         for (int i = 0; i < hand.num_fingers; i++)
         {
+            // fill hand message
             hand_msg.finger[i].proximal = hand.fingers[i].getProximalAngle();
             hand_msg.finger[i].distal_approx = hand.fingers[i].getDistalAngle();
 
-            // iterate over sensors
             for (int j = 0; j < hand.num_sensors; j++)
             {
                 hand_msg.finger[i].pressure[j] = hand.fingers[i].sensors[j].getPressure();
                 hand_msg.finger[i].contact[j] = hand.fingers[i].sensors[j].getContact();
             }
 
-            int prox_size = hand.fingers[i].prox_contact_frames.size();
-            int dist_size = hand.fingers[i].dist_contact_frames.size();
-            cfs_msg.num_contact_frames += (prox_size + dist_size);
-
             // fill contact frames message with prox and distal contacts
-            for (int j = 0; j < prox_size; j++)
-            {
-                cfs_msg.contact_frames.push_back(hand.fingers[i].prox_contact_frames[j]);
-            }
-            for (int j = 0; j < dist_size; j++)
-            {
-                cfs_msg.contact_frames.push_back(hand.fingers[i].dist_contact_frames[j]);
-            }
+            cfs_msg.contact_frames.insert(cfs_msg.contact_frames.end(), hand.fingers[i].prox_contact_frames.begin(), hand.fingers[i].prox_contact_frames.end());
+            cfs_msg.contact_frames.insert(cfs_msg.contact_frames.end(), hand.fingers[i].dist_contact_frames.begin(), hand.fingers[i].dist_contact_frames.end());
+            cfs_msg.num_contact_frames += hand.fingers[i].prox_contact_frames.size();
+            cfs_msg.num_contact_frames += hand.fingers[i].dist_contact_frames.size();
         }
 
         // iterate over motors
@@ -65,6 +56,10 @@ int main(int argc, char **argv)
             hand_msg.motor[i].joint_angle = hand.motors[i]->getAngle();
             hand_msg.motor[i].velocity = hand.motors[i]->getVelocity();
         }
+
+        // add palm info to contact frames message
+        cfs_msg.contact_frames.insert(cfs_msg.contact_frames.end(), hand.palm.contact_frames.begin(), hand.palm.contact_frames.end());
+        cfs_msg.num_contact_frames += hand.palm.contact_frames.size();
 
         cfs_msg.header.frame_id = "world";
         cfs_msg.header.stamp = ros::Time::now();
