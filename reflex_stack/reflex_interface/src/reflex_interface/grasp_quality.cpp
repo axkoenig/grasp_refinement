@@ -23,7 +23,9 @@ GraspQuality::GraspQuality(float mu, int num_edges, ContactModel contact_model)
     beta = atan(mu);
 
     // define task wrenches (how much total task wrench has to be applied from fingers to object)
-    tp.add_task_wrench(tf2::Vector3(0, 0, 5), tf2::Vector3(0, 0, 0));
+    float obj_mass = 0.5;
+    float obj_weight = obj_mass * 9.81; // grasp must resist only gravity for now (quasi-static assumption)
+    tp.add_task_wrench(tf2::Vector3(0, 0, obj_weight), tf2::Vector3(0, 0, 0));
 }
 
 bool GraspQuality::isValidNumContacts()
@@ -420,7 +422,7 @@ float GraspQuality::getSlipMargin(std::vector<tf2::Vector3> &contact_normals,
     for (int i = 0; i < num_contacts; i++)
     {
         // calc measured normal force by scalar projection
-        float f_norm_m = contact_forces[i].dot(contact_normals[i].normalize());
+        float f_norm_m = abs(contact_forces[i].dot(contact_normals[i].normalize()));
 
         // calc measured tangential force
         float f_tang_m = sqrt(pow(contact_force_magnitudes[i], 2) - pow(f_norm_m, 2));
@@ -428,7 +430,7 @@ float GraspQuality::getSlipMargin(std::vector<tf2::Vector3> &contact_normals,
         // calc allowed tangential force using Coulomb
         float f_tang_allow = mu * f_norm_m;
 
-        // calc margin and only update if smaller than previous delta
+        // calc margin to slip boundary
         float f_tang_margin = f_tang_allow - f_tang_m;
 
         // save first or new lowest f_tang_margin
@@ -439,13 +441,13 @@ float GraspQuality::getSlipMargin(std::vector<tf2::Vector3> &contact_normals,
 
         if (verbose)
         {
-
-            ROS_WARN("===============");
+            ROS_INFO_STREAM(">> CONTACT[" << i << "] of [" << num_contacts << "]");
             ROS_INFO_STREAM("DEBUG: contact_forces[" << i << "]: \t" << vec2string(contact_forces[i]));
             ROS_INFO_STREAM("DEBUG: contact_normals[" << i << "]: \t" << vec2string(contact_normals[i]));
             ROS_INFO_STREAM("DEBUG: contact_force_magnitudes[" << i << "]: \t" << contact_force_magnitudes[i]);
             ROS_INFO_STREAM("f_norm_m is " << f_norm_m);
             ROS_INFO_STREAM("f_tang_m is " << f_tang_m);
+            ROS_INFO_STREAM("f_tang_allow is " << f_tang_allow);
             ROS_INFO_STREAM("f_tang_margin is " << f_tang_margin);
         }
     }
