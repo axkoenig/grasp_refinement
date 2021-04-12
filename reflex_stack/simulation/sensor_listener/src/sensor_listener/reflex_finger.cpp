@@ -123,6 +123,7 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
     // which we know points away from the inner finger surface, and measuring the angle
     // to the contact normal reported by Gazebo.
     tf2::Vector3 link_z = world_to_link * tf2::Vector3(0, 0, 1);
+    tf2::Transform link_to_world = world_to_link.inverse();
 
     int num_contacts = msg.states[states_idx].wrenches.size();
     for (int i = 0; i < num_contacts; i++)
@@ -141,17 +142,17 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
 
         // transform contact_position from world frame to pad origin
         tf2::Vector3 contact_position = create_vec_from_msg(msg.states[states_idx].contact_positions[i]);
-        contact_position = world_to_link.inverse() * contact_position - link_to_pad_origin;
+        tf2::Vector3 contact_position_on_pad = link_to_world * contact_position - link_to_pad_origin;
 
         // stop if contact on back of finger
-        if (contact_position[2] < 0.0)
+        if (contact_position_on_pad[2] < 0.0)
         {
             ROS_WARN("Ignoring contact on back of finger.");
             continue;
         }
 
         // find out which sensor this contact would belong to and save results
-        int sensor_id = which_sensor(contact_position[0], sensor_boundaries, num_sensors_on_link - 1);
+        int sensor_id = which_sensor(contact_position_on_pad[0], sensor_boundaries, num_sensors_on_link - 1);
         pressures[sensor_id] += cf_msg.contact_force_magnitude;
         contacts[sensor_id] = true;
         num_real_contacts[sensor_id] += 1;
@@ -176,6 +177,7 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
         // fill remaining message
         cf_msg.sensor_id = first_sensor_idx + sensor_id + 1; // ranges from 1 to 9
         cf_msg.finger_id = finger_id;                        // ranges from 1 to 3
+        cf_msg.palm_contact = false;
         cf_msg.contact_torque_magnitude = contact_torque_world.length();
         cf_msg.contact_wrench.force = tf2::toMsg(invert_or_leave * contact_force_world);
         cf_msg.contact_wrench.torque = tf2::toMsg(invert_or_leave * contact_torque_world);
