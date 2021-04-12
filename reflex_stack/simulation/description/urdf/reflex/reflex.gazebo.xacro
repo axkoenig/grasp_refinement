@@ -78,10 +78,9 @@
 
   </xacro:macro>
 
-  <!-- adds sensor plugin to proximal and distal links -->
-  <xacro:macro name="link_sensor" params="location finger_id">
+  <!-- adds sensor plugin to links -->
+  <xacro:macro name="link_sensor" params="link_name">
 
-    <xacro:property name="link_name" value="${location}_${finger_id}_pad"/>
     <xacro:property name="sensor_name" value="gazebo/${link_name}_sensor"/>
 
     <gazebo reference="${link_name}">
@@ -133,8 +132,8 @@
     <xacro:tactile_sensor location="distal" finger_id="${id}" sensor_id="3"/>
     <xacro:tactile_sensor location="distal" finger_id="${id}" sensor_id="4"/>
 
-    <xacro:link_sensor location="proximal" finger_id="${id}"/>
-    <xacro:link_sensor location="distal" finger_id="${id}"/>
+    <xacro:link_sensor link_name="proximal_${id}"/>
+    <xacro:link_sensor link_name="distal_${id}"/>
 
     <xacro:preserve_fixed location="proximal" finger_id="${id}" sensor_id="1"/>
     <xacro:preserve_fixed location="proximal" finger_id="${id}" sensor_id="2"/>
@@ -154,4 +153,10 @@
   <xacro:gazebo_finger id="2"/>
   <xacro:gazebo_finger id="3"/>
 
+  <!-- latch sensor onto palm pad -->
+  <xacro:link_sensor link_name="pad"/>
+  <gazebo reference="shell_to_pad">
+    <preserveFixedJoint>true</preserveFixedJoint>
+  </gazebo>
+  
 </robot>
