@@ -69,7 +69,6 @@ void HandState::sim_state_callback(const sensor_listener::ContactFrames &msg)
 
     for (int i = 0; i < vars.num_contacts; i++)
     {
-        int finger_id = msg.contact_frames[i].finger_id;
         tf2::Transform transform;
         tf2::fromMsg(msg.contact_frames[i].contact_frame, transform);
         vars.contact_frames.push_back(transform);
@@ -77,12 +76,16 @@ void HandState::sim_state_callback(const sensor_listener::ContactFrames &msg)
         vars.contact_torques.push_back(create_vec_from_msg(msg.contact_frames[i].contact_wrench.torque));
         vars.contact_positions.push_back(create_vec_from_msg(msg.contact_frames[i].contact_position));
         vars.contact_normals.push_back(create_vec_from_msg(msg.contact_frames[i].contact_normal));
-        vars.finger_ids.push_back(finger_id);
         vars.sensor_ids.push_back(msg.contact_frames[i].sensor_id);
         vars.contact_force_magnitudes.push_back(msg.contact_frames[i].contact_force_magnitude);
         vars.contact_torque_magnitudes.push_back(msg.contact_frames[i].contact_torque_magnitude);
-        vars.fingers_in_contact[finger_id - 1] = true;
-        vars.num_sensors_in_contact_per_finger[finger_id - 1] += 1; // TODO actually this variable now represents num_sim_contacts_per_finger
+        if (!msg.contact_frames[i].palm_contact)
+        {
+            int finger_id = msg.contact_frames[i].finger_id;
+            vars.finger_ids.push_back(finger_id);
+            vars.fingers_in_contact[finger_id - 1] = true;
+            vars.num_sensors_in_contact_per_finger[finger_id - 1] += 1; // TODO actually this variable now represents num_sim_contacts_per_finger
+        }
     }
 }
 
@@ -130,7 +133,10 @@ void HandState::reflex_state_callback(const reflex_msgs::Hand &msg)
 
     // calculate quality metrics
     grasp_quality.fillEpsilonFTSeparate(vars.contact_positions, vars.contact_normals, obj_measured.getOrigin(), vars.epsilon_force, vars.epsilon_torque);
+    ROS_WARN("=== COMPUTING CURRENT DELTA ===");
     vars.delta_cur = grasp_quality.getSlipMargin(vars.contact_normals, vars.contact_forces, vars.contact_force_magnitudes, vars.num_contacts);
+
+    ROS_WARN("=== COMPUTING TASK FORCE DELTA ===");
     vars.delta_task = grasp_quality.getSlipMarginWithTaskWrenches(vars.contact_forces, vars.contact_normals, vars.contact_frames, obj_measured.getOrigin(), vars.num_contacts);
 
     hand_state_pub.publish(getHandStateMsg());
