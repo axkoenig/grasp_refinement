@@ -150,8 +150,8 @@ void HandState::broadcastModelState(tf2::Transform tf, std::string source_frame,
 void HandState::updateQualityMetrics(bool calc_deltas)
 {
     grasp_quality.fillEpsilonFTSeparate(vars.contact_positions, vars.contact_normals, obj_measured.getOrigin(), vars.epsilon_force, vars.epsilon_torque);
-    // the deltas can only be calculated when we have full information from simulation since we require
-    // the actual contact forces
+    
+    // the deltas can only be calculated when we have full information from simulation on actual contact forces
     if (calc_deltas)
     {
         // ROS_WARN("=== COMPUTING CURRENT DELTA ===");
