@@ -65,7 +65,7 @@ void HandState::sim_state_callback(const sensor_listener::ContactFrames &msg)
 {
     // reset variables
     vars.clear_all();
-    vars.num_contacts = msg.contact_frames.size();
+    vars.num_contacts = msg.num_contact_frames;
 
     for (int i = 0; i < vars.num_contacts; i++)
     {
@@ -87,6 +87,9 @@ void HandState::sim_state_callback(const sensor_listener::ContactFrames &msg)
             vars.num_sensors_in_contact_per_finger[finger_id - 1] += 1; // TODO actually this variable now represents num_sim_contacts_per_finger
         }
     }
+
+    updateQualityMetrics(true);
+    hand_state_pub.publish(getHandStateMsg());
 }
 
 void HandState::reflex_state_callback(const reflex_msgs::Hand &msg)
@@ -105,19 +108,6 @@ void HandState::reflex_state_callback(const reflex_msgs::Hand &msg)
         }
     }
 
-    if (use_sim_data_hand)
-    {
-        updateFingerStatesWorldSim();
-        // TODO shift this to wrist_controller
-        // broadcast Gazebo wrist pose to ROS tf tree
-        tf2::Transform wrist_measured = getLinkPoseSim(nh, "shell", "world", false);
-        broadcastModelState(wrist_measured, "world", "reflex_interface/wrist_measured", &br_reflex_measured);
-    }
-    else
-    {
-        updateHandStateWorldReal();
-    }
-
     if (use_sim_data_obj)
     {
         // broadcast Gazebo object pose to ROS tf tree
@@ -131,15 +121,20 @@ void HandState::reflex_state_callback(const reflex_msgs::Hand &msg)
         throw "Not implemented.";
     }
 
-    // calculate quality metrics
-    grasp_quality.fillEpsilonFTSeparate(vars.contact_positions, vars.contact_normals, obj_measured.getOrigin(), vars.epsilon_force, vars.epsilon_torque);
-    ROS_WARN("=== COMPUTING CURRENT DELTA ===");
-    vars.delta_cur = grasp_quality.getSlipMargin(vars.contact_normals, vars.contact_forces, vars.contact_force_magnitudes, vars.num_contacts);
-
-    ROS_WARN("=== COMPUTING TASK FORCE DELTA ===");
-    vars.delta_task = grasp_quality.getSlipMarginWithTaskWrenches(vars.contact_forces, vars.contact_normals, vars.contact_frames, obj_measured.getOrigin(), vars.num_contacts);
-
-    hand_state_pub.publish(getHandStateMsg());
+    if (use_sim_data_hand)
+    {
+        updateFingerStatesWorldSim();
+        // TODO shift this to wrist_controller
+        // broadcast Gazebo wrist pose to ROS tf tree
+        tf2::Transform wrist_measured = getLinkPoseSim(nh, "shell", "world", false);
+        broadcastModelState(wrist_measured, "world", "reflex_interface/wrist_measured", &br_reflex_measured);
+    }
+    else
+    {
+        updateHandStateWorldReal();
+        updateQualityMetrics(false);
+        hand_state_pub.publish(getHandStateMsg());
+    }
 }
 
 void HandState::broadcastModelState(tf2::Transform tf, std::string source_frame, std::string target_frame, tf2_ros::TransformBroadcaster *br)
@@ -150,6 +145,20 @@ void HandState::broadcastModelState(tf2::Transform tf, std::string source_frame,
     ts.header.stamp = ros::Time::now();
     ts.transform = tf2::toMsg(tf);
     br->sendTransform(ts);
+}
+
+void HandState::updateQualityMetrics(bool calc_deltas)
+{
+    grasp_quality.fillEpsilonFTSeparate(vars.contact_positions, vars.contact_normals, obj_measured.getOrigin(), vars.epsilon_force, vars.epsilon_torque);
+    // the deltas can only be calculated when we have full information from simulation since we require
+    // the actual contact forces
+    if (calc_deltas)
+    {
+        // ROS_WARN("=== COMPUTING CURRENT DELTA ===");
+        vars.delta_cur = grasp_quality.getSlipMargin(vars.contact_normals, vars.contact_forces, vars.contact_force_magnitudes, vars.num_contacts);
+        // ROS_WARN("=== COMPUTING TASK FORCE DELTA ===");
+        vars.delta_task = grasp_quality.getSlipMarginWithTaskWrenches(vars.contact_forces, vars.contact_normals, vars.contact_frames, obj_measured.getOrigin(), vars.num_contacts);
+    }
 }
 
 HandState::ContactState HandState::getContactState()
