@@ -61,7 +61,6 @@ public:
     float getProximalAngle();
     float getDistalAngle();
     tf2::Vector3 create_vec_from_msg(const geometry_msgs::Vector3 &msg);
-
 };
 
 #endif

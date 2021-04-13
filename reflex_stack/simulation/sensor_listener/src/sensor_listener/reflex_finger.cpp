@@ -4,6 +4,7 @@
 
 #include "gazebo_interface/gazebo_interface.hpp"
 #include "sensor_listener/reflex_finger.hpp"
+#include "sensor_listener/contact_point_buffer.hpp"
 
 ReflexFinger::ReflexFinger(const int &finger_id)
 {
@@ -96,10 +97,6 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
     // number of intermediate collision results (usually around 20)
     int num_contact_states = msg.states.size();
 
-    // we only take the second latest result to decrease computational load. (latest result is
-    // sometimes not filled by Gazebo and results in error)
-    int states_idx = num_contact_states - 1;
-
     // no contacts on link, set all sensors zero
     if (num_contact_states == 0)
     {
@@ -110,6 +107,9 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
         }
         return;
     }
+
+    // all unique contact points (ContactPointBuffer is used for averaging)
+    std::vector<ContactPointBuffer> unique_contacts;
 
     // define bins for each sensor and keep track of number of contacts on each sensor
     float pressures[num_sensors_on_link] = {0};
@@ -125,76 +125,90 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
     tf2::Vector3 link_z = world_to_link * tf2::Vector3(0, 0, 1);
     tf2::Transform link_to_world = world_to_link.inverse();
 
-    int num_contacts = msg.states[states_idx].wrenches.size();
-    for (int i = 0; i < num_contacts; i++)
+    // we only take run [j] until the second latest result because latest result is
+    // sometimes not filled by Gazebo and results in error when accessed
+    for (int j = 0; j < num_contact_states - 1; j++)
     {
-        sensor_listener::ContactFrame cf_msg;
-
-        tf2::Vector3 contact_force_world = create_vec_from_msg(msg.states[states_idx].wrenches[i].force);
-        cf_msg.contact_force_magnitude = contact_force_world.length();
-
-        // stop if force is smaller than thresh (we are doing this since
-        // Gazebo returns many forces which are 0 and we want to ignore them)
-        if (cf_msg.contact_force_magnitude < ignore_force_thresh)
+        int num_contacts = msg.states[j].wrenches.size();
+        for (int i = 0; i < num_contacts; i++)
         {
-            continue;
+            // variable to store intermediate results
+            SimContactResult scr;
+
+            scr.force = create_vec_from_msg(msg.states[j].wrenches[i].force);
+            float contact_force_magnitude = scr.force.length();
+
+            // stop if force is smaller than thresh (we are doing this since
+            // Gazebo returns many forces which are 0 and we want to ignore them)
+            if (contact_force_magnitude < ignore_force_thresh)
+            {
+                continue;
+            }
+
+            // transform contact_position from world frame to pad origin
+            scr.position = create_vec_from_msg(msg.states[j].contact_positions[i]);
+            tf2::Vector3 contact_position_on_pad = link_to_world * scr.position - link_to_pad_origin;
+
+            // stop if contact on back of finger
+            if (contact_position_on_pad[2] < 0.0)
+            {
+                ROS_WARN("Ignoring contact on back of finger.");
+                continue;
+            }
+
+            // find out which sensor this contact would belong to and save results
+            int sensor_id = which_sensor(contact_position_on_pad[0], sensor_boundaries, num_sensors_on_link - 1);
+            pressures[sensor_id] += contact_force_magnitude;
+            contacts[sensor_id] = true;
+            num_real_contacts[sensor_id] += 1;
+
+            scr.normal = create_vec_from_msg(msg.states[j].contact_normals[i]);
+            scr.torque = create_vec_from_msg(msg.states[j].wrenches[i].torque);
+
+            // this is our dirty fix for the Gazebo bug (see description above)
+            float angle = acos(link_z.dot(scr.normal) / (scr.normal.length() * link_z.length()));
+            float invert_or_leave = 1;
+            if (abs(angle) > M_PI / 2)
+            {
+                scr.normal *= -1;
+                scr.force *= -1;
+                scr.torque *= -1;
+            }
+
+            // this is our first contact, save it in buffer
+            if (unique_contacts.empty())
+            {
+                ContactPointBuffer cpb;
+                cpb.results.push_back(scr);
+                unique_contacts.push_back(cpb);
+                continue;
+            }
+
+            // check if this contact belongs to any of the previous contacts or
+            // if we should save it as a new contact point
+            bool merged = false;
+            for (int c = 0; c < unique_contacts.size(); c++)
+            {
+                if (tf2::tf2Distance2(unique_contacts[c].results[0].position, scr.position) < unique_contacts[c].merge_contacts_dist)
+                {
+                    // we found another contact point in the buffer we can merge results with
+                    unique_contacts[c].results.push_back(scr);
+                    merged = true;
+                    break;
+                }
+            }
+
+            // we didn't find a close enough contact point in buffer, save as new unique contact point
+            if (!merged)
+            {
+                ContactPointBuffer cpb;
+                cpb.results.push_back(scr);
+                unique_contacts.push_back(cpb);
+            }
         }
-
-        // transform contact_position from world frame to pad origin
-        tf2::Vector3 contact_position = create_vec_from_msg(msg.states[states_idx].contact_positions[i]);
-        tf2::Vector3 contact_position_on_pad = link_to_world * contact_position - link_to_pad_origin;
-
-        // stop if contact on back of finger
-        if (contact_position_on_pad[2] < 0.0)
-        {
-            ROS_WARN("Ignoring contact on back of finger.");
-            continue;
-        }
-
-        // find out which sensor this contact would belong to and save results
-        int sensor_id = which_sensor(contact_position_on_pad[0], sensor_boundaries, num_sensors_on_link - 1);
-        pressures[sensor_id] += cf_msg.contact_force_magnitude;
-        contacts[sensor_id] = true;
-        num_real_contacts[sensor_id] += 1;
-
-        tf2::Vector3 contact_normal = create_vec_from_msg(msg.states[states_idx].contact_normals[i]);
-        tf2::Vector3 contact_torque_world = create_vec_from_msg(msg.states[states_idx].wrenches[i].torque);
-
-        // this is our dirty fix for the Gazebo bug (see description above)
-        float angle = acos(link_z.dot(contact_normal) / (contact_normal.length() * link_z.length()));
-        float invert_or_leave = 1;
-        if (abs(angle) > M_PI / 2)
-        {
-            invert_or_leave = -1;
-            contact_normal *= invert_or_leave;
-        }
-
-        // calculate rotation of contact frame (x must align with contact normal)
-        tf2::Vector3 world_x = tf2::Vector3{1, 0, 0};
-        tf2::Quaternion rot_x_to_normal = tf2::shortestArcQuatNormalize2(world_x, contact_normal);
-        tf2::Transform contact_frame = tf2::Transform(rot_x_to_normal, contact_position);
-
-        // fill remaining message
-        cf_msg.sensor_id = first_sensor_idx + sensor_id + 1; // ranges from 1 to 9
-        cf_msg.finger_id = finger_id;                        // ranges from 1 to 3
-        cf_msg.palm_contact = false;
-        cf_msg.contact_torque_magnitude = contact_torque_world.length();
-        cf_msg.contact_wrench.force = tf2::toMsg(invert_or_leave * contact_force_world);
-        cf_msg.contact_wrench.torque = tf2::toMsg(invert_or_leave * contact_torque_world);
-        cf_msg.contact_frame = tf2::toMsg(contact_frame);
-        cf_msg.contact_position = tf2::toMsg(contact_position);
-        cf_msg.contact_normal = tf2::toMsg(contact_normal);
-
-        // all is well, add contact frame to vector
-        contact_frames.push_back(cf_msg);
-
-        // DEBUG
-        // tf2::Vector3 z = contact_frame * tf2::Vector3{0, 0, 1};
-        // ROS_INFO_STREAM("contact frame z is " << z[0] << "," << z[1] << "," << z[2]);
-        // ROS_INFO_STREAM("measured contact normal is " << contact_normal[0] << "," << contact_normal[1] << "," << contact_normal[2]);
-        // ROS_INFO_STREAM("angle" << tf2::tf2Angle(contact_normal, z));
     }
 
+    // save results in virtual sensors
     for (int i = 0; i < num_sensors_on_link; i++)
     {
         // average forces if we have multiple contacts on one sensor
@@ -205,6 +219,38 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
         // save final values for each sensor
         sensors[first_sensor_idx + i].addContactToBuffer(contacts[i]);
         sensors[first_sensor_idx + i].addPressureToBuffer(pressures[i]);
+    }
+
+    for (int i = 0; i < unique_contacts.size(); i++)
+    {
+        sensor_listener::ContactFrame cf_msg;
+
+        // average all results in one buffer (i.e. all contacts that are very close together will be averaged)
+        SimContactResult avg_scr = unique_contacts[i].get_averaged_results();
+
+        // construct contact frame: calculate rotation of contact frame (x must align with contact normal)
+        tf2::Vector3 world_x = tf2::Vector3{1, 0, 0};
+        tf2::Quaternion rot_x_to_normal = tf2::shortestArcQuatNormalize2(world_x, avg_scr.normal);
+        tf2::Transform contact_frame = tf2::Transform(rot_x_to_normal, avg_scr.position);
+
+        // find sensor_id this contact would belong to
+        tf2::Vector3 contact_position_on_pad = link_to_world * avg_scr.position - link_to_pad_origin;
+        int sensor_id = which_sensor(contact_position_on_pad[0], sensor_boundaries, num_sensors_on_link - 1);
+
+        // fill remaining message
+        cf_msg.sensor_id = first_sensor_idx + sensor_id + 1; // ranges from 1 to 9
+        cf_msg.finger_id = finger_id;                        // ranges from 1 to 3
+        cf_msg.palm_contact = false;
+        cf_msg.contact_torque_magnitude = avg_scr.torque.length();
+        cf_msg.contact_force_magnitude = avg_scr.force.length();
+        cf_msg.contact_wrench.force = tf2::toMsg(avg_scr.force);
+        cf_msg.contact_wrench.torque = tf2::toMsg(avg_scr.torque);
+        cf_msg.contact_frame = tf2::toMsg(contact_frame);
+        cf_msg.contact_position = tf2::toMsg(avg_scr.position);
+        cf_msg.contact_normal = tf2::toMsg(avg_scr.normal);
+
+        // all is well, add contact frame to vector
+        contact_frames.push_back(cf_msg);
     }
 };
 
