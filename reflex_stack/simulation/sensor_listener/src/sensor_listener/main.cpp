@@ -46,8 +46,6 @@ int main(int argc, char **argv)
             // fill contact frames message with prox and distal contacts
             cfs_msg.contact_frames.insert(cfs_msg.contact_frames.end(), hand.fingers[i].prox_contact_frames.begin(), hand.fingers[i].prox_contact_frames.end());
             cfs_msg.contact_frames.insert(cfs_msg.contact_frames.end(), hand.fingers[i].dist_contact_frames.begin(), hand.fingers[i].dist_contact_frames.end());
-            cfs_msg.num_contact_frames += hand.fingers[i].prox_contact_frames.size();
-            cfs_msg.num_contact_frames += hand.fingers[i].dist_contact_frames.size();
         }
 
         // iterate over motors
@@ -59,7 +57,7 @@ int main(int argc, char **argv)
 
         // add palm info to contact frames message
         cfs_msg.contact_frames.insert(cfs_msg.contact_frames.end(), hand.palm.contact_frames.begin(), hand.palm.contact_frames.end());
-        cfs_msg.num_contact_frames += hand.palm.contact_frames.size();
+        cfs_msg.num_contact_frames = cfs_msg.contact_frames.size();
 
         cfs_msg.header.frame_id = "world";
         cfs_msg.header.stamp = ros::Time::now();
