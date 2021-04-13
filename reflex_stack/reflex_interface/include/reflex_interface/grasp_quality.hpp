@@ -26,7 +26,7 @@ public:
         SoftFinger
     };
 
-    GraspQuality(float mu = 5, int num_edges = 4, ContactModel contact_model = HardFinger);
+    GraspQuality(float mu_epsilon = 1, float mu_delta = 5, int num_edges = 4, ContactModel contact_model = HardFinger);
 
     // all args have to be in same coordinate system!
     float getEpsilon(const std::vector<tf2::Vector3> &contact_positions,
@@ -63,7 +63,8 @@ public:
                                         const int &num_contacts);
 
 private:
-    float mu;
+    float mu_epsilon;
+    float mu_delta;
     int num_edges;
     int num_contacts;
     double beta;

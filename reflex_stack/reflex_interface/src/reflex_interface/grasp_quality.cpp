@@ -15,12 +15,13 @@ std::string vec2string(tf2::Vector3 vec)
     return std::to_string(vec[0]) + ", " + std::to_string(vec[1]) + ", " + std::to_string(vec[2]);
 }
 
-GraspQuality::GraspQuality(float mu, int num_edges, ContactModel contact_model)
+GraspQuality::GraspQuality(float mu_epsilon, float mu_delta, int num_edges, ContactModel contact_model)
 {
-    this->mu = mu;
+    this->mu_epsilon = mu_epsilon;
+    this->mu_delta = mu_delta;
     this->num_edges = num_edges;
     this->contact_model = contact_model;
-    beta = atan(mu);
+    beta = atan(mu_epsilon);
 
     // define task wrenches (how much total task wrench has to be applied from fingers to object)
     float obj_mass = 0.5;
@@ -441,7 +442,7 @@ float GraspQuality::getSlipMargin(std::vector<tf2::Vector3> &contact_normals,
         float f_tang_m = sqrt(pow(contact_force_magnitudes[i], 2) - pow(f_norm_m, 2));
 
         // calc allowed tangential force using Coulomb
-        float f_tang_allow = mu * f_norm_m;
+        float f_tang_allow = mu_delta * f_norm_m;
 
         // calc margin to slip boundary
         float f_tang_margin = f_tang_allow - f_tang_m;
