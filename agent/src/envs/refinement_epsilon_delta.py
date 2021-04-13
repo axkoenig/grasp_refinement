@@ -48,14 +48,11 @@ class ActionSpace(Space):
         super().__init__()
 
         self.add_variable(1, "trigger_regrasp", 0, 0, 1)
-        # self.add_variable(2, "wrist_incr", 0, -0.001, 0.001)
-        # self.add_variable(1, "wrist_incr_z", 0, -0.005, 0.02)
-
-        # if we introduce error
         self.add_variable(1, "wrist_incr_x", 0, -0.02, 0.02)
         self.add_variable(1, "wrist_incr_y", 0, -0.001, 0.001)
         self.add_variable(1, "wrist_incr_z", 0, -0.005, 0.02)
         self.add_variable(1, "wrist_pitch", 0, -0.1, 0.1)
+        self.add_variable(3, "trigger_finger_tightening", 0, 0, 1)
 
 
 class TensorboardCallback(BaseCallback):
@@ -67,6 +64,7 @@ class TensorboardCallback(BaseCallback):
         self.cum_epsilon_torque = 0
         self.cum_obj_shift = 0
         self.cum_joint_diff = 0
+        self.cum_delta_task = 0
 
     def _on_rollout_end(self) -> None:
         self.logger.record("rollout/cum_num_contacts", self.cum_num_contacts)
@@ -75,6 +73,7 @@ class TensorboardCallback(BaseCallback):
         self.logger.record("rollout/cum_epsilon_torque", self.cum_epsilon_torque)
         self.logger.record("rollout/cum_obj_shift", self.cum_obj_shift)
         self.logger.record("rollout/cum_joint_diff", self.cum_joint_diff)
+        self.logger.record("rollout/cum_delta_task", self.cum_delta_task)
 
         # reset vars once recorded
         self.cum_num_contacts = 0
@@ -83,6 +82,7 @@ class TensorboardCallback(BaseCallback):
         self.cum_epsilon_torque = 0
         self.cum_obj_shift = 0
         self.cum_joint_diff = 0
+        self.cum_delta_task = 0
 
     def _on_step(self) -> bool:
         self.cur_num_regrasps = self.training_env.get_attr("num_regrasps")[0]
@@ -90,6 +90,7 @@ class TensorboardCallback(BaseCallback):
         self.cur_dist_tcp_obj = self.training_env.get_attr("dist_tcp_obj")[0]
         self.cur_epsilon_force = self.training_env.get_attr("epsilon_force")[0]
         self.cur_epsilon_torque = self.training_env.get_attr("epsilon_torque")[0]
+        self.cur_delta_task = self.training_env.get_attr("delta_task")[0]
         self.cur_obj_shift = self.training_env.get_attr("obj_shift")[0]
         self.cur_joint_diff = self.training_env.get_attr("prox_diff")[0]
 
@@ -98,6 +99,7 @@ class TensorboardCallback(BaseCallback):
         self.logger.record("step/cur_dist_tcp_obj", self.cur_dist_tcp_obj)
         self.logger.record("step/cur_epsilon_force", self.cur_epsilon_force)
         self.logger.record("step/cur_epsilon_torque", self.cur_epsilon_torque)
+        self.logger.record("step/cur_delta_task", self.cur_delta_task)
         self.logger.record("step/cur_obj_shift", self.cur_obj_shift)
         self.logger.record("step/cur_joint_diff", self.cur_joint_diff)
 
@@ -107,6 +109,7 @@ class TensorboardCallback(BaseCallback):
         self.cum_epsilon_torque += self.cur_epsilon_force
         self.cum_obj_shift += self.cur_obj_shift
         self.cum_joint_diff += self.cur_joint_diff
+        self.cum_delta_task += self.cur_delta_task
         return True
 
 
@@ -127,7 +130,7 @@ class GazeboEnv(gym.Env):
         self.gi = GazeboInterface()
 
         self.wrist_init_pose = get_homo_matrix_from_tq(
-            [-0.020000008416459117, 0.017719972837563544, 0.03613883173559584],
+            [-0.020000008416459117, 0.027719972837563544, 0.03613883173559584],
             [-0.7075026182105896, 0, 0, 0.7067107101727882],
         )
         self.t_obj_init = [1.2079885446707724e-05, 0.2000036106758952, 0.02999998861373354]
@@ -151,6 +154,7 @@ class GazeboEnv(gym.Env):
         self.num_contacts = 0
         self.epsilon_force = 0
         self.epsilon_torque = 0
+        self.delta_task = 0
         self.num_regrasps = 0
         self.last_quality = 0
         self.cur_time_step = 0
@@ -163,6 +167,7 @@ class GazeboEnv(gym.Env):
         self.num_contacts = msg.num_contacts
         self.epsilon_force = msg.epsilon_force
         self.epsilon_torque = msg.epsilon_torque
+        self.delta_task = msg.delta_task
 
         self.obs.set_cur_val_by_name("preshape_angle", msg.preshape_angle)
 
@@ -201,14 +206,19 @@ class GazeboEnv(gym.Env):
         return reward / time_steps
 
     def get_reward(self):
-        return self.epsilon_force + 10 * self.epsilon_torque
+        return self.epsilon_force + 10 * self.epsilon_torque + 1 / 100 * self.delta_task
+
+    def get_f_incr(self, action):
+        return 0.1 if action >= 0.5 else 0
 
     def step(self, action):
         self.cur_time_step += 1
-        #### REGRASPING
-        rospy.loginfo(f"Action is {action[0]}, {action[1]}, {action[2]}, {action[3]}")
 
-        if 0.5 <= action[0]:
+        rospy.loginfo(f"Action Regrasp \t {action[0]}")
+        rospy.loginfo(f"Action Wrist \t {action[1]}, {action[2]}, {action[3]}, {action[4]}")
+        rospy.loginfo(f"Action Finger \t {action[5]}, {action[6]}, {action[7]}")
+
+        if action[0] >= 0:
             rospy.loginfo(">>REGRASPING<<")
             wrist_p_incr = [action[1], action[2], action[3]]
             wrist_q_incr = tf.transformations.quaternion_from_euler(0, action[4], 0)
@@ -216,37 +226,28 @@ class GazeboEnv(gym.Env):
             self.num_regrasps += 1
         else:
             rospy.loginfo(">>STAYING<<")
-        ### REGRASPING END
+            self.gi.pos_incr(get_f_incr(action[5]), get_f_incr(action[6]), get_f_incr(action[7]), 0, False, False, 0, 0)
 
+        #### STUFF ABOUT PROX ANGLES
         prox_angles = [
             self.obs.get_cur_vals_by_name("prox_angle_f1"),
             self.obs.get_cur_vals_by_name("prox_angle_f2"),
             self.obs.get_cur_vals_by_name("prox_angle_f3"),
         ]
 
-        # # send finger position increment
-        # self.hand_cmd.f1 = prox_angles[0] + action[0]
-        # self.hand_cmd.f2 = prox_angles[1] + action[1]
-        # self.hand_cmd.f3 = prox_angles[2] + action[2]
-        # self.hand_pub.publish(self.hand_cmd)
-
         self.prox_diff = abs(prox_angles[0] - prox_angles[1]) + abs(prox_angles[1] - prox_angles[2]) + abs(prox_angles[0] - prox_angles[2])
         self.prox_diff = self.prox_diff[0]  # convert to float
-        rel_epsilon_change = self.collect_reward(self.exec_secs) - self.start_epsilon
         rel_prox_diff_change = self.prox_diff - self.start_prox_diff
+        #### END STUFF ABOUT PROX ANGLES
 
-        # optimization goal: more relative reward, less relative diff in joint angles
-        reward = rel_epsilon_change #- rel_prox_diff_change / 100
-
-        rospy.loginfo(f"prox_diff is {self.prox_diff}")
-        rospy.loginfo(f"rel_epsilon_change is {rel_epsilon_change}")
-        rospy.loginfo(f"rel_prox_diff_change is {rel_prox_diff_change}")
+        # reward is relative grasp improvement w.r.t. starting config
+        reward = self.collect_reward(self.exec_secs) - self.start_reward
         rospy.loginfo(f"==> reward is {reward}")
 
         reward_msg = Float64(reward)
         self.reward_pub.publish(reward_msg)
 
-        # get object shift and distance to object (used for logging)
+        # get object shift and distance to object
         t_obj, _ = get_tq_from_homo_matrix(self.gi.get_object_pose())
         self.obj_shift = np.linalg.norm(t_obj - self.t_obj_init)
         self.dist_tcp_obj = self.gi.get_dist_tcp_obj()
@@ -278,7 +279,7 @@ class GazeboEnv(gym.Env):
 
         rospy.loginfo("Resetting world.")
         self.gi.reset_world(wrist_init_pose_err, self.obj_init_pose)
-        self.start_epsilon = self.collect_reward(self.exec_secs)
+        self.start_reward = self.collect_reward(self.exec_secs)
 
         prox_angles = [
             self.obs.get_cur_vals_by_name("prox_angle_f1"),
@@ -287,9 +288,9 @@ class GazeboEnv(gym.Env):
         ]
         self.start_prox_diff = abs(prox_angles[0] - prox_angles[1]) + abs(prox_angles[1] - prox_angles[2]) + abs(prox_angles[0] - prox_angles[2])
         self.start_prox_diff = self.start_prox_diff[0]
-        rospy.loginfo(f"start_epsilon is {self.start_epsilon}")
+        rospy.loginfo(f"start_reward is {self.start_reward}")
         rospy.loginfo(f"start_prox_diff is {self.start_prox_diff}")
-        
+
         # reset vars
         obs = np.zeros(self.observation_space.shape)
         self.last_reset_time = rospy.get_rostime()
