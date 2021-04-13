@@ -409,7 +409,7 @@ float GraspQuality::getSlipMarginWithTaskWrenches(std::vector<tf2::Vector3> &con
         float slip_margin = getSlipMargin(contact_normals, contact_forces, contact_force_magnitudes, num_contacts);
 
         // save first or new lowest slip_margin
-        if (i = 0 || slip_margin < lowest_slip_margin)
+        if (i == 0 || slip_margin < lowest_slip_margin)
         {
             lowest_slip_margin = slip_margin;
         }
