@@ -353,6 +353,12 @@ float GraspQuality::getSlipMarginWithTaskWrenches(std::vector<tf2::Vector3> &con
         return 0;
     }
 
+    if (!(isSameSize(num_contacts, contact_forces) && isSameSize(num_contacts, contact_normals) && isSameSize(num_contacts, contact_frames)))
+    {
+        ROS_ERROR("Number of contact forces/normals/frames does not match number of contacts. Returning 0 for slip margin.");
+        return 0;
+    }
+
     // compute grasp matrix (nxm)
     Eigen::MatrixXd G(6, num_contacts * 6);
     G = getGraspMatrix(contact_frames, object_position, num_contacts);
@@ -417,6 +423,13 @@ float GraspQuality::getSlipMargin(std::vector<tf2::Vector3> &contact_normals,
                                   const int &num_contacts,
                                   bool verbose)
 {
+
+    if (!(isSameSize(num_contacts, contact_forces) && isSameSize(num_contacts, contact_normals) && isSameSize(num_contacts, contact_force_magnitudes)))
+    {
+        ROS_ERROR("Number of contact forces/normals/force_magnitudes does not match number of contacts. Returning 0 for slip margin.");
+        return 0;
+    }
+
     float min_delta = 0;
 
     for (int i = 0; i < num_contacts; i++)
