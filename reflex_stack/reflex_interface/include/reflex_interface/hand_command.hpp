@@ -77,7 +77,7 @@ private:
     bool callbackCloseUntilContact(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
     bool callbackTightenGrip(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
 
-    bool executePosIncrement(float increment[4], bool blocking = false, float tolerance = 0.1, float time_out = 4);
+    bool executePosIncrement(float increment[4], bool from_measured_pos = true, bool blocking = false, float tolerance = 0.1, float time_out = 4);
     void publishCommand();
     bool waitUntilFinished(float tolerance, float time_out);
 };

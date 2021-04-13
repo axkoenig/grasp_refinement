@@ -146,7 +146,7 @@ bool HandCommand::callbackPosIncr(reflex_interface::PosIncrement::Request &req, 
                           (float)req.f2,
                           (float)req.f3,
                           (float)req.preshape};
-    res.success = executePosIncrement(increment, req.blocking, req.tolerance, req.time_out);
+    res.success = executePosIncrement(increment, req.from_measured_pos, req.blocking, req.tolerance, req.time_out);
     res.message = this->getStatusMsg();
     if (res.success == false)
     {
@@ -214,18 +214,26 @@ bool HandCommand::callbackTightenGrip(std_srvs::Trigger::Request &req, std_srvs:
                           tighten_incr,
                           tighten_incr,
                           0};
-    this->executePosIncrement(increment);
+    this->executePosIncrement(increment, false);
     res.success = true;
     res.message = this->getStatusMsg();
     return true;
 }
 
-bool HandCommand::executePosIncrement(float increment[4], bool blocking, float tolerance, float time_out)
+bool HandCommand::executePosIncrement(float increment[4], bool from_measured_pos, bool blocking, float tolerance, float time_out)
 {
-    float cur_state[4] = {state->finger_states[0]->getProximalAngle(),
-                          state->finger_states[1]->getProximalAngle(),
-                          state->finger_states[2]->getProximalAngle(),
-                          state->finger_states[0]->getPreshapeAngle() + state->finger_states[1]->getPreshapeAngle()};
+    std::array<float, 4> cur_state;
+    if (from_measured_pos)
+    {
+        cur_state = {state->finger_states[0]->getProximalAngle(),
+                     state->finger_states[1]->getProximalAngle(),
+                     state->finger_states[2]->getProximalAngle(),
+                     state->finger_states[0]->getPreshapeAngle() + state->finger_states[1]->getPreshapeAngle()};
+    }
+    else
+    {
+        cur_state = cur_cmd;
+    }
 
     for (int i = 0; i < 4; i++)
     {
