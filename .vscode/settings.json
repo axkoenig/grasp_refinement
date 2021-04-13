@@ -78,7 +78,12 @@
         "*.ipp": "cpp",
         "enc.h": "c",
         "core": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "charconv": "cpp",
+        "csetjmp": "cpp",
+        "cuchar": "cpp",
+        "forward_list": "cpp",
+        "scoped_allocator": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled",
     "ros.distro": "noetic",
