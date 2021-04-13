@@ -26,7 +26,7 @@ public:
         SoftFinger
     };
 
-    GraspQuality(float mu = 1, int num_edges = 4, ContactModel contact_model = HardFinger);
+    GraspQuality(float mu = 5, int num_edges = 4, ContactModel contact_model = HardFinger);
 
     // all args have to be in same coordinate system!
     float getEpsilon(const std::vector<tf2::Vector3> &contact_positions,
@@ -47,6 +47,8 @@ public:
                         const int &num_contacts,
                         bool verbose = false);
 
+    template <class T>
+    bool isSameSize(const int desired_size, const std::vector<T> &vector) { return vector.size() == desired_size; };
     void updateGraspWrenchSpace(bool verbose);
     bool isValidNumContacts();
     Eigen::MatrixXd getCrossProductMatrix(const tf2::Vector3 &r);
