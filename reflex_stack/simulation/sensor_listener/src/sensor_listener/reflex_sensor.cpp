@@ -2,16 +2,19 @@
 
 #include "sensor_listener/reflex_sensor.hpp"
 
-double ReflexSensor::getPressure()
+int ReflexSensor::getPressure()
 {
     // we average pressure over buffer
-    return scaling_factor * std::accumulate(pressure_buffer.begin(), pressure_buffer.end(), 0.0) / buf_size;
+    float avg_pressure = std::accumulate(pressure_buffer.begin(), pressure_buffer.end(), 0.0) / buf_size;
+
+    // linearly scale to range [0, max_pressure_val]
+    int res = int((avg_pressure / pressure_at_max_val) * max_pressure_val);
+    return res <= max_pressure_val ? res : max_pressure_val;
 }
 
 bool ReflexSensor::getContact()
 {
-    // if any element in contact buffer is true, we return true
-    return true ? std::any_of(contact_buffer.begin(), contact_buffer.end(), [](bool v) { return v; }) : false;
+    return getPressure() > default_contact_threshold;
 }
 
 void ReflexSensor::addContactToBuffer(const bool contact)
