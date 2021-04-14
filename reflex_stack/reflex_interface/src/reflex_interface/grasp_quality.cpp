@@ -100,7 +100,6 @@ void GraspQuality::updateGraspWrenchSpace(bool verbose)
 
             if (verbose)
             {
-                tf2::Vector3 vec = contact_normals[i];
                 ROS_INFO_STREAM("DEBUG: Contact[" << i << "], Edge[" << j << "] force primitive: \t" << vec2string(force_primitive));
                 ROS_INFO_STREAM("DEBUG: Contact[" << i << "], Edge[" << j << "] torque primitive: \t" << vec2string(torque_primitive));
                 ROS_INFO_STREAM("DEBUG: Contact[" << i << "], Edge[" << j << "] force primitive length: \t" << force_primitive.length());
