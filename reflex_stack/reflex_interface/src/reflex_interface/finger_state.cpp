@@ -48,10 +48,15 @@ void FingerState::setSensorContactsFromMsg(boost::array<unsigned char, 9> sensor
     }
 }
 
-void FingerState::fillContactInfoInWorldFrameSim(std::vector<tf2::Vector3> &contact_positions, std::vector<tf2::Vector3> &contact_normals, int &num_contacts_on_finger)
+void FingerState::fillContactInfo(std::vector<tf2::Vector3> &contact_positions,
+                                  std::vector<tf2::Vector3> &contact_normals,
+                                  int &num_contacts_on_finger,
+                                  bool use_sim_data_hand,
+                                  std::string frame)
 {
     // this method checks each sensor for contact and fills vectors with positions and normals
-    // of the virtual sensors. we could also get the contact position and normals directly from
+    // of the virtual sensors.
+    // TODO Update: we could also get the contact position and normals directly from
     // the simulation, but this won't be possible in real world. in real world we can only calculate
     // approx position and normal of each sensor in 3D space. hence this function is a "hybrid"
     // between getting accurate information from the simulation (the distal and proximal pose) and
@@ -61,6 +66,16 @@ void FingerState::fillContactInfoInWorldFrameSim(std::vector<tf2::Vector3> &cont
     if (contact_positions.size() != contact_normals.size())
     {
         ROS_ERROR("Number of contact positions and normals must be equal.");
+        return;
+    }
+    if (frame == "world" && !use_sim_data_hand)
+    {
+        ROS_ERROR("Not implemented yet. Use frame = 'shell' instead if you're working on real hand. To get the frames in world coosy you must integrate the measured shell position from the robot arm here.");
+        return;
+    }
+    if (frame != "shell" && !use_sim_data_hand)
+    {
+        ROS_ERROR("For now you can only get the data in the shell frame on the real hand! Use frame = 'shell'.");
         return;
     }
 
@@ -74,13 +89,28 @@ void FingerState::fillContactInfoInWorldFrameSim(std::vector<tf2::Vector3> &cont
     {
         return;
     }
-    if (has_prox_contact)
+
+    if (use_sim_data_hand)
     {
-        prox_link_pose = getLinkPoseSim(&nh, "proximal_" + std::to_string(finger_id), "world", false);
+        if (has_prox_contact)
+        {
+            prox_link_pose = getLinkPoseSim(&nh, "proximal_" + std::to_string(finger_id), frame, false);
+        }
+        if (has_dist_contact)
+        {
+            dist_link_pose = getLinkPoseSim(&nh, "distal_" + std::to_string(finger_id), frame, false);
+        }
     }
-    if (has_dist_contact)
+    else
     {
-        dist_link_pose = getLinkPoseSim(&nh, "distal_" + std::to_string(finger_id), "world", false);
+        if (has_prox_contact)
+        {
+            prox_link_pose = cur_prox_link_in_shell_frame;
+        }
+        if (has_dist_contact)
+        {
+            dist_link_pose = cur_dist_link_in_shell_frame;
+        }
     }
 
     for (int i = 0; i < num_sensors; i++)
