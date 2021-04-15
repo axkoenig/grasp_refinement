@@ -18,7 +18,7 @@ class GazeboEnv(gym.Env):
 
         self.hand_pub = rospy.Publisher("reflex_takktile/command_position", PoseCommand, queue_size=5)
         self.reward_pub = rospy.Publisher("agent/reward", Float32, queue_size=5)
-        self.hand_sub = rospy.Subscriber("reflex/hand_state", Hand, self.hand_callback, queue_size=5)
+        self.hand_sub = rospy.Subscriber("reflex_takktile/hand_state", Hand, self.hand_callback, queue_size=5)
 
         self.unpause_name = "/gazebo/unpause_physics"
         self.pause_name = "/gazebo/pause_physics"

@@ -6,7 +6,7 @@
 #include "gazebo_interface/gazebo_interface.hpp"
 
 std::string node_name = "sensor_listener";
-std::string hand_state_topic = "reflex/hand_state";
+std::string hand_state_topic = "reflex_takktile/hand_state";
 std::string contact_frames_topic = "reflex/sim_contact_frames";
 
 int main(int argc, char **argv)

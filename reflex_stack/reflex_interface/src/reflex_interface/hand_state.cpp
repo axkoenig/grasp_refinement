@@ -16,7 +16,7 @@ HandState::HandState(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_d
     this->nh = nh;
     this->use_sim_data_hand = use_sim_data_hand;
     this->use_sim_data_obj = use_sim_data_obj;
-    reflex_state_sub = nh->subscribe("reflex/hand_state", 1, &HandState::reflex_state_callback, this);
+    reflex_state_sub = nh->subscribe("reflex_takktile/hand_state", 1, &HandState::reflex_state_callback, this);
     hand_state_pub = nh->advertise<reflex_interface::HandStateStamped>("/reflex_interface/hand_state", 1);
     
     if (use_sim_data_obj)
