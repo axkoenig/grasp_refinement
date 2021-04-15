@@ -15,7 +15,7 @@
 class HandCommand
 {
 public:
-    HandCommand(ros::NodeHandle *nh, HandState *state);
+    HandCommand(ros::NodeHandle *nh, HandState *state, bool use_sim_data_hand);
 
     enum Primitive
     {
