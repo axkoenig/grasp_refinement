@@ -53,11 +53,10 @@ private:
 
     void sim_state_callback(const sensor_listener::ContactFrames &msg);
     void reflex_state_callback(const reflex_msgs::Hand &msg);
-    void updateHandStateWorldSim();
-    void updateHandStateWorldReal();
-    void updateFingerStatesWorldSim();
+    void updateHandStateReal();
+    void updateHandStateSim();
     void broadcastModelState(tf2::Transform tf, std::string source_frame, std::string target_frame, tf2_ros::TransformBroadcaster *br);
-    void updateQualityMetrics(bool calc_deltas);
+    void updateQualityMetrics();
     reflex_interface::HandStateStamped getHandStateMsg();
     tf2::Vector3 create_vec_from_msg(const geometry_msgs::Vector3 &msg);
 };

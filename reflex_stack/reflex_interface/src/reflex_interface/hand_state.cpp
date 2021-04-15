@@ -18,12 +18,12 @@ HandState::HandState(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_d
     this->use_sim_data_obj = use_sim_data_obj;
     reflex_state_sub = nh->subscribe("reflex_takktile/hand_state", 1, &HandState::reflex_state_callback, this);
     hand_state_pub = nh->advertise<reflex_interface::HandStateStamped>("/reflex_interface/hand_state", 1);
-    
+
     if (use_sim_data_obj)
     {
         getParam(nh, &object_name, "object_name", false);
     }
-    
+
     if (use_sim_data_hand)
     {
         sim_state_sub = nh->subscribe("reflex/sim_contact_frames", 1, &HandState::sim_state_callback, this);
@@ -93,8 +93,13 @@ void HandState::sim_state_callback(const sensor_listener::ContactFrames &msg)
                 vars.num_sensors_in_contact_per_finger[finger_id - 1] += 1; // TODO actually this variable now represents num_sim_contacts_per_finger
             }
         }
+        updateHandStateSim();
+        // TODO shift this to wrist_controller
+        // broadcast Gazebo wrist pose to ROS tf tree
+        tf2::Transform wrist_measured = getLinkPoseSim(nh, "shell", "world", false);
+        broadcastModelState(wrist_measured, "world", "reflex_interface/wrist_measured", &br_reflex_measured);
 
-        updateQualityMetrics(true);
+        updateQualityMetrics();
         hand_state_pub.publish(getHandStateMsg());
     }
     catch (std::exception &e)
@@ -121,18 +126,10 @@ void HandState::reflex_state_callback(const reflex_msgs::Hand &msg)
             }
         }
 
-        if (use_sim_data_hand)
+        if (!use_sim_data_hand)
         {
-            updateFingerStatesWorldSim();
-            // TODO shift this to wrist_controller
-            // broadcast Gazebo wrist pose to ROS tf tree
-            tf2::Transform wrist_measured = getLinkPoseSim(nh, "shell", "world", false);
-            broadcastModelState(wrist_measured, "world", "reflex_interface/wrist_measured", &br_reflex_measured);
-        }
-        else
-        {
-            updateHandStateWorldReal();
-            updateQualityMetrics(false);
+            updateHandStateReal();
+            updateQualityMetrics();
             hand_state_pub.publish(getHandStateMsg());
         }
     }
@@ -153,30 +150,24 @@ void HandState::broadcastModelState(tf2::Transform tf, std::string source_frame,
     br->sendTransform(ts);
 }
 
-void HandState::updateQualityMetrics(bool calc_deltas)
+void HandState::updateQualityMetrics()
 {
     if (use_sim_data_obj)
     {
         // broadcast Gazebo object pose to ROS tf tree
         obj_measured = getModelPoseSim(nh, object_name, "world", false);
         broadcastModelState(obj_measured, "world", "reflex_interface/obj_measured", &br_obj_measured);
-    }
-    else
-    {
-        // we could obtain center of mass from computer vision or manual estimates.
-        // could listen to a ROS topic here to obtain object_com_world and then:
-        throw "Not implemented.";
-    }
 
-    grasp_quality.fillEpsilonFTSeparate(vars.contact_positions, vars.contact_normals, obj_measured.getOrigin(), vars.epsilon_force, vars.epsilon_torque);
-
-    // the deltas can only be calculated when we have full information from simulation on actual contact forces
-    if (calc_deltas)
-    {
+        grasp_quality.fillEpsilonFTSeparate(vars.contact_positions, vars.contact_normals, obj_measured.getOrigin(), vars.epsilon_force, vars.epsilon_torque);
         // ROS_WARN("=== COMPUTING CURRENT DELTA ===");
         vars.delta_cur = grasp_quality.getSlipMargin(vars.contact_normals, vars.contact_forces, vars.contact_force_magnitudes, vars.num_contacts);
         // ROS_WARN("=== COMPUTING TASK FORCE DELTA ===");
         vars.delta_task = grasp_quality.getSlipMarginWithTaskWrenches(vars.contact_forces, vars.contact_normals, vars.contact_frames, obj_measured.getOrigin(), vars.num_contacts);
+    }
+    else
+    {
+        // on real hand (without knowing the object pose) we can only calculate the epsilon force
+        // TODO implement separate force epsilon
     }
 }
 
@@ -193,26 +184,28 @@ HandState::ContactState HandState::getContactState()
     }
 }
 
-void HandState::updateFingerStatesWorldSim()
+void HandState::updateHandStateSim()
 {
+    // updates poses of finger links from simulation
     for (int i = 0; i < num_fingers; i++)
     {
         finger_states[i]->updateCurLinkFramesInShellFrameSim();
     }
 }
 
-void HandState::updateHandStateWorldSim()
+void HandState::updateHandStateReal()
 {
-    // TODO this method should become our new updateHandStateWorldReal
     // reset variables
     vars.clear_all();
 
     for (int i = 0; i < num_fingers; i++)
     {
-        finger_states[i]->updateCurLinkFramesInShellFrameSim();
         int num_contacts_on_finger = 0;
-        finger_states[i]->fillContactInfoInWorldFrameSim(vars.contact_positions, vars.contact_normals, num_contacts_on_finger);
+        finger_states[i]->updateCurLinkFramesInShellFrameReal();
+        finger_states[i]->fillContactInfo(vars.contact_positions, vars.contact_normals, num_contacts_on_finger, false, "shell");
 
+        // TODO: solve with forward kinematics and compare with results we obtain from simulation.
+        // TODO because we want this in world coosy we also need the gripper pose.
         if (num_contacts_on_finger > 0)
         {
             vars.num_sensors_in_contact_per_finger[i] = num_contacts_on_finger;
@@ -257,15 +250,4 @@ reflex_interface::HandStateStamped HandState::getHandStateMsg()
         }
     }
     return hss;
-}
-
-void HandState::updateHandStateWorldReal()
-{
-    for (int i = 0; i < num_fingers; i++)
-    {
-        finger_states[i]->updateCurLinkFramesInShellFrameReal();
-    }
-    // TODO: solve with forward kinematics and compare with results we obtain from simulation.
-    // because we want this in world coosy we also need the gripper pose.
-    throw "Not implemented.";
 }
