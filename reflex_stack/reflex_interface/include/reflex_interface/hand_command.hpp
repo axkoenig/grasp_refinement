@@ -30,14 +30,14 @@ public:
 private:
     HandState *state;
 
-    std::string open_srv_name = "reflex/open";
-    std::string close_srv_name = "reflex/close";
-    std::string pinch_srv_name = "reflex/pinch";
-    std::string sph_open_srv_name = "reflex/spherical_open";
-    std::string sph_close_srv_name = "reflex/spherical_close";
-    std::string pos_incr_srv_name = "reflex/pos_incr";
-    std::string close_until_contact_srv_name = "reflex/close_until_contact";
-    std::string tighten_grip_srv_name = "reflex/tighten_grip";
+    std::string open_srv_name = "reflex_interface/open";
+    std::string close_srv_name = "reflex_interface/close";
+    std::string pinch_srv_name = "reflex_interface/pinch";
+    std::string sph_open_srv_name = "reflex_interface/spherical_open";
+    std::string sph_close_srv_name = "reflex_interface/spherical_close";
+    std::string pos_incr_srv_name = "reflex_interface/position_increment";
+    std::string close_until_contact_srv_name = "reflex_interface/close_until_contact";
+    std::string tighten_grip_srv_name = "reflex_interface/tighten_grip";
     std::string pos_cmd_topic = "reflex_takktile/command_position";
 
     float tighten_incr = 0.0349066;    // this is 2 degrees

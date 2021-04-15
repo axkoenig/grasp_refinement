@@ -28,9 +28,9 @@ class GazeboInterface:
         self.num_srv_tries = 0
 
         # reflex services
-        self.open_hand = rospy.ServiceProxy("/reflex/open", GraspPrimitive)
-        self.close_until_contact = rospy.ServiceProxy("/reflex/close_until_contact", Trigger)
-        self.pos_incr = rospy.ServiceProxy("/reflex/pos_incr", PosIncrement)
+        self.open_hand = rospy.ServiceProxy("/reflex_interface/open", GraspPrimitive)
+        self.close_until_contact = rospy.ServiceProxy("/reflex_interface/close_until_contact", Trigger)
+        self.pos_incr = rospy.ServiceProxy("/reflex_interface/position_increment", PosIncrement)
         self.srv_time_out = 6
         self.srv_tolerance = 0.1
 

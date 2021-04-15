@@ -18,14 +18,14 @@ std::string node_name = "finger_teleop_node";
 std::string source_frame = "world";
 std::string target_frame = "reflex";
 
-std::string open_srv_name = "reflex/open";
-std::string close_srv_name = "reflex/close";
-std::string pinch_srv_name = "reflex/pinch";
-std::string sph_open_srv_name = "reflex/spherical_open";
-std::string sph_close_srv_name = "reflex/spherical_close";
-std::string pos_incr_srv_name = "reflex/pos_incr";
-std::string close_until_contact_srv_name = "reflex/close_until_contact";
-std::string tighten_grip_srv_name = "reflex/tighten_grip";
+std::string open_srv_name = "reflex_interface/open";
+std::string close_srv_name = "reflex_interface/close";
+std::string pinch_srv_name = "reflex_interface/pinch";
+std::string sph_open_srv_name = "reflex_interface/spherical_open";
+std::string sph_close_srv_name = "reflex_interface/spherical_close";
+std::string pos_incr_srv_name = "reflex_interface/position_increment";
+std::string close_until_contact_srv_name = "reflex_interface/close_until_contact";
+std::string tighten_grip_srv_name = "reflex_interface/tighten_grip";
 
 float trans_scaling = 0.01;
 float rot_scaling = 0.2;
