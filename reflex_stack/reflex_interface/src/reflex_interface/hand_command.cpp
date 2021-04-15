@@ -1,10 +1,12 @@
 #include <algorithm>
 #include <bits/stdc++.h>
 
+#include <std_srvs/Empty.h>
+
 #include "reflex_interface/PosIncrement.h"
 #include "reflex_interface/hand_command.hpp"
 
-HandCommand::HandCommand(ros::NodeHandle *nh, HandState *state)
+HandCommand::HandCommand(ros::NodeHandle *nh, HandState *state, bool use_sim_data_hand)
 {
     this->state = state;
 
@@ -13,10 +15,28 @@ HandCommand::HandCommand(ros::NodeHandle *nh, HandState *state)
     close_service = nh->advertiseService(close_srv_name, &HandCommand::callbackClose, this);
     pinch_service = nh->advertiseService(pinch_srv_name, &HandCommand::callbackPinch, this);
     sph_open_service = nh->advertiseService(sph_open_srv_name, &HandCommand::callbackSphOpen, this);
-    sph_close_service = nh->advertiseService(sph_close_srv_name, &HandCommand::callbackSphClose, this);
     pos_incr_service = nh->advertiseService(pos_incr_srv_name, &HandCommand::callbackPosIncr, this);
     close_until_contact_service = nh->advertiseService(close_until_contact_srv_name, &HandCommand::callbackCloseUntilContact, this);
     tighten_grip_service = nh->advertiseService(tighten_grip_srv_name, &HandCommand::callbackTightenGrip, this);
+
+    if (!use_sim_data_hand)
+    {
+        // calibrate fingers and tactile if working on real hand
+        ros::ServiceClient calibrate_fingers = nh->serviceClient<std_srvs::Empty>("reflex_takktile/calibrate_fingers");
+        ros::ServiceClient calibrate_tactile = nh->serviceClient<std_srvs::Empty>("reflex_takktile/calibrate_tactile");
+        std_srvs::Empty srv;
+        ROS_INFO("Calibrating fingers ...");
+        calibrate_fingers.call(srv);
+        ROS_INFO("Calibrating sensors ...");
+        calibrate_tactile.call(srv);
+        ROS_INFO("Calibration done!");
+    }
+    else
+    {
+        // we only offer spherical close service in simulated hand because fingers would crash into
+        // each other on real hand
+        sph_close_service = nh->advertiseService(sph_close_srv_name, &HandCommand::callbackSphClose, this);
+    }
 }
 
 std::string HandCommand::getStatusMsg()
@@ -170,7 +190,7 @@ bool HandCommand::callbackPosIncr(reflex_interface::PosIncrement::Request &req, 
     catch (std::exception &e)
     {
         ROS_ERROR("Whoops! Exception occured in callbackPosIncr: %s", e.what());
-        return false; 
+        return false;
     }
 }
 
@@ -230,7 +250,7 @@ bool HandCommand::callbackCloseUntilContact(std_srvs::Trigger::Request &req, std
     catch (std::exception &e)
     {
         ROS_ERROR("Whoops! Exception occured in callbackCloseUntilContact: %s", e.what());
-        return false; 
+        return false;
     }
 }
 
