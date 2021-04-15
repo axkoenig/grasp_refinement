@@ -9,6 +9,7 @@
 #include <reflex_interface/HandStateStamped.h>
 
 #include "reflex_interface/finger_state.hpp"
+#include "reflex_interface/motor_state.hpp"
 #include "reflex_interface/hand_state_variables.hpp"
 #include "reflex_interface/grasp_quality.hpp"
 #include "sensor_listener/ContactFrames.h"
@@ -28,6 +29,7 @@ public:
 
     HandState(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_data_obj);
     FingerState *finger_states[3];
+    MotorState *motor_states[4] = {new MotorState(1), new MotorState(2), new MotorState(3), new MotorState(4)};
 
     ContactState getContactState();
     int getNumFingersInContact();
