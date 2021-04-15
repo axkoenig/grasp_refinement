@@ -35,8 +35,9 @@ class ObservationSpace(Space):
 
             for j in range(self.num_sensors):
                 id_str = "_f" + str(i + 1) + "_s" + str(j + 1)
-                self.add_variable(1, "sensor_pressure" + id_str, 0, 0, 10)
-                self.add_variable(1, "tactile_positions" + id_str, [0, 0, 0], [-0.2, -0.16, 0.06], [0.2, 0.16, 0.2])
+                self.add_variable(1, "sensor_pressure" + id_str, 0, 0, 255)
+                self.add_variable(1, "tactile_position" + id_str, [0, 0, 0], [-0.2, -0.16, 0.06], [0.2, 0.16, 0.2])
+                self.add_variable(1, "tactile_contact" + id_str, 0, 0, 1)
 
         self.add_variable(1, "preshape_angle", 0, 0, self.prox_angle_max)
 
@@ -48,7 +49,7 @@ class ActionSpace(Space):
         super().__init__()
 
         self.add_variable(1, "trigger_regrasp", 0, 0, 1)
-        self.add_variable(1, "wrist_incr_x", 0, -0.02, 0.02)
+        self.add_variable(1, "wrist_incr_x", 0, -0.01, 0.01)
         self.add_variable(1, "wrist_incr_y", 0, -0.001, 0.001)
         self.add_variable(1, "wrist_incr_z", 0, -0.005, 0.02)
         self.add_variable(1, "wrist_pitch", 0, -0.1, 0.1)
@@ -147,7 +148,7 @@ class GazeboEnv(gym.Env):
         self.observation_space = gym.spaces.Box(low=self.obs.get_min_vals(), high=self.obs.get_max_vals(), dtype=np.float32)
         self.reward_range = (-np.inf, np.inf)
 
-        self.hand_pub = rospy.Publisher("reflex/pos_cmd", PoseCommand, queue_size=5)
+        self.hand_pub = rospy.Publisher("reflex_takktile/command_position", PoseCommand, queue_size=5)
         self.reward_pub = rospy.Publisher("agent/reward", Float64, queue_size=5)
         self.hand_state_sub = rospy.Subscriber("reflex_interface/hand_state", HandStateStamped, self.hand_state_callback, queue_size=5)
 
@@ -189,10 +190,13 @@ class GazeboEnv(gym.Env):
                 self.obs.set_cur_val_by_name("sensor_pressure" + id_str, msg.finger_state[i].sensor_pressure[j])
 
                 if msg.finger_state[i].sensor_contact[j]:
-                    tactile_positions = self.gi.ros_vector_to_list(msg.finger_state[i].tactile_position[j])
-                    self.obs.set_cur_val_by_name("tactile_positions" + id_str, tactile_positions)
+                    tactile_position = self.gi.ros_vector_to_list(msg.finger_state[i].tactile_position[j])
+                    self.obs.set_cur_val_by_name("tactile_position" + id_str, tactile_position)
+                    self.obs.set_cur_val_by_name("tactile_contact" + id_str, 1)
+                    
                 else:
-                    self.obs.set_cur_val_by_name("tactile_positions" + id_str, [0, 0, 0])
+                    self.obs.set_cur_val_by_name("tactile_position" + id_str, [0, 0, 0])
+                    self.obs.set_cur_val_by_name("tactile_contact" + id_str, 0)
 
     def collect_reward(self, tot_duration=0.5, time_steps=20):
         # records epsilon over tot_duration and returns average
@@ -209,7 +213,7 @@ class GazeboEnv(gym.Env):
         return self.epsilon_force + 10 * self.epsilon_torque + 1 / 100 * self.delta_task
 
     def get_f_incr(self, action):
-        return 0.1 if action >= 0.5 else 0
+        return deg2rad(2) if action >= 0.5 else 0
 
     def step(self, action):
         self.cur_time_step += 1
