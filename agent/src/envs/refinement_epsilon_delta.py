@@ -35,7 +35,7 @@ class ObservationSpace(Space):
 
             for j in range(self.num_sensors):
                 id_str = "_f" + str(i + 1) + "_s" + str(j + 1)
-                self.add_variable(1, "sensor_pressure" + id_str, 0, 0, 255)
+                self.add_variable(1, "sensor_pressure" + id_str, 0, 0, 127)
                 self.add_variable(1, "tactile_position" + id_str, [0, 0, 0], [-0.2, -0.16, 0.06], [0.2, 0.16, 0.2])
                 self.add_variable(1, "tactile_contact" + id_str, 0, 0, 1)
 
