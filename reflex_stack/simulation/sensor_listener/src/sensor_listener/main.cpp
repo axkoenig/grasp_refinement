@@ -20,9 +20,9 @@ int main(int argc, char **argv)
     ReflexHand hand;
     reflex_msgs::Hand hand_msg;
 
-    float reflex_tactile_sensor_rate;
-    getParam(&nh, &reflex_tactile_sensor_rate, "reflex_tactile_sensor_rate");
-    ros::Rate rate(reflex_tactile_sensor_rate);
+    float reflex_pub_rate;
+    getParam(&nh, &reflex_pub_rate, "reflex_pub_rate");
+    ros::Rate rate(reflex_pub_rate);
 
     ROS_INFO("Starting to listen to Gazebo sensor values.");
     ROS_INFO_STREAM("Publishing to " << hand_state_topic << " and " << contact_frames_topic);

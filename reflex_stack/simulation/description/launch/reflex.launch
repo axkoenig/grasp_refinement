@@ -9,9 +9,15 @@
     <arg name="launch_finger_controllers" default="true" />
     <arg name="base_link_name" default="shell" />
 
-    <!-- real reflex sensor rate is 50Hz -->
-    <arg name="reflex_tactile_sensor_rate" default="50" />
-    <param name="reflex_tactile_sensor_rate" value="$(arg reflex_tactile_sensor_rate)" />
+    <!-- tell reflex_interface that we're running in simulation -->
+    <arg name="use_sim_data_hand" default="true" />
+    <param name="use_sim_data_hand" value="$(arg use_sim_data_hand)" />
+    <arg name="use_sim_data_obj" default="true" />
+    <param name="use_sim_data_obj" value="$(arg use_sim_data_obj)" />
+
+    <!-- effective publishing rate of real reflex is 40Hz -->
+    <arg name="reflex_pub_rate" default="40" />
+    <param name="reflex_pub_rate" value="$(arg reflex_pub_rate)" />
 
     <!-- "true" will significantly speed up your simulation as I use simplfied collision meshes. Turn on
          "view" -> "collisions" in Gazebo to see the collision meshes -->
@@ -50,7 +56,7 @@
     <node name="reflex_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param robot_description -model $(arg robot_name)" />
 
     <param name="robot_description" command="
-        $(find xacro)/xacro '$(find description)/robots/reflex.robot.xacro' only_reflex:=true base_link_name:=$(arg base_link_name) reflex_tactile_sensor_rate:=$(arg reflex_tactile_sensor_rate) simplify_collisions:=$(arg simplify_collisions)"/>
+        $(find xacro)/xacro '$(find description)/robots/reflex.robot.xacro' only_reflex:=true base_link_name:=$(arg base_link_name) reflex_pub_rate:=$(arg reflex_pub_rate) simplify_collisions:=$(arg simplify_collisions)"/>
 
     <!-- Keyboard teleoperation node for wrist and fingers-->
     <group if="$(arg run_keyboard_teleop_nodes)">
