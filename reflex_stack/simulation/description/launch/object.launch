@@ -16,8 +16,8 @@
     <arg name="sphere_radius" default="0.08" />
 
     <!-- cylinder params -->
-    <arg name="cylinder_radius" default="0.04" />
-    <arg name="cylinder_length" default="0.15" />
+    <arg name="cylinder_radius" default="0.0525" />
+    <arg name="cylinder_length" default="0.145" />
 
     <!-- box params -->
     <arg name="box_x" default="0.10" />
