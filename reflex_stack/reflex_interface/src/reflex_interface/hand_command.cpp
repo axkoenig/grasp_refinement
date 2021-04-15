@@ -112,8 +112,17 @@ bool HandCommand::waitUntilFinished(float tolerance, float time_out)
 
 bool HandCommand::callbackOpen(reflex_interface::GraspPrimitive::Request &req, reflex_interface::GraspPrimitive::Response &res)
 {
-    res.success = executePrimitive(Open, req.blocking, req.tolerance, req.time_out, &res.message);
-    return true;
+    try
+    {
+        res.success = executePrimitive(Open, req.blocking, req.tolerance, req.time_out, &res.message);
+        return true;
+    }
+
+    catch (std::exception &e)
+    {
+        ROS_ERROR("Whoops! Exception occured in callbackOpen: %s", e.what());
+        return false;
+    }
 }
 
 bool HandCommand::callbackClose(reflex_interface::GraspPrimitive::Request &req, reflex_interface::GraspPrimitive::Response &res)
@@ -142,69 +151,87 @@ bool HandCommand::callbackSphClose(reflex_interface::GraspPrimitive::Request &re
 
 bool HandCommand::callbackPosIncr(reflex_interface::PosIncrement::Request &req, reflex_interface::PosIncrement::Response &res)
 {
-    float increment[4] = {(float)req.f1,
-                          (float)req.f2,
-                          (float)req.f3,
-                          (float)req.preshape};
-    res.success = executePosIncrement(increment, req.from_measured_pos, req.blocking, req.tolerance, req.time_out);
-    res.message = this->getStatusMsg();
-    if (res.success == false)
+    try
     {
-        res.message += "Not all fingers reached their desired positions of within a time out of " +
-                       std::to_string(req.time_out) + " secs and a tolerance of " + std::to_string(req.tolerance) + ".";
+        float increment[4] = {(float)req.f1,
+                              (float)req.f2,
+                              (float)req.f3,
+                              (float)req.preshape};
+        res.success = executePosIncrement(increment, req.from_measured_pos, req.blocking, req.tolerance, req.time_out);
+        res.message = this->getStatusMsg();
+        if (res.success == false)
+        {
+            res.message += "Not all fingers reached their desired positions of within a time out of " +
+                           std::to_string(req.time_out) + " secs and a tolerance of " + std::to_string(req.tolerance) + ".";
+        }
+        return true;
     }
-    return true;
+
+    catch (std::exception &e)
+    {
+        ROS_ERROR("Whoops! Exception occured in callbackPosIncr: %s", e.what());
+        return false; 
+    }
 }
 
 bool HandCommand::callbackCloseUntilContact(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
 {
-    // this service is blocking by default
-    ros::Duration allowed_duration(close_until_contact_time_out);
-    ros::Time start_time = ros::Time::now();
-    std::vector<bool> fingers_in_contact = {0, 0, 0}; // example: finger 1 in contact {1, 0, 0}
-    std::vector<bool> contact_memory = {0, 0, 0};     // example: finger 1 and 2 were in contact throughout this service call {1, 1, 0}
-
-    ros::Rate rate(close_until_contact_pub_rate);
-
-    while (allowed_duration > (ros::Time::now() - start_time))
+    try
     {
-        // stop if all fingers have been in contact at least once throughout this service call or if all are currently in contact
-        bool allFingersHaveMadeContact = std::all_of(contact_memory.begin(), contact_memory.end(), [](bool v) { return v; });
-        bool stop = allFingersHaveMadeContact || state->allFingersInContact();
+        // this service is blocking by default
+        ros::Duration allowed_duration(close_until_contact_time_out);
+        ros::Time start_time = ros::Time::now();
+        std::vector<bool> fingers_in_contact = {0, 0, 0}; // example: finger 1 in contact {1, 0, 0}
+        std::vector<bool> contact_memory = {0, 0, 0};     // example: finger 1 and 2 were in contact throughout this service call {1, 1, 0}
 
-        if (stop)
+        ros::Rate rate(close_until_contact_pub_rate);
+
+        while (allowed_duration > (ros::Time::now() - start_time))
         {
-            res.success = true;
-            res.message = "All fingers have been in contact.";
-            return true;
+            // stop if all fingers have been in contact at least once throughout this service call or if all are currently in contact
+            bool allFingersHaveMadeContact = std::all_of(contact_memory.begin(), contact_memory.end(), [](bool v) { return v; });
+            bool stop = allFingersHaveMadeContact || state->allFingersInContact();
+
+            if (stop)
+            {
+                res.success = true;
+                res.message = "All fingers have been in contact.";
+                return true;
+            }
+
+            fingers_in_contact = state->getVars().fingers_in_contact;
+            float increment[4] = {0, 0, 0, 0};
+
+            for (int i = 0; i < state->num_fingers; i++)
+            {
+                if (!fingers_in_contact[i] && !contact_memory[i])
+                {
+                    // for all fingers that did not have contact yet: tighten up
+                    increment[i] = close_until_contact_incr;
+                }
+                else if (fingers_in_contact[i])
+                {
+                    // memorize that we obtained a contact at this finger
+                    contact_memory[i] = 1;
+                }
+            }
+            this->executePosIncrement(increment);
+
+            // make sure to process callbacks in HandState class
+            ros::spinOnce();
+            rate.sleep();
         }
 
-        fingers_in_contact = state->getVars().fingers_in_contact;
-        float increment[4] = {0, 0, 0, 0};
-
-        for (int i = 0; i < state->num_fingers; i++)
-        {
-            if (!fingers_in_contact[i] && !contact_memory[i])
-            {
-                // for all fingers that did not have contact yet: tighten up
-                increment[i] = close_until_contact_incr;
-            }
-            else if (fingers_in_contact[i])
-            {
-                // memorize that we obtained a contact at this finger
-                contact_memory[i] = 1;
-            }
-        }
-        this->executePosIncrement(increment);
-
-        // make sure to process callbacks in HandState class
-        ros::spinOnce();
-        rate.sleep();
+        res.success = false;
+        res.message = "Did not obtain contact on all fingers within time-out of " + std::to_string(close_until_contact_time_out) + " secs.";
+        return true;
     }
 
-    res.success = false;
-    res.message = "Did not obtain contact on all fingers within time-out of " + std::to_string(close_until_contact_time_out) + " secs.";
-    return true;
+    catch (std::exception &e)
+    {
+        ROS_ERROR("Whoops! Exception occured in callbackCloseUntilContact: %s", e.what());
+        return false; 
+    }
 }
 
 bool HandCommand::callbackTightenGrip(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
