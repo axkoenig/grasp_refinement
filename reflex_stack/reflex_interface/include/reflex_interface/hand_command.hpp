@@ -40,10 +40,10 @@ private:
     std::string tighten_grip_srv_name = "reflex_interface/tighten_grip";
     std::string pos_cmd_topic = "reflex_takktile/command_position";
 
-    float tighten_incr = 0.0349066;    // this is 2 degrees
+    float tighten_incr = 0.0349066; // this is 2 degrees
     float close_until_contact_incr = 0.1;
     float close_until_contact_time_out = 6;
-    float close_until_contact_pub_rate = 50;
+    float close_until_contact_pub_rate = 20;
 
     ros::Publisher pub;
     ros::ServiceServer open_service;
@@ -58,12 +58,12 @@ private:
 
     // format {finger1, finger2, finger3, preshape}
     std::array<float, 4> low_limits = {0, 0, 0, 0};
-    std::array<float, 4> high_limits = {M_PI, M_PI, M_PI, M_PI};
+    std::array<float, 4> high_limits = {M_PI, M_PI, M_PI, M_PI / 2};
     std::array<float, 4> open_pos = {0, 0, 0, 0};
     std::array<float, 4> close_pos = {2.5, 2.5, 2.5, 0};
-    std::array<float, 4> pinch_pos = {1.7, 1.7, 0, M_PI};
-    std::array<float, 4> sph_open_pos = {1.2, 1.2, 1.2, M_PI / 2};
-    std::array<float, 4> sph_close_pos = {2.5, 2.5, 2.5, M_PI / 2};
+    std::array<float, 4> pinch_pos = {2, 2, 0, M_PI / 2};
+    std::array<float, 4> sph_open_pos = {1.2, 1.2, 1.2, M_PI / 4};
+    std::array<float, 4> sph_close_pos = {2.5, 2.5, 2.5, M_PI / 4};
     std::array<float, 4> cur_cmd = open_pos;
 
     std::string getStatusMsg();
