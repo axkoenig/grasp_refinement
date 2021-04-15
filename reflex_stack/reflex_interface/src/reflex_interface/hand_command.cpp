@@ -13,7 +13,6 @@ HandCommand::HandCommand(ros::NodeHandle *nh, HandState *state, bool use_sim_dat
     pub = nh->advertise<reflex_msgs::PoseCommand>(pos_cmd_topic, 1);
     open_service = nh->advertiseService(open_srv_name, &HandCommand::callbackOpen, this);
     close_service = nh->advertiseService(close_srv_name, &HandCommand::callbackClose, this);
-    pinch_service = nh->advertiseService(pinch_srv_name, &HandCommand::callbackPinch, this);
     sph_open_service = nh->advertiseService(sph_open_srv_name, &HandCommand::callbackSphOpen, this);
     pos_incr_service = nh->advertiseService(pos_incr_srv_name, &HandCommand::callbackPosIncr, this);
     close_until_contact_service = nh->advertiseService(close_until_contact_srv_name, &HandCommand::callbackCloseUntilContact, this);
@@ -33,9 +32,10 @@ HandCommand::HandCommand(ros::NodeHandle *nh, HandState *state, bool use_sim_dat
     }
     else
     {
-        // we only offer spherical close service in simulated hand because fingers would crash into
-        // each other on real hand
+        // we only offer sph_close_service and pinch_service in simulated hand
+        // because fingers could crash into each other on real hand
         sph_close_service = nh->advertiseService(sph_close_srv_name, &HandCommand::callbackSphClose, this);
+        pinch_service = nh->advertiseService(pinch_srv_name, &HandCommand::callbackPinch, this);
     }
 }
 
@@ -114,10 +114,10 @@ bool HandCommand::waitUntilFinished(float tolerance, float time_out)
 
     while (allowed_duration > (ros::Time::now() - start_time))
     {
-        diff[0] = abs(cur_cmd[0] - state->finger_states[0]->getProximalAngle());
-        diff[1] = abs(cur_cmd[1] - state->finger_states[1]->getProximalAngle());
-        diff[2] = abs(cur_cmd[2] - state->finger_states[2]->getProximalAngle());
-        diff[3] = abs(cur_cmd[3] - state->finger_states[0]->getPreshapeAngle() * 2);
+        for (int i = 0; i < state->num_motors; i++)
+        {
+            diff[i] = abs(cur_cmd[i] - state->motor_states[i]->getJointAngle());
+        }
 
         if (std::all_of(diff.begin(), diff.end(), [tolerance](float x) { return x < tolerance; }))
         {
@@ -272,10 +272,10 @@ bool HandCommand::executePosIncrement(float increment[4], bool from_measured_pos
     std::array<float, 4> cur_state;
     if (from_measured_pos)
     {
-        cur_state = {state->finger_states[0]->getProximalAngle(),
-                     state->finger_states[1]->getProximalAngle(),
-                     state->finger_states[2]->getProximalAngle(),
-                     state->finger_states[0]->getPreshapeAngle() + state->finger_states[1]->getPreshapeAngle()};
+        cur_state = {state->motor_states[0]->getJointAngle(),
+                     state->motor_states[1]->getJointAngle(),
+                     state->motor_states[2]->getJointAngle(),
+                     state->motor_states[3]->getJointAngle()};
     }
     else
     {
