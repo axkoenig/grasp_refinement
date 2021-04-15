@@ -38,9 +38,9 @@ private:
     std::string pos_incr_srv_name = "reflex/pos_incr";
     std::string close_until_contact_srv_name = "reflex/close_until_contact";
     std::string tighten_grip_srv_name = "reflex/tighten_grip";
-    std::string pos_cmd_topic = "reflex/pos_cmd";
+    std::string pos_cmd_topic = "reflex_takktile/command_position";
 
-    float tighten_incr = 0.1;
+    float tighten_incr = 0.0349066;    // this is 2 degrees
     float close_until_contact_incr = 0.1;
     float close_until_contact_time_out = 6;
     float close_until_contact_pub_rate = 50;

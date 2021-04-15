@@ -16,7 +16,7 @@ class GazeboEnv(gym.Env):
 
         rospy.init_node("agent", anonymous=True)
 
-        self.hand_pub = rospy.Publisher("reflex/pos_cmd", PoseCommand, queue_size=5)
+        self.hand_pub = rospy.Publisher("reflex_takktile/command_position", PoseCommand, queue_size=5)
         self.reward_pub = rospy.Publisher("agent/reward", Float32, queue_size=5)
         self.hand_sub = rospy.Subscriber("reflex/hand_state", Hand, self.hand_callback, queue_size=5)
 

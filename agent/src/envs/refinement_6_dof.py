@@ -109,7 +109,7 @@ class GazeboEnv(gym.Env):
         self.observation_space = gym.spaces.Box(low=self.obs.get_min_vals(), high=self.obs.get_max_vals(), dtype=np.float32)
         self.reward_range = (-np.inf, np.inf)
 
-        self.hand_pub = rospy.Publisher("reflex/pos_cmd", PoseCommand, queue_size=5)
+        self.hand_pub = rospy.Publisher("reflex_takktile/command_position", PoseCommand, queue_size=5)
         self.reward_pub = rospy.Publisher("agent/reward", Float64, queue_size=5)
         self.hand_sub = rospy.Subscriber("reflex/hand_state", Hand, self.hand_callback, queue_size=5)
         self.num_contacts_sub = rospy.Subscriber("reflex/num_contacts", Int32, self.num_contacts_callback, queue_size=5)

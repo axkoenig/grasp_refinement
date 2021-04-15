@@ -3,7 +3,7 @@
 #include <std_srvs/SetBool.h>
 #include <reflex_msgs/PoseCommand.h>
 
-std::string pos_cmd_topic = "reflex/pos_cmd";
+std::string pos_cmd_topic = "reflex_takktile/command_position";
 std::string node_name = "finger_controller_node";
 std::string ns = "/gazebo";
 
