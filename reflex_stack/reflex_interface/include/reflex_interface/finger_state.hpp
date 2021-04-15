@@ -14,11 +14,11 @@ class FingerState
 public:
     FingerState(ros::NodeHandle *nh, int finger_id);
     const int num_sensors = 9;
-    void setProximalAngleFromMsg(float angle);
-    void setDistalAngleFromMsg(float angle);
-    void setPreshapeAngleFromMsg(float angle);
-    void setSensorContactsFromMsg(boost::array<unsigned char, 9> sensor_contacts);
-    void setSensorPressuresFromMsg(boost::array<float, 9> sensor_pressures);
+    void setProximalAngle(float angle);
+    void setDistalAngle(float angle);
+    void setPreshapeAngle(float angle);
+    void setSensorContacts(boost::array<unsigned char, 9> sensor_contacts);
+    void setSensorPressures(boost::array<float, 9> sensor_pressures);
     float getProximalAngle() { return proximal_angle; };
     float getDistalAngle() { return distal_angle; };
     float getPreshapeAngle() { return preshape_angle; };

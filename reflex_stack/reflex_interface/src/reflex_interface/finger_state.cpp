@@ -25,22 +25,22 @@ tf2::Transform FingerState::getStaticProximalJointFrame()
     }
 }
 
-void FingerState::setProximalAngleFromMsg(float angle)
+void FingerState::setProximalAngle(float angle)
 {
     proximal_angle = angle;
 }
 
-void FingerState::setDistalAngleFromMsg(float angle)
+void FingerState::setDistalAngle(float angle)
 {
     distal_angle = angle;
 }
 
-void FingerState::setPreshapeAngleFromMsg(float angle)
+void FingerState::setPreshapeAngle(float angle)
 {
     preshape_angle = angle;
 }
 
-void FingerState::setSensorContactsFromMsg(boost::array<unsigned char, 9> sensor_contacts)
+void FingerState::setSensorContacts(boost::array<unsigned char, 9> sensor_contacts)
 {
     for (int i = 0; i < num_sensors; i++)
     {
@@ -145,7 +145,7 @@ void FingerState::fillContactInfo(std::vector<tf2::Vector3> &contact_positions,
     }
 }
 
-void FingerState::setSensorPressuresFromMsg(boost::array<float, 9> sensor_pressures)
+void FingerState::setSensorPressures(boost::array<float, 9> sensor_pressures)
 {
     for (int i = 0; i < num_sensors; i++)
     {
