@@ -46,11 +46,16 @@ public:
       preshape_pub = nh->advertise<std_msgs::Float64>(preshape_topic, 1);
     }
   }
-  void send_commands(float proximal, float preshape = 0.0)
+  void send_commands(float motor, float preshape = 0.0)
   {
-    proximal_msg.data = proximal;
-    proximal_to_flex_msg.data = scaling_factor * proximal;
-    flex_to_distal_msg.data = scaling_factor * proximal;
+    // the overall motor command is separated into motor commands for each of the joints 
+    // motor_all = motor_prox + motor_prox_to_flex + motor_flex_to_dist
+    // motor_prox_to_flex = motor_flex_to_dist = scaling_factor * motor_prox
+    // motor_all = (1 + 2 * scaling_factor) * motor_prox
+
+    proximal_msg.data = motor / (1 + 2 * scaling_factor);
+    proximal_to_flex_msg.data = scaling_factor * proximal_msg.data;
+    flex_to_distal_msg.data = scaling_factor * proximal_msg.data;
 
     proximal_pub.publish(proximal_msg);
     proximal_to_flex_pub.publish(proximal_to_flex_msg);
