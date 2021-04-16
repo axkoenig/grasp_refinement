@@ -1,8 +1,8 @@
 import gym
 import numpy as np
-
 import rospy
 import tf
+
 from std_msgs.msg import Float64, Int32
 from reflex_interface.msg import HandStateStamped
 from reflex_msgs.msg import PoseCommand
@@ -10,110 +10,9 @@ from stable_baselines3.common.callbacks import BaseCallback
 
 from .helpers import rad2deg, deg2rad, get_homo_matrix_from_tq, get_tq_from_homo_matrix
 from .space import Space
+from .space_act import ActionSpace
+from .space_obs import ObservationSpace
 from .gazebo_interface import GazeboInterface
-
-
-class ObservationSpace(Space):
-    """Defines observation space."""
-
-    def __init__(self):
-        super().__init__()
-
-        self.num_fingers = 3
-        self.num_motors = 4
-        self.num_sensors = 9
-        self.num_tot_sensors = self.num_fingers * self.num_sensors
-        self.vars_per_finger = 4 + 2 * self.num_motors
-        self.prox_angle_max = 3
-        self.preshape_angle_max = np.pi / 2
-
-        for i in range(self.num_fingers):
-            id_str = "_f" + str(i + 1)
-            self.add_variable(1, "prox_angle" + id_str, 0, 0, self.prox_angle_max)
-            self.add_variable(1, "dist_angle" + id_str, 0, 0, 0.2 * self.prox_angle_max)
-            self.add_variable(1, "prox_normal" + id_str, [0, 0, 0], [-1, -1, -1], [1, 1, 1])
-            self.add_variable(1, "dist_normal" + id_str, [0, 0, 0], [-1, -1, -1], [1, 1, 1])
-
-            for j in range(self.num_sensors):
-                id_str = "_f" + str(i + 1) + "_s" + str(j + 1)
-                self.add_variable(1, "sensor_pressure" + id_str, 0, 0, 127)
-                self.add_variable(1, "tactile_position" + id_str, [0, 0, 0], [-0.2, -0.16, 0.06], [0.2, 0.16, 0.2])
-                self.add_variable(1, "tactile_contact" + id_str, 0, 0, 1)
-
-        self.add_variable(1, "preshape_angle", 0, 0, self.preshape_angle_max)
-
-
-class ActionSpace(Space):
-    """Defines action space."""
-
-    def __init__(self):
-        super().__init__()
-
-        self.add_variable(1, "trigger_regrasp", 0, 0, 1)
-        self.add_variable(1, "wrist_incr_x", 0, -0.01, 0.01)
-        self.add_variable(1, "wrist_incr_y", 0, -0.001, 0.001)
-        self.add_variable(1, "wrist_incr_z", 0, -0.005, 0.02)
-        self.add_variable(1, "wrist_pitch", 0, -0.1, 0.1)
-        self.add_variable(3, "trigger_finger_tightening", 0, 0, 1)
-
-
-class TensorboardCallback(BaseCallback):
-    def __init__(self, verbose=1):
-        super(TensorboardCallback, self).__init__(verbose)
-        self.cum_num_contacts = 0
-        self.cum_dist_tcp_obj = 0
-        self.cum_epsilon_force = 0
-        self.cum_epsilon_torque = 0
-        self.cum_obj_shift = 0
-        self.cum_joint_diff = 0
-        self.cum_delta_task = 0
-
-    def _on_rollout_end(self) -> None:
-        self.logger.record("rollout/cum_num_contacts", self.cum_num_contacts)
-        self.logger.record("rollout/cum_dist_tcp_obj", self.cum_dist_tcp_obj)
-        self.logger.record("rollout/cum_epsilon_force", self.cum_epsilon_force)
-        self.logger.record("rollout/cum_epsilon_torque", self.cum_epsilon_torque)
-        self.logger.record("rollout/cum_obj_shift", self.cum_obj_shift)
-        self.logger.record("rollout/cum_joint_diff", self.cum_joint_diff)
-        self.logger.record("rollout/cum_delta_task", self.cum_delta_task)
-
-        # reset vars once recorded
-        self.cum_num_contacts = 0
-        self.cum_dist_tcp_obj = 0
-        self.cum_epsilon_force = 0
-        self.cum_epsilon_torque = 0
-        self.cum_obj_shift = 0
-        self.cum_joint_diff = 0
-        self.cum_delta_task = 0
-
-    def _on_step(self) -> bool:
-        self.cur_num_regrasps = self.training_env.get_attr("num_regrasps")[0]
-        self.cur_num_contacts = self.training_env.get_attr("num_contacts")[0]
-        self.cur_dist_tcp_obj = self.training_env.get_attr("dist_tcp_obj")[0]
-        self.cur_epsilon_force = self.training_env.get_attr("epsilon_force")[0]
-        self.cur_epsilon_torque = self.training_env.get_attr("epsilon_torque")[0]
-        self.cur_delta_task = self.training_env.get_attr("delta_task")[0]
-        self.cur_obj_shift = self.training_env.get_attr("obj_shift")[0]
-        self.cur_joint_diff = self.training_env.get_attr("prox_diff")[0]
-
-        self.logger.record("step/cur_num_regrasps", self.cur_num_regrasps)
-        self.logger.record("step/cur_num_contacts", self.cur_num_contacts)
-        self.logger.record("step/cur_dist_tcp_obj", self.cur_dist_tcp_obj)
-        self.logger.record("step/cur_epsilon_force", self.cur_epsilon_force)
-        self.logger.record("step/cur_epsilon_torque", self.cur_epsilon_torque)
-        self.logger.record("step/cur_delta_task", self.cur_delta_task)
-        self.logger.record("step/cur_obj_shift", self.cur_obj_shift)
-        self.logger.record("step/cur_joint_diff", self.cur_joint_diff)
-
-        self.cum_num_contacts += self.cur_num_contacts
-        self.cum_dist_tcp_obj += self.cur_dist_tcp_obj
-        self.cum_epsilon_force += self.cur_epsilon_torque
-        self.cum_epsilon_torque += self.cur_epsilon_force
-        self.cum_obj_shift += self.cur_obj_shift
-        self.cum_joint_diff += self.cur_joint_diff
-        self.cum_delta_task += self.cur_delta_task
-        return True
-
 
 class GazeboEnv(gym.Env):
     def __init__(self, exec_secs, max_ep_len, joint_lim, obj_shift_tol, reward_weight, pos_error):

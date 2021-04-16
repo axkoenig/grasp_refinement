@@ -20,7 +20,8 @@ def main(args):
 
     print("Loading environment...")
     if args.environment == "refinement":
-        from envs.refinement import GazeboEnv, TensorboardCallback
+        from envs.refinement import GazeboEnv
+        from envs.tb_callback import TensorboardCallback
         env = GazeboEnv(args.exec_secs, args.max_ep_len, args.joint_lim, args.obj_shift_tol, args.reward_weight, [args.x_error, args.y_error, args.z_error])
     else:
         raise ValueError("Invalid environment name.")
