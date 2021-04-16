@@ -25,6 +25,7 @@ class ObservationSpace(Space):
         self.num_tot_sensors = self.num_fingers * self.num_sensors
         self.vars_per_finger = 4 + 2 * self.num_motors
         self.prox_angle_max = 3
+        self.preshape_angle_max = np.pi / 2
 
         for i in range(self.num_fingers):
             id_str = "_f" + str(i + 1)
@@ -39,7 +40,7 @@ class ObservationSpace(Space):
                 self.add_variable(1, "tactile_position" + id_str, [0, 0, 0], [-0.2, -0.16, 0.06], [0.2, 0.16, 0.2])
                 self.add_variable(1, "tactile_contact" + id_str, 0, 0, 1)
 
-        self.add_variable(1, "preshape_angle", 0, 0, self.prox_angle_max)
+        self.add_variable(1, "preshape_angle", 0, 0, self.preshape_angle_max)
 
 
 class ActionSpace(Space):
@@ -193,7 +194,7 @@ class GazeboEnv(gym.Env):
                     tactile_position = self.gi.ros_vector_to_list(msg.finger_state[i].tactile_position[j])
                     self.obs.set_cur_val_by_name("tactile_position" + id_str, tactile_position)
                     self.obs.set_cur_val_by_name("tactile_contact" + id_str, 1)
-                    
+
                 else:
                     self.obs.set_cur_val_by_name("tactile_position" + id_str, [0, 0, 0])
                     self.obs.set_cur_val_by_name("tactile_contact" + id_str, 0)

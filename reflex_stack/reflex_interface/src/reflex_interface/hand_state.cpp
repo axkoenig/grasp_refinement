@@ -122,7 +122,7 @@ void HandState::reflex_state_callback(const reflex_msgs::Hand &msg)
             if (i != 2)
             {
                 // set preshape angle for fingers 1 and 2 (finger 3 doesn't have a preshape angle)
-                finger_states[i]->setPreshapeAngle(msg.motor[3].joint_angle / 2);
+                finger_states[i]->setPreshapeAngle(msg.motor[3].joint_angle);
             }
         }
 
@@ -233,7 +233,7 @@ reflex_interface::HandStateStamped HandState::getHandStateMsg()
     reflex_interface::HandStateStamped hss;
     hss.header.stamp = ros::Time::now();
     hss.header.frame_id = "shell";
-    hss.preshape_angle = 2 * finger_states[0]->getPreshapeAngle();
+    hss.preshape_angle = finger_states[0]->getPreshapeAngle();
     hss.num_contacts = vars.num_contacts;
     hss.epsilon = vars.epsilon;
     hss.epsilon_force = vars.epsilon_force;

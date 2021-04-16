@@ -68,14 +68,12 @@ void ReflexPreshapeMotor::preshape_2_callback(const control_msgs::JointControlle
 
 float ReflexPreshapeMotor::getAngle()
 {
-    // assume motor angle is sum of both preshape motor angles
-    // TODO: compare with real reflex sensor readings
-    return preshape_1_angle + preshape_2_angle;
+    // motor angle is mean of both simulated preshape motor angles
+    return (preshape_1_angle + preshape_2_angle) / 2;
 }
 
 float ReflexPreshapeMotor::getVelocity()
 {
-    // assume motor angle is sum of both preshape motor velocities
-    // TODO: compare with real reflex sensor readings
-    return preshape_1_vel + preshape_2_vel;
+    // motor velocities is mean of both simulated preshape motor velocities
+    return (preshape_1_vel + preshape_2_vel) / 2;
 }
