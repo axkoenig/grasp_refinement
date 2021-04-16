@@ -26,7 +26,7 @@ public:
         SoftFinger
     };
 
-    GraspQuality(float mu_epsilon = 1, float mu_delta = 5, int num_edges = 4, ContactModel contact_model = HardFinger);
+    GraspQuality(float mu_epsilon = 1, float mu_delta = 1, int num_edges = 4, ContactModel contact_model = HardFinger);
 
     // all args have to be in same coordinate system!
     float getEpsilon(const std::vector<tf2::Vector3> &contact_positions,
@@ -45,7 +45,7 @@ public:
                         const std::vector<tf2::Vector3> &contact_forces,
                         const std::vector<float> &contact_force_magnitudes,
                         const int &num_contacts,
-                        bool verbose = false);
+                        bool verbose = true);
 
     template <class T>
     bool isSameSize(const int desired_size, const std::vector<T> &vector) { return vector.size() == desired_size; };
