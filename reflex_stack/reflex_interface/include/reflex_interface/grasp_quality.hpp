@@ -45,7 +45,7 @@ public:
                         const std::vector<tf2::Vector3> &contact_forces,
                         const std::vector<float> &contact_force_magnitudes,
                         const int &num_contacts,
-                        bool verbose = true);
+                        bool verbose = false);
 
     template <class T>
     bool isSameSize(const int desired_size, const std::vector<T> &vector) { return vector.size() == desired_size; };
