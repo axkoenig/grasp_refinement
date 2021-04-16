@@ -431,12 +431,16 @@ float GraspQuality::getSlipMargin(std::vector<tf2::Vector3> &contact_normals,
     }
 
     float min_delta = 0;
-
     for (int i = 0; i < num_contacts; i++)
     {
         // calc measured normal force by scalar projection
-        float f_norm_m = abs(contact_forces[i].dot(contact_normals[i].normalize()));
+        float f_norm_m = contact_forces[i].dot(contact_normals[i].normalize());
 
+        // negative normal force means we lift off (i.e. can't resist tangential forces)
+        if (f_norm_m < 0){
+            continue; 
+        }
+        
         // calc measured tangential force
         float f_tang_m = sqrt(pow(contact_force_magnitudes[i], 2) - pow(f_norm_m, 2));
 
