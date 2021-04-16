@@ -19,11 +19,8 @@ def main(args):
     model_path = os.path.join(ckpt_path, "final_model")
 
     print("Loading environment...")
-    if args.environment == "refinement_epsilon_delta":
-        from envs.refinement_epsilon_delta import GazeboEnv, TensorboardCallback
-        env = GazeboEnv(args.exec_secs, args.max_ep_len, args.joint_lim, args.obj_shift_tol, args.reward_weight, [args.x_error, args.y_error, args.z_error])
-    elif args.environment == "refinement_epsilon":
-        from envs.refinement_epsilon import GazeboEnv, TensorboardCallback
+    if args.environment == "refinement":
+        from envs.refinement import GazeboEnv, TensorboardCallback
         env = GazeboEnv(args.exec_secs, args.max_ep_len, args.joint_lim, args.obj_shift_tol, args.reward_weight, [args.x_error, args.y_error, args.z_error])
     else:
         raise ValueError("Invalid environment name.")
@@ -77,7 +74,7 @@ def main(args):
 if __name__ == "__main__":
     parser = ArgumentParser("Trains an RL algorithm for autonomous grasping.")
 
-    parser.add_argument("--environment", type=str, default="refinement_epsilon_delta", help="Environment to load.")
+    parser.add_argument("--environment", type=str, default="refinement", help="Environment to load.")
     parser.add_argument("--train", type=int, default=1, help="Whether to train or evaluate the model.")
     parser.add_argument("--seed", type=int, default=0, help="Seed for random number generators.")
     parser.add_argument("--max_ep_len", type=float, default=15, help="Maximum time steps in one episode.")
