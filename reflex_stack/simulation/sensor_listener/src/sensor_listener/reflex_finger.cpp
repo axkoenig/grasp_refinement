@@ -165,7 +165,7 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
             scr.normal = create_vec_from_msg(msg.states[j].contact_normals[i]);
             scr.torque = create_vec_from_msg(msg.states[j].wrenches[i].torque);
 
-            // this is our dirty fix for the Gazebo bug (see description above)
+            // this is our fix for the Gazebo bug (see description above)
             float angle = acos(link_z.dot(scr.normal) / (scr.normal.length() * link_z.length()));
             float invert_or_leave = 1;
             if (abs(angle) > M_PI / 2)
