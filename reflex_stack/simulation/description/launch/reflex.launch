@@ -53,14 +53,25 @@
         <arg name="verbose" value="true" />
     </include>
 
-    <node name="reflex_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param robot_description -model $(arg robot_name)" />
+    <!-- spawning objects here first (before spawning reflex) -->
+    <include file="$(find description)/launch/object.launch" if="$(arg spawn_object)">
+        <arg name="object_name" value="$(arg object_name)"/>
+    </include>
 
     <param name="robot_description" command="
         $(find xacro)/xacro '$(find description)/robots/reflex.robot.xacro' only_reflex:=true base_link_name:=$(arg base_link_name) reflex_pub_rate:=$(arg reflex_pub_rate) simplify_collisions:=$(arg simplify_collisions)"/>
 
+    <!-- wait before launching reflex (this makes sure that the contact normals are pointing from reflex to object. this actually is an easy fix (simply everse contact normals and forces when pointing the wrong way) 
+         but for some reason the spawning order also influences how Gazebo calculates forces. I noticed that forces are more "usable" and stable when normals point from reflex to object.
+         TODO check if this is really a Gazebo bug or if we can treat this in a nicer way ...-->
+    <arg name="reflex_spawn_delay" default="2" />
+    <arg name="nodes_spawn_delay" default="4" />
+    
+    <node name="reflex_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param robot_description -model $(arg robot_name)" launch-prefix="bash -c 'sleep $(arg reflex_spawn_delay); $0 $@' " />
+
     <!-- Keyboard teleoperation node for wrist and fingers-->
     <group if="$(arg run_keyboard_teleop_nodes)">
-        <node pkg="reflex_interface" type="finger_teleop_node" name="finger_teleop_node" output="screen"/>
+        <node pkg="reflex_interface" type="finger_teleop_node" name="finger_teleop_node" output="screen" launch-prefix="bash -c 'sleep $(arg nodes_spawn_delay); $0 $@' " />
         <!-- TODO: I would like to split functionality (into a wrist teleop node and a finger teleop node and run both at once, but 
         keyboard input doesn't work smoothly if both nodes are run, presumably because two nodes are reading from the keyboard and 
         they interfere. Leaving wrist + finger controller combined in finger_teleop_node for now, because it works better. -->
@@ -69,27 +80,26 @@
 
     <!-- Launch controllers -->
     <group if="$(arg launch_finger_controllers)">
-        <include file="$(find finger_controller)/launch/reflex_control.launch" />
+        <include file="$(find finger_controller)/launch/reflex_control.launch">
+            <arg name="spawn_delay" value="$(arg nodes_spawn_delay)" />
+        </include>
     </group>
 
     <!-- Sensors node -->
     <group if="$(arg run_sensors_node)">
-        <node pkg="sensor_listener" type="sensor_listener_node" name="sensor_listener_node" output="screen"/>
+        <node pkg="sensor_listener" type="sensor_listener_node" name="sensor_listener_node" output="screen" launch-prefix="bash -c 'sleep $(arg nodes_spawn_delay); $0 $@' " />
     </group>
 
     <!-- Run reflex interface node -->
     <group if="$(arg run_reflex_interface_node)">
-        <node pkg="reflex_interface" type="reflex_interface_node" name="reflex_interface_node" output="screen"/>
+        <node pkg="reflex_interface" type="reflex_interface_node" name="reflex_interface_node" output="screen" launch-prefix="bash -c 'sleep $(arg nodes_spawn_delay); $0 $@' " />
     </group>
 
     <!-- Wrist controller node -->
     <group if="$(arg run_wrist_controller_node)">
-        <include file="$(find wrist_controller)/launch/wrist_controller.launch" />
+        <include file="$(find wrist_controller)/launch/wrist_controller.launch">
+            <arg name="spawn_delay" value="$(arg nodes_spawn_delay)" />
+        </include>
     </group>
-
-    <!-- launch an object -->
-    <include file="$(find description)/launch/object.launch" if="$(arg spawn_object)">
-        <arg name="object_name" value="$(arg object_name)"/>
-    </include>
 
 </launch>
