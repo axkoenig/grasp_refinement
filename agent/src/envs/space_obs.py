@@ -9,10 +9,7 @@ class ObservationSpace(Space):
         super().__init__()
 
         self.num_fingers = 3
-        self.num_motors = 4
         self.num_sensors = 9
-        self.num_tot_sensors = self.num_fingers * self.num_sensors
-        self.vars_per_finger = 4 + 2 * self.num_motors
         self.prox_angle_max = 3
         self.preshape_angle_max = np.pi / 2
 
