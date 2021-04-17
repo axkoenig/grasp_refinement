@@ -30,15 +30,18 @@ class TensorboardCallback(BaseCallback):
         self.cum_joint_diff = 0
         self.cum_delta_task = 0
 
+    def get_env_attr(self, name):
+        return self.training_env.get_attr(name)[0]
+
     def _on_step(self) -> bool:
-        self.cur_num_regrasps = self.training_env.get_attr("num_regrasps")[0]
-        self.cur_num_contacts = self.training_env.get_attr("num_contacts")[0]
-        self.cur_dist_tcp_obj = self.training_env.get_attr("dist_tcp_obj")[0]
-        self.cur_epsilon_force = self.training_env.get_attr("epsilon_force")[0]
-        self.cur_epsilon_torque = self.training_env.get_attr("epsilon_torque")[0]
-        self.cur_delta_task = self.training_env.get_attr("delta_task")[0]
-        self.cur_obj_shift = self.training_env.get_attr("obj_shift")[0]
-        self.cur_joint_diff = self.training_env.get_attr("prox_diff")[0]
+        self.cur_num_regrasps = self.get_env_attr("num_regrasps")
+        self.cur_num_contacts = self.get_env_attr("num_contacts")
+        self.cur_dist_tcp_obj = self.get_env_attr("dist_tcp_obj")
+        self.cur_epsilon_force = self.get_env_attr("epsilon_force")
+        self.cur_epsilon_torque = self.get_env_attr("epsilon_torque")
+        self.cur_delta_task = self.get_env_attr("delta_task")
+        self.cur_obj_shift = self.get_env_attr("obj_shift")
+        self.cur_joint_diff = self.get_env_attr("prox_diff")
 
         self.logger.record("step/cur_num_regrasps", self.cur_num_regrasps)
         self.logger.record("step/cur_num_contacts", self.cur_num_contacts)
@@ -56,4 +59,15 @@ class TensorboardCallback(BaseCallback):
         self.cum_obj_shift += self.cur_obj_shift
         self.cum_joint_diff += self.cur_joint_diff
         self.cum_delta_task += self.cur_delta_task
+
+        if self.get_env_attr("done"):
+            self.logger.record("drop_test/delta_cur_lifting", self.get_env_attr("delta_cur_lifting"))
+            self.logger.record("drop_test/delta_cur_holding", self.get_env_attr("delta_cur_holding"))
+            self.logger.record("drop_test/eps_force_lifting", self.get_env_attr("eps_force_lifting"))
+            self.logger.record("drop_test/eps_force_holding", self.get_env_attr("eps_force_holding"))
+            self.logger.record("drop_test/eps_torque_lifting", self.get_env_attr("eps_torque_lifting"))
+            self.logger.record("drop_test/eps_torque_holding", self.get_env_attr("eps_torque_holding"))
+            self.logger.record("drop_test/sustained_lifting", self.get_env_attr("sustained_lifting"))
+            self.logger.record("drop_test/sustained_holding", self.get_env_attr("sustained_holding"))
+
         return True
