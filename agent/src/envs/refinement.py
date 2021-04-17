@@ -14,6 +14,7 @@ from .space_act import ActionSpace
 from .space_obs import ObservationSpace
 from .gazebo_interface import GazeboInterface
 
+
 class GazeboEnv(gym.Env):
     def __init__(self, exec_secs, max_ep_len, joint_lim, obj_shift_tol, reward_weight, pos_error):
 
@@ -22,9 +23,15 @@ class GazeboEnv(gym.Env):
         self.joint_lim = joint_lim
         self.obj_shift_tol = obj_shift_tol
         self.reward_weight = reward_weight
-        self.x_error = pos_error[0]
-        self.y_error = pos_error[1]
-        self.z_error = pos_error[2]
+        self.pos_error = pos_error
+
+        self.num_contacts = 0
+        self.epsilon_force = 0
+        self.epsilon_torque = 0
+        self.delta_task = 0
+        self.delta_cur = 0
+        self.num_regrasps = 0
+        self.cur_time_step = 0
 
         rospy.init_node("agent", anonymous=True)
 
@@ -52,14 +59,6 @@ class GazeboEnv(gym.Env):
         self.reward_pub = rospy.Publisher("agent/reward", Float64, queue_size=5)
         self.hand_state_sub = rospy.Subscriber("reflex_interface/hand_state", HandStateStamped, self.hand_state_callback, queue_size=5)
 
-        self.num_contacts = 0
-        self.epsilon_force = 0
-        self.epsilon_torque = 0
-        self.delta_task = 0
-        self.num_regrasps = 0
-        self.last_quality = 0
-        self.cur_time_step = 0
-
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)
         return [seed]
@@ -69,6 +68,7 @@ class GazeboEnv(gym.Env):
         self.epsilon_force = msg.epsilon_force
         self.epsilon_torque = msg.epsilon_torque
         self.delta_task = msg.delta_task
+        self.delta_cur = msg.delta_cur
 
         self.obs.set_cur_val_by_name("preshape_angle", msg.preshape_angle)
 
@@ -110,19 +110,18 @@ class GazeboEnv(gym.Env):
         return reward / time_steps
 
     def get_reward(self):
-        return self.epsilon_force + 10 * self.epsilon_torque + 1 / 100 * self.delta_task
+        return self.epsilon_force + 10 * self.epsilon_torque + 1 / 10 * self.delta_task
 
     def get_f_incr(self, action):
         return deg2rad(2) if action >= 0.5 else 0
 
     def step(self, action):
         self.cur_time_step += 1
-
         rospy.loginfo(f"Action Regrasp \t {action[0]}")
         rospy.loginfo(f"Action Wrist \t {action[1]}, {action[2]}, {action[3]}, {action[4]}")
         rospy.loginfo(f"Action Finger \t {action[5]}, {action[6]}, {action[7]}")
 
-        if action[0] >= 0:
+        if action[0] >= 0.5:
             rospy.loginfo(">>REGRASPING<<")
             wrist_p_incr = [action[1], action[2], action[3]]
             wrist_q_incr = tf.transformations.quaternion_from_euler(0, action[4], 0)
@@ -130,7 +129,21 @@ class GazeboEnv(gym.Env):
             self.num_regrasps += 1
         else:
             rospy.loginfo(">>STAYING<<")
-            self.gi.pos_incr(get_f_incr(action[5]), get_f_incr(action[6]), get_f_incr(action[7]), 0, False, False, 0, 0)
+            self.gi.pos_incr(self.get_f_incr(action[5]), self.get_f_incr(action[6]), self.get_f_incr(action[7]), 0, False, False, 0, 0)
+
+        # reward is relative grasp improvement w.r.t. starting config
+        reward = self.collect_reward(self.exec_secs) - self.start_reward
+        rospy.loginfo(f"== RELATIVE REWARD \t {reward}")
+        self.reward_pub.publish(Float64(reward))
+
+        logs = {}
+        self.done = self.check_if_done()
+        if self.done:
+            self.drop_test()
+
+        return self.obs.get_cur_vals(), reward, self.done, logs
+
+    def check_if_done(self):
 
         #### STUFF ABOUT PROX ANGLES
         prox_angles = [
@@ -144,45 +157,34 @@ class GazeboEnv(gym.Env):
         rel_prox_diff_change = self.prox_diff - self.start_prox_diff
         #### END STUFF ABOUT PROX ANGLES
 
-        # reward is relative grasp improvement w.r.t. starting config
-        reward = self.collect_reward(self.exec_secs) - self.start_reward
-        rospy.loginfo(f"==> reward is {reward}")
-
-        reward_msg = Float64(reward)
-        self.reward_pub.publish(reward_msg)
-
         # get object shift and distance to object
         t_obj, _ = get_tq_from_homo_matrix(self.gi.get_object_pose())
         self.obj_shift = np.linalg.norm(t_obj - self.t_obj_init)
         self.dist_tcp_obj = self.gi.get_dist_tcp_obj()
 
-        done = False
-        logs = {}
-
         # check if should end episode
         if self.obj_shift > self.obj_shift_tol:
-            done = True
             rospy.loginfo(f"Object shift is above {self.obj_shift_tol} m. Setting done = True.")
+            return True
         elif not all(prox_angle < self.joint_lim for prox_angle in prox_angles):
-            done = True
             rospy.loginfo(f"One angle is above {self.joint_lim} rad. Setting done = True.")
+            return True
         elif self.cur_time_step == self.max_ep_len:
-            done = True
             rospy.loginfo(f"Episode lasted {self.cur_time_step} time steps. Setting done = True.")
+            return True
 
-        return self.obs.get_cur_vals(), reward, done, logs
-
-    def reset(self):
+    def get_wrist_start_pose(self):
         # generate random offset from initial wrist pose
-        x_offset = np.random.uniform(-self.x_error, self.x_error)
-        y_offset = np.random.uniform(-self.y_error, self.y_error)
-        z_offset = np.random.uniform(-self.z_error, self.z_error)
+        x_offset = np.random.uniform(-self.pos_error[0], self.pos_error[0])
+        y_offset = np.random.uniform(-self.pos_error[1], self.pos_error[1])
+        z_offset = np.random.uniform(-self.pos_error[2], self.pos_error[2])
         rospy.loginfo(f"Random offset for init wrist pose is [x: {x_offset}, y: {y_offset}, z: {z_offset}].")
         mat_offset = tf.transformations.translation_matrix([x_offset, y_offset, z_offset])
-        wrist_init_pose_err = np.dot(self.wrist_init_pose, mat_offset)
+        return np.dot(self.wrist_init_pose, mat_offset)
 
+    def reset(self):
         rospy.loginfo("Resetting world.")
-        self.gi.reset_world(wrist_init_pose_err, self.obj_init_pose)
+        self.gi.reset_world(self.get_wrist_start_pose(), self.obj_init_pose)
         self.start_reward = self.collect_reward(self.exec_secs)
 
         prox_angles = [
@@ -202,5 +204,57 @@ class GazeboEnv(gym.Env):
         self.cur_time_step = 0
         return obs
 
-    def close(self):
-        rospy.signal_shutdown("Gym is now closing.")
+    def drop_test(self, lift_vel=0.1, lift_dist=0.15, z_incr=0.0001, secs_to_hold=5):
+        counter = 0
+        r = rospy.Rate(lift_vel / z_incr)
+
+        # vars to evaluate stability during lifting and when lifted
+        self.delta_cur_lifting = 0
+        self.delta_cur_holding = 0
+        self.eps_force_lifting = 0
+        self.eps_force_holding = 0
+        self.eps_torque_lifting = 0
+        self.eps_torque_holding = 0
+        self.sustained_lifting = False
+        self.sustained_holding = False
+
+        self.gi.sim_unpause()
+        while counter * z_incr <= lift_dist:
+            lift_mat = tf.transformations.translation_matrix([0, 0, z_incr])
+            lift_mat = np.dot(lift_mat, self.gi.last_wrist_pose)
+            self.gi.cmd_wrist_abs(lift_mat)
+            r.sleep()
+            counter += 1
+            self.delta_cur_lifting += self.delta_cur
+            self.eps_force_lifting += self.epsilon_force
+            self.eps_torque_lifting += self.epsilon_torque
+
+        # average metrics over lifting period
+        self.delta_cur_lifting /= counter
+        self.eps_force_lifting /= counter
+        self.eps_torque_lifting /= counter
+        self.sustained_lifting = self.gi.object_lifted()
+
+        if not self.sustained_lifting:
+            rospy.loginfo("Object did not sustain lifting.")
+            return
+
+        # keep object in hand and record avg stability
+        start_time = rospy.Time.now()
+        counter = 0
+        r = rospy.Rate(100)
+        while rospy.Time.now() - start_time <= rospy.Duration(secs_to_hold):
+            self.delta_cur_holding += self.delta_cur
+            self.eps_force_holding += self.epsilon_force
+            self.eps_torque_holding += self.epsilon_torque
+            counter += 1
+            r.sleep()
+
+        # average metrics over secs_to_hold duration
+        self.delta_cur_lifting /= counter
+        self.eps_force_lifting /= counter
+        self.eps_torque_lifting /= counter
+
+        self.sustained_holding = self.gi.object_lifted()
+
+        self.gi.sim_pause()
