@@ -6,7 +6,7 @@ import geometry_msgs.msg
 from std_srvs.srv import Empty, Trigger, TriggerRequest
 from reflex_interface.srv import GraspPrimitive
 from gazebo_msgs.srv import GetModelState, GetLinkState, SetModelState
-from gazebo_msgs.msg import ModelState
+from gazebo_msgs.msg import ModelState, ContactsState
 from reflex_interface.srv import PosIncrement
 
 from .helpers import get_tq_from_homo_matrix, get_homo_matrix_from_msg
@@ -137,22 +137,20 @@ class GazeboInterface:
         self.ts_wrist.transform.rotation.w = q[3]
         self.br.sendTransform(self.ts_wrist)
 
-    def cmd_wrist_z_abs(self, origin_pose, origin_offset):
-        mat_offset = tf.transformations.translation_matrix([0, 0, origin_offset])
-        mat_shell = np.dot(origin_pose, mat_offset)
+    def cmd_wrist_abs(self, mat_shell, wait_until_reached_pose=False):
+        self.last_wrist_pose = mat_shell
         self.send_transform(mat_shell)
+        if wait_until_reached_pose:
+            self.wait_until_reached_pose(mat_shell)
 
-    def cmd_wrist_pos_abs(self, origin_pose, origin_offset):
-        mat_offset = tf.transformations.translation_matrix(origin_offset)
-        mat_shell = np.dot(origin_pose, mat_offset)
-        self.send_transform(mat_shell)
-
-    def cmd_wrist_pose_incr(self, p_incr, q_incr):
+    def cmd_wrist_pose_incr(self, p_incr, q_incr, wait_until_reached_pose=False):
         mat_t_incr = tf.transformations.translation_matrix(p_incr)
         mat_q_incr = tf.transformations.quaternion_matrix(q_incr)
         mat_homo = np.dot(mat_t_incr, mat_q_incr)
         self.last_wrist_pose = np.dot(self.last_wrist_pose, mat_homo)
         self.send_transform(self.last_wrist_pose)
+        if wait_until_reached_pose:
+            self.wait_until_reached_pose(self.last_wrist_pose)
 
     def wait_until_reached_pose(self, pose, t_tol=0.01, q_tol=0.02):
         r = rospy.Rate(5)
@@ -168,6 +166,9 @@ class GazeboInterface:
                 return
             r.sleep()
 
+    def wait_until_grasp_stabilizes(self):
+        rospy.sleep(0.2)
+
     def reset_world(self, mat_shell, mat_obj):
 
         self.sim_unpause()
@@ -177,18 +178,14 @@ class GazeboInterface:
         large_mat = np.dot(mat_obj, large_disp)
         self.set_model_pose(large_mat, self.object_name)
 
-        # move wrist to start position and open fingers
-        self.last_wrist_pose = mat_shell
-        self.send_transform(mat_shell)
-        self.wait_until_reached_pose(mat_shell)
+        # open fingers and move wrist to start position 
         self.open_hand(True, self.srv_tolerance, self.srv_time_out)
+        self.cmd_wrist_abs(mat_shell, True)
 
         # reset cylinder and close
         self.set_model_pose(mat_obj, self.object_name)
         self.close_until_contact_and_tighten()
-
-        # wait for grasp to stabilize
-        rospy.sleep(0.2)
+        self.wait_until_grasp_stabilizes()
 
         self.sim_pause()
 
@@ -209,8 +206,15 @@ class GazeboInterface:
         # apply relative wrist increment
         self.cmd_wrist_pose_incr(wrist_p_incr, wrist_q_incr)
         self.close_until_contact_and_tighten()
-
-        # wait for grasp to stabilize
-        rospy.sleep(0.2)
+        self.wait_until_grasp_stabilizes()
 
         self.sim_pause()
+
+    def object_lifted(self):
+        msg = rospy.wait_for_message("/gazebo/object_sensor_bumper", ContactsState)
+        collision_name = "ground_plane::link::collision"
+
+        for i in range(len(msg.states)):
+            if msg.states[i].collision1_name == collision_name or msg.states[i].collision2_name == collision_name:
+                return False
+        return True
