@@ -24,7 +24,7 @@ def main(args):
         from envs.callbacks import TensorboardCallback
 
         env = GazeboEnv(
-            args.exec_secs, args.max_ep_len, args.joint_lim, args.obj_shift_tol, args.reward_weight, [args.x_error, args.y_error, args.z_error]
+            args.exec_secs, args.max_ep_len, args.joint_lim, args.obj_shift_tol, args.reward_weight, [args.x_error, args.y_error, args.z_error], args.framework
         )
     else:
         raise ValueError("Invalid environment name.")
@@ -90,6 +90,7 @@ if __name__ == "__main__":
     parser.add_argument("--x_error", type=float, default=0, help="Positional error along x direction.")
     parser.add_argument("--y_error", type=float, default=0, help="Positional error along y direction.")
     parser.add_argument("--z_error", type=float, default=0, help="Positional error along z direction.")
+    parser.add_argument("--framework", type=int, default=2, help="Which reward framework to train with (1 or 2).")
 
     args = parser.parse_args()
 

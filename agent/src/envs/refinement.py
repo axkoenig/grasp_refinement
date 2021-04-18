@@ -16,7 +16,7 @@ from .gazebo_interface import GazeboInterface
 
 
 class GazeboEnv(gym.Env):
-    def __init__(self, exec_secs, max_ep_len, joint_lim, obj_shift_tol, reward_weight, pos_error):
+    def __init__(self, exec_secs, max_ep_len, joint_lim, obj_shift_tol, reward_weight, pos_error, framework):
 
         self.exec_secs = exec_secs
         self.max_ep_len = max_ep_len
@@ -24,6 +24,7 @@ class GazeboEnv(gym.Env):
         self.obj_shift_tol = obj_shift_tol
         self.reward_weight = reward_weight
         self.pos_error = pos_error
+        self.framework = framework 
 
         self.num_contacts = 0
         self.epsilon_force = 0
@@ -38,7 +39,7 @@ class GazeboEnv(gym.Env):
         self.gi = GazeboInterface()
 
         self.wrist_init_pose = get_homo_matrix_from_tq(
-            [-0.020000008416459117, 0.027719972837563544, 0.03613883173559584],
+            [-0.020000008416459117, 0.017719972837563544, 0.03613883173559584],
             [-0.7075026182105896, 0, 0, 0.7067107101727882],
         )
         self.t_obj_init = [1.2079885446707724e-05, 0.2000036106758952, 0.02999998861373354]
@@ -132,14 +133,20 @@ class GazeboEnv(gym.Env):
             self.gi.pos_incr(self.get_f_incr(action[5]), self.get_f_incr(action[6]), self.get_f_incr(action[7]), 0, False, False, 0, 0)
 
         # reward is relative grasp improvement w.r.t. starting config
-        reward = self.collect_reward(self.exec_secs) - self.start_reward
-        rospy.loginfo(f"== RELATIVE REWARD \t {reward}")
-        self.reward_pub.publish(Float64(reward))
-
+        if self.framework == 1:
+            reward = self.collect_reward(self.exec_secs) - self.start_reward
+            
         logs = {}
         self.done = self.check_if_done()
         if self.done:
             self.drop_test()
+        
+        # reward is binary grasp success
+        if self.framework == 2:
+            reward = int(self.sustained_holding) if self.done else 0
+            
+        rospy.loginfo(f"REWARD \t {reward}")
+        self.reward_pub.publish(Float64(reward))
 
         return self.obs.get_cur_vals(), reward, self.done, logs
 
@@ -204,7 +211,7 @@ class GazeboEnv(gym.Env):
         self.cur_time_step = 0
         return obs
 
-    def drop_test(self, lift_vel=0.1, lift_dist=0.15, z_incr=0.0001, secs_to_hold=5):
+    def drop_test(self, lift_vel=0.1, lift_dist=0.15, z_incr=0.0001, secs_to_hold=3):
         counter = 0
         r = rospy.Rate(lift_vel / z_incr)
 
