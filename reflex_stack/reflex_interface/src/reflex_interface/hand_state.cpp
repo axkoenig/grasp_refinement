@@ -85,6 +85,7 @@ void HandState::sim_state_callback(const sensor_listener::ContactFrames &msg)
             vars.sensor_ids.push_back(msg.contact_frames[i].sensor_id);
             vars.contact_force_magnitudes.push_back(msg.contact_frames[i].contact_force_magnitude);
             vars.contact_torque_magnitudes.push_back(msg.contact_frames[i].contact_torque_magnitude);
+            vars.sum_contact_forces += msg.contact_frames[i].contact_force_magnitude;
             if (!msg.contact_frames[i].palm_contact)
             {
                 int finger_id = msg.contact_frames[i].finger_id;
@@ -240,6 +241,7 @@ reflex_interface::HandStateStamped HandState::getHandStateMsg()
     hss.delta_cur = vars.delta_cur;
     hss.delta_task = vars.delta_task;
     hss.epsilon_torque = vars.epsilon_torque;
+    hss.sum_contact_forces = vars.sum_contact_forces;
 
     for (int i = 0; i < num_fingers; i++)
     {

@@ -2,7 +2,7 @@
 
 void HandStateVariables::clear_all()
 {
-    num_contacts = epsilon = epsilon_force = epsilon_torque = delta_cur = delta_task = 0;
+    num_contacts = epsilon = epsilon_force = epsilon_torque = delta_cur = delta_task = sum_contact_forces = 0;
     num_sensors_in_contact_per_finger = {0, 0, 0};
     fingers_in_contact = {0, 0, 0};
     contact_frames.clear();

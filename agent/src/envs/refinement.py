@@ -6,7 +6,6 @@ import tf
 from std_msgs.msg import Float64, Int32
 from reflex_interface.msg import HandStateStamped
 from reflex_msgs.msg import PoseCommand
-from stable_baselines3.common.callbacks import BaseCallback
 
 from .helpers import rad2deg, deg2rad, get_homo_matrix_from_tq, get_tq_from_homo_matrix
 from .space import Space
@@ -70,6 +69,7 @@ class GazeboEnv(gym.Env):
         self.epsilon_torque = msg.epsilon_torque
         self.delta_task = msg.delta_task
         self.delta_cur = msg.delta_cur
+        self.sum_contact_forces = msg.sum_contact_forces
 
         self.obs.set_cur_val_by_name("preshape_angle", msg.preshape_angle)
 
@@ -179,6 +179,7 @@ class GazeboEnv(gym.Env):
         elif self.cur_time_step == self.max_ep_len:
             rospy.loginfo(f"Episode lasted {self.cur_time_step} time steps. Setting done = True.")
             return True
+        return False 
 
     def get_wrist_start_pose(self):
         # generate random offset from initial wrist pose
@@ -258,9 +259,9 @@ class GazeboEnv(gym.Env):
             r.sleep()
 
         # average metrics over secs_to_hold duration
-        self.delta_cur_lifting /= counter
-        self.eps_force_lifting /= counter
-        self.eps_torque_lifting /= counter
+        self.delta_cur_holding /= counter
+        self.eps_force_holding /= counter
+        self.eps_torque_holding /= counter
 
         self.sustained_holding = self.gi.object_lifted()
 
