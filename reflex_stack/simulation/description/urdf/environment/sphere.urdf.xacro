@@ -3,10 +3,11 @@
 
     <!-- arguments -->
     <xacro:arg name="sphere_mass" default="0.2"/>
-    <xacro:arg name="sphere_inertia" default="0.0006"/>
     <xacro:arg name="sphere_radius" default="0.08"/>
 
     <xacro:property name="link_name" value="sphere_link"/>
+
+    <xacro:include filename="$(find description)/urdf/xacro_macros/inertia_tensors.xacro"/>
 
     <link name="${link_name}">
         <visual>
@@ -24,7 +25,7 @@
         <inertial>
             <origin xyz="0 0 0" rpy="0 0 0"/>
             <mass value="$(arg sphere_mass)"/>
-            <inertia ixx="$(arg sphere_inertia)" ixy="0" ixz="0" iyy="$(arg sphere_inertia)" iyz="0" izz="$(arg sphere_inertia)" />
+            <xacro:sphere_inertia m="$(arg sphere_mass)" r="$(arg sphere_radius)" />
         </inertial>
     </link>
 

@@ -3,12 +3,12 @@
 
     <!-- arguments -->
     <xacro:arg name="box_mass" default="0.2"/>
-    <xacro:arg name="box_inertia" default="0.0006"/>
     <xacro:arg name="box_x" default="0.08"/>
     <xacro:arg name="box_y" default="0.08"/>
     <xacro:arg name="box_z" default="0.08"/>
 
     <xacro:property name="link_name" value="box_link"/>
+    <xacro:include filename="$(find description)/urdf/xacro_macros/inertia_tensors.xacro"/>
 
     <link name="${link_name}">
         <visual>
@@ -26,7 +26,7 @@
         <inertial>
             <origin xyz="0 0 0" rpy="0 0 0"/>
             <mass value="$(arg box_mass)"/>
-            <inertia ixx="$(arg box_inertia)" ixy="0" ixz="0" iyy="$(arg box_inertia)" iyz="0" izz="$(arg box_inertia)" />
+            <xacro:cuboid_inertia m="$(arg box_mass)" x="$(arg box_x)" y="$(arg box_y)" z="$(arg box_z)" />
         </inertial>
     </link>
 
