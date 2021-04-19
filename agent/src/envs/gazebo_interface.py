@@ -152,7 +152,7 @@ class GazeboInterface:
         if wait_until_reached_pose:
             self.wait_until_reached_pose(self.last_wrist_pose)
 
-    def wait_until_reached_pose(self, pose, t_tol=0.01, q_tol=0.02):
+    def wait_until_reached_pose(self, pose, t_tol=0.005, q_tol=0.02):
         r = rospy.Rate(5)
         t, q = get_tq_from_homo_matrix(pose)
         while not rospy.is_shutdown():
