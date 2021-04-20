@@ -24,7 +24,13 @@ def main(args):
         from envs.callbacks import TensorboardCallback
 
         env = GazeboEnv(
-            args.exec_secs, args.max_ep_len, args.joint_lim, args.obj_shift_tol, args.reward_weight, [args.x_error, args.y_error, args.z_error], args.framework
+            args.exec_secs,
+            args.max_ep_len,
+            args.joint_lim,
+            args.obj_shift_tol,
+            args.reward_weight,
+            [args.x_error, args.y_error, args.z_error],
+            args.framework,
         )
     else:
         raise ValueError("Invalid environment name.")
@@ -86,10 +92,10 @@ if __name__ == "__main__":
     parser.add_argument("--reward_weight", type=float, default=1, help="Weight in reward function.")
     parser.add_argument("--log_name", type=str, default="test", help="Name for log.")
     parser.add_argument("--output_dir", type=str, default="./", help="Path of output directory.")
-    parser.add_argument("--chkpt_freq", type=int, default=300, help="Save model every n training steps.")    
-    parser.add_argument('--x_error', nargs='+', default=[0,0], help='Positional error along x direction')
-    parser.add_argument('--y_error', nargs='+', default=[0,0], help='Positional error along y direction')
-    parser.add_argument('--z_error', nargs='+', default=[0,0], help='Positional error along z direction')
+    parser.add_argument("--chkpt_freq", type=int, default=300, help="Save model every n training steps.")
+    parser.add_argument("--x_error", nargs="+", default=[0, 0], type=float, help="Positional error along x direction")
+    parser.add_argument("--y_error", nargs="+", default=[0, 0], type=float, help="Positional error along y direction")
+    parser.add_argument("--z_error", nargs="+", default=[0, 0], type=float, help="Positional error along z direction")
     parser.add_argument("--framework", type=int, default=2, help="Which reward framework to train with (1 or 2).")
 
     args = parser.parse_args()
