@@ -120,6 +120,9 @@ class GazeboInterface:
 
     def set_model_pose(self, pose, model_name, reference_frame="world"):
         t, q = get_tq_from_homo_matrix(pose)
+        self.set_model_pose_tq(t,q,model_name,reference_frame)
+
+    def set_model_pose_tq(self, t, q, model_name, reference_frame="world"):
         state = ModelState()
         state.model_name = model_name
         state.reference_frame = reference_frame
@@ -197,6 +200,7 @@ class GazeboInterface:
 
         # spawn new object and close
         self.spawn_object()
+        self.set_model_pose_tq(self.obj_p, self.obj_q, self.object_name)
         self.close_until_contact_and_tighten()
         self.wait_until_grasp_stabilizes()
 
