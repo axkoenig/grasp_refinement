@@ -9,6 +9,9 @@
     <arg name="launch_finger_controllers" default="true" />
     <arg name="base_link_name" default="shell" />
 
+    <!-- grasp and object poses -->
+    <rosparam file="$(find description)/config/grasp_poses.yaml"/>
+
     <!-- tell reflex_interface that we're running in simulation -->
     <arg name="use_sim_data_hand" default="true" />
     <param name="use_sim_data_hand" value="$(arg use_sim_data_hand)" />
@@ -26,7 +29,7 @@
 
     <!-- currently supports "sphere", "box", "cylinder" -->
     <arg name="spawn_object" default="true" />
-    <arg name="object_name" default="cylinder" />
+    <arg name="object_name" default="box" />
 
     <!-- load robot_name to parameter server -->
     <arg name="robot_name" default="reflex" />
