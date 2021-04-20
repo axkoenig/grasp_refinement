@@ -22,6 +22,9 @@ class Space:
         self.vars.extend([Variable(name, init_value, min_val, max_val) for i in range(num_instances)])
         self.dim = len(self.vars)
 
+    def print_num_dimensions(self):
+        print("Your " + self.__class__.__name__ + " has " + str(self.dim) + " dimensions.")
+
     def get_min_vals(self):
         min_vals = np.empty((0,))
         for i in range(self.dim):

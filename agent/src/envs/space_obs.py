@@ -27,3 +27,5 @@ class ObservationSpace(Space):
                 self.add_variable(1, "tactile_contact" + id_str, 0, 0, 1)
 
         self.add_variable(1, "preshape_angle", 0, 0, self.preshape_angle_max)
+
+        self.print_num_dimensions()
