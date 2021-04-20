@@ -16,7 +16,7 @@ from .helpers import get_tq_from_homo_matrix, get_homo_matrix_from_msg, get_homo
 
 
 class GazeboInterface:
-    def __init__(self, verbose=False):
+    def __init__(self, verbose=True):
         self.verbose = verbose
 
         self.unpause_name = "/gazebo/unpause_physics"
@@ -172,9 +172,9 @@ class GazeboInterface:
             t_cur, q_cur = get_tq_from_homo_matrix(mat_shell)
             if np.linalg.norm(t_cur - t) > t_tol and self.verbose:
                 rospy.loginfo(f"Wrist position not within tolerance of {t_tol} yet.")
-            elif np.linalg.norm(q_cur - q) > t_tol and self.verbose:
+            elif np.linalg.norm(q_cur - q) > q_tol and self.verbose:
                 rospy.loginfo(f"Wrist orientation not within tolerance of {q_tol} yet.")
-            else:
+            elif np.linalg.norm(t_cur - t) < t_tol and np.linalg.norm(q_cur - q) < q_tol:
                 return
             r.sleep()
 
@@ -187,6 +187,14 @@ class GazeboInterface:
         self.delete_model(req)
         self.service_call_with_retries(self.delete_model, req, self.delete_model_name)
 
+    def get_wrist_waypoint_pose(self, wrist_p, wrist_q, obj_p, offset_dist=0.05):
+        # returns a wrist pose that is 5cm offset from wrist_p in the normal direction from the object
+        offset = np.array(wrist_p) - np.array(obj_p)
+        offset = offset_dist * (offset / np.linalg.norm(offset))
+        wrist_p += offset
+
+        return get_homo_matrix_from_tq(wrist_p, wrist_q)
+
     def reset_world(self, pos_error):
 
         self.delete_object()
@@ -195,12 +203,16 @@ class GazeboInterface:
         # open fingers and move wrist to start position
         self.open_hand(True, self.srv_tolerance, self.srv_time_out)
         self.select_random_object_wrist_pair()
+        wrist_waypoint_pose = self.get_wrist_waypoint_pose(self.wrist_p, self.wrist_q, self.obj_p)
+        self.cmd_wrist_abs(wrist_waypoint_pose, True)
+
+        # spawn object and move to init pose
+        self.spawn_object()
+        self.set_model_pose_tq(self.obj_p, self.obj_q, self.object_name)
         wrist_init_pose = self.get_wrist_init_pose(self.wrist_p, self.wrist_q, pos_error)
         self.cmd_wrist_abs(wrist_init_pose, True)
 
-        # spawn new object and close
-        self.spawn_object()
-        self.set_model_pose_tq(self.obj_p, self.obj_q, self.object_name)
+        # close fingers
         self.close_until_contact_and_tighten()
         self.wait_until_grasp_stabilizes()
 
@@ -249,12 +261,14 @@ class GazeboInterface:
     def select_random_object_wrist_pair(self):
         # select new object randomly
         self.desired_obj_name = random.choice(self.object_names)
+        self.pose_list = rospy.get_param(f"{self.desired_obj_name}/pose_list")
+        self.desired_pose_name = random.choice(self.pose_list)
 
         # get object and grasp pose from yaml file
-        self.obj_p = rospy.get_param(f"{self.desired_obj_name}/object_p")
-        self.obj_q = rospy.get_param(f"{self.desired_obj_name}/object_q")
-        self.wrist_p = rospy.get_param(f"{self.desired_obj_name}/wrist_p")
-        self.wrist_q = rospy.get_param(f"{self.desired_obj_name}/wrist_q")
+        self.obj_p = rospy.get_param(f"{self.desired_obj_name}/pose_{self.desired_pose_name}/object_p")
+        self.obj_q = rospy.get_param(f"{self.desired_obj_name}/pose_{self.desired_pose_name}/object_q")
+        self.wrist_p = rospy.get_param(f"{self.desired_obj_name}/pose_{self.desired_pose_name}/wrist_p")
+        self.wrist_q = rospy.get_param(f"{self.desired_obj_name}/pose_{self.desired_pose_name}/wrist_q")
 
     def spawn_object(self):
         # use service to spawn urdf model
