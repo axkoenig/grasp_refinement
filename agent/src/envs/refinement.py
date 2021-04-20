@@ -36,18 +36,6 @@ class GazeboEnv(gym.Env):
         rospy.init_node("agent", anonymous=True)
 
         self.gi = GazeboInterface()
-
-        self.wrist_init_pose = get_homo_matrix_from_tq(
-            [-0.020000008416459117, 0.017719972837563544, 0.03613883173559584],
-            [-0.7075026182105896, 0, 0, 0.7067107101727882],
-        )
-        self.t_obj_init = [1.2079885446707724e-05, 0.2000036106758952, 0.02999998861373354]
-        self.obj_init_pose = get_homo_matrix_from_tq(
-            self.t_obj_init,
-            [-2.0374825955119477e-07, 3.561732066170289e-08, 0.0002924163549034363, 0.9999999572463154],
-        )
-
-        self.hand_cmd = PoseCommand()
         self.acts = ActionSpace()
         self.obs = ObservationSpace()
 
@@ -55,7 +43,6 @@ class GazeboEnv(gym.Env):
         self.observation_space = gym.spaces.Box(low=self.obs.get_min_vals(), high=self.obs.get_max_vals(), dtype=np.float32)
         self.reward_range = (-np.inf, np.inf)
 
-        self.hand_pub = rospy.Publisher("reflex_takktile/command_position", PoseCommand, queue_size=5)
         self.reward_pub = rospy.Publisher("agent/reward", Float64, queue_size=5)
         self.hand_state_sub = rospy.Subscriber("reflex_interface/hand_state", HandStateStamped, self.hand_state_callback, queue_size=5)
 
@@ -166,7 +153,7 @@ class GazeboEnv(gym.Env):
 
         # get object shift and distance to object
         t_obj, _ = get_tq_from_homo_matrix(self.gi.get_object_pose())
-        self.obj_shift = np.linalg.norm(t_obj - self.t_obj_init)
+        self.obj_shift = np.linalg.norm(t_obj - self.gi.obj_p)
         self.dist_tcp_obj = self.gi.get_dist_tcp_obj()
 
         # check if should end episode
@@ -181,18 +168,9 @@ class GazeboEnv(gym.Env):
             return True
         return False 
 
-    def get_wrist_start_pose(self):
-        # generate random offset from initial wrist pose
-        x_offset = np.random.uniform(-self.pos_error[0], self.pos_error[0])
-        y_offset = np.random.uniform(-self.pos_error[1], self.pos_error[1])
-        z_offset = np.random.uniform(-self.pos_error[2], self.pos_error[2])
-        rospy.loginfo(f"Random offset for init wrist pose is [x: {x_offset}, y: {y_offset}, z: {z_offset}].")
-        mat_offset = tf.transformations.translation_matrix([x_offset, y_offset, z_offset])
-        return np.dot(self.wrist_init_pose, mat_offset)
-
     def reset(self):
         rospy.loginfo("Resetting world.")
-        self.gi.reset_world(self.get_wrist_start_pose(), self.obj_init_pose)
+        self.gi.reset_world(self.pos_error)
         self.start_reward = self.collect_reward(self.exec_secs)
 
         prox_angles = [

@@ -1,15 +1,18 @@
+import random
+
 import numpy as np
 import rospy
 import tf2_ros
 import tf
 import geometry_msgs.msg
+from geometry_msgs.msg import Pose, Point, Quaternion
 from std_srvs.srv import Empty, Trigger, TriggerRequest
 from reflex_interface.srv import GraspPrimitive
-from gazebo_msgs.srv import GetModelState, GetLinkState, SetModelState
+from gazebo_msgs.srv import GetModelState, GetLinkState, SetModelState, DeleteModel, SpawnModel, DeleteModelRequest, SpawnModelRequest
 from gazebo_msgs.msg import ModelState, ContactsState
 from reflex_interface.srv import PosIncrement
 
-from .helpers import get_tq_from_homo_matrix, get_homo_matrix_from_msg
+from .helpers import get_tq_from_homo_matrix, get_homo_matrix_from_msg, get_homo_matrix_from_tq
 
 
 class GazeboInterface:
@@ -19,12 +22,18 @@ class GazeboInterface:
         self.unpause_name = "/gazebo/unpause_physics"
         self.pause_name = "/gazebo/pause_physics"
         self.set_model_state_name = "/gazebo/set_model_state"
+        self.delete_model_name = "/gazebo/delete_model"
+        self.spawn_model_name = "/gazebo/spawn_sdf_model"
+
         self.object_name = rospy.get_param("/object_name")
+        self.object_names = rospy.get_param("/object_names")
 
         # gazebo services
         self.unpause = rospy.ServiceProxy(self.unpause_name, Empty)
         self.pause = rospy.ServiceProxy(self.pause_name, Empty)
         self.set_model_state = rospy.ServiceProxy(self.set_model_state_name, SetModelState)
+        self.delete_model = rospy.ServiceProxy(self.delete_model_name, DeleteModel)
+        self.spawn_model = rospy.ServiceProxy(self.spawn_model_name, SpawnModel)
         self.num_srv_tries = 0
 
         # reflex services
@@ -169,21 +178,25 @@ class GazeboInterface:
     def wait_until_grasp_stabilizes(self):
         rospy.sleep(0.2)
 
-    def reset_world(self, mat_shell, mat_obj):
+    def delete_object(self):
+        req = DeleteModelRequest()
+        req.model_name = "object"
+        self.delete_model(req)
+        self.service_call_with_retries(self.delete_model, req, self.delete_model_name)
 
+    def reset_world(self, pos_error):
+
+        self.delete_object()
         self.sim_unpause()
 
-        # move object safe distance away s.t. hand can reset
-        large_disp = tf.transformations.translation_matrix([0, 1, 0])
-        large_mat = np.dot(mat_obj, large_disp)
-        self.set_model_pose(large_mat, self.object_name)
-
-        # open fingers and move wrist to start position 
+        # open fingers and move wrist to start position
         self.open_hand(True, self.srv_tolerance, self.srv_time_out)
-        self.cmd_wrist_abs(mat_shell, True)
+        self.select_random_object_wrist_pair()
+        wrist_init_pose = self.get_wrist_init_pose(self.wrist_p, self.wrist_q, pos_error)
+        self.cmd_wrist_abs(wrist_init_pose, True)
 
-        # reset cylinder and close
-        self.set_model_pose(mat_obj, self.object_name)
+        # spawn new object and close
+        self.spawn_object()
         self.close_until_contact_and_tighten()
         self.wait_until_grasp_stabilizes()
 
@@ -218,3 +231,36 @@ class GazeboInterface:
             if msg.states[i].collision1_name == collision_name or msg.states[i].collision2_name == collision_name:
                 return False
         return True
+
+    def get_wrist_init_pose(self, wrist_p, wrist_q, pos_error):
+        self.wrist_init_pose = get_homo_matrix_from_tq(wrist_p, wrist_q)
+        # generate random offset from initial wrist pose
+        x_offset = np.random.uniform(min(pos_error[0]), max(pos_error[0]))
+        y_offset = np.random.uniform(min(pos_error[1]), max(pos_error[1]))
+        z_offset = np.random.uniform(min(pos_error[2]), max(pos_error[2]))
+        rospy.loginfo(f"Random offset for init wrist pose is [x: {x_offset}, y: {y_offset}, z: {z_offset}].")
+        mat_offset = tf.transformations.translation_matrix([x_offset, y_offset, z_offset])
+        return np.dot(self.wrist_init_pose, mat_offset)
+
+    def select_random_object_wrist_pair(self):
+        # select new object randomly
+        self.desired_obj_name = random.choice(self.object_names)
+
+        # get object and grasp pose from yaml file
+        self.obj_p = rospy.get_param(f"{self.desired_obj_name}/object_p")
+        self.obj_q = rospy.get_param(f"{self.desired_obj_name}/object_q")
+        self.wrist_p = rospy.get_param(f"{self.desired_obj_name}/wrist_p")
+        self.wrist_q = rospy.get_param(f"{self.desired_obj_name}/wrist_q")
+
+    def spawn_object(self):
+        # use service to spawn urdf model
+        req = SpawnModelRequest()
+        req.model_name = "object"
+        req.model_xml = open(
+            f"/home/parallels/catkin_ws/src/grasp_refinement/reflex_stack/simulation/description/urdf/objects/{self.desired_obj_name}.urdf", "r"
+        ).read()
+        req.reference_frame = "world"
+        req.initial_pose = Pose(
+            Point(self.obj_p[0], self.obj_p[1], self.obj_p[1]), Quaternion(self.obj_q[0], self.obj_q[1], self.obj_q[2], self.obj_q[3])
+        )
+        self.service_call_with_retries(self.spawn_model, req, self.spawn_model_name)
