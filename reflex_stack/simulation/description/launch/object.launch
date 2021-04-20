@@ -29,7 +29,7 @@
     <arg name="box_z" default="0.10" />
 
     <!-- load object_name to parameter server s.t. we can query it's pose from within the controller node -->
-    <param name="object_name" value="$(arg object_name)" />
+    <param name="object_name" value="object" />
     <param name="object_mass" value="$(arg object_mass)" />
 
     <!-- sphere -->
@@ -45,5 +45,5 @@
         $(find xacro)/xacro '$(find description)/urdf/environment/box.urdf.xacro' box_x:=$(arg box_x) box_y:=$(arg box_y) box_z:=$(arg box_z) box_mass:=$(arg object_mass)" if="$(eval arg('object_name') == 'box')"/>
 
     <!-- spawn object -->
-    <node name="object_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param object_description -model $(arg object_name) -x $(arg origin_x) -y $(arg origin_y) -z $(arg origin_z)" />
+    <node name="object_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param object_description -model object -x $(arg origin_x) -y $(arg origin_y) -z $(arg origin_z)" />
 </launch>
