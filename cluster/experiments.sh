@@ -18,8 +18,8 @@ echo "Submitting ${NUM_EXPERIMENTS} experiments for each framework..."
 
 submit_job () {
     LOG_NAME=${NOW}_f${1}_id${i}
-    echo $LOG_NAME
-    sbatch --export=FRAMEWORK=${1},TIME_STEPS=${TIME_STEPS} --export=LOG_NAME=${LOG_NAME} CLUSTER_PATH/experiment.slurm
+    echo "Submitting job with log name $LOG_NAME"
+    sbatch --export=FRAMEWORK=${1},TIME_STEPS=${TIME_STEPS} --export=LOG_NAME=${LOG_NAME} ${CLUSTER_PATH}/experiment.slurm
 } 
 
 for i in $(seq 1 $NUM_EXPERIMENTS); 
