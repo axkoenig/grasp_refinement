@@ -25,6 +25,9 @@ case $1 in
     -l|--max_ep_len)
     MAX_EP_LEN=$2
     ;;
+    -n|--log_name)
+    LOG_NAME=$2
+    ;;
 esac
 shift
 done
@@ -37,11 +40,12 @@ echo "Z_ERROR: $Z_ERROR"
 echo "TIME_STEPS: $TIME_STEPS"
 echo "FRAMEWORK: $FRAMEWORK"
 echo "MAX_EP_LEN: $MAX_EP_LEN"
+echo "LOG_NAME: $LOG_NAME"
 
 . /opt/ros/noetic/setup.sh
 . ~/overlay/work/catkin_ws/devel/setup.sh
 cd ~/overlay/work/catkin_ws/src/grasp_refinement/agent/src
 
 echo "Entering training loop..."
-python3 main.py --framework=${FRAMEWORK} --log_name=f${FRAMEWORK}_t${TIME_STEPS}_id${EXPERIMENT_ID} --time_steps=${TIME_STEPS} --max_ep_len=${MAX_EP_LEN} --x_error -${X_ERROR} ${X_ERROR} --y_error -${Y_ERROR} ${Y_ERROR} --z_error -${Z_ERROR} ${Z_ERROR}             
+python3 main.py --framework=${FRAMEWORK} --log_name=${LOG_NAME} --time_steps=${TIME_STEPS} --max_ep_len=${MAX_EP_LEN} --x_error -${X_ERROR} ${X_ERROR} --y_error -${Y_ERROR} ${Y_ERROR} --z_error -${Z_ERROR} ${Z_ERROR}             
 echo "Done! Have a nice day."
