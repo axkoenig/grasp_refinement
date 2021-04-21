@@ -7,7 +7,7 @@
 #SBATCH -n=8                          
 #SBATCH --mem=16000       
 #SBATCH --time=00:04:00           
-#SBATCH --output=logs_slurm/job_%j.log 
+#SBATCH --output=$HOME/logs_slurm/job_%LOG_NAME.log 
 echo "================================="
 echo "Starting simulation in background"
 echo "================================="
