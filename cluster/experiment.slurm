@@ -13,19 +13,19 @@ echo "Starting simulation in background"
 echo "================================="
 CLUSTER_PATH=$HOME/overlay/work/catkin_ws/src/grasp_refinement/cluster
 IMG_PATH=$HOME
-screen -S simulation -d -m singularity exec -e --overlay $IMG_PATH/overlay.img --bind $SCRATCH/howe_lab_seas/Users/akoenig/output/:/output $IMG_PATH/gazebo_ros.img /bin/sh $CLUSTER_PATH/run_sim.sh
+screen -S simulation -d -m singularity exec -e --bind $SCRATCH/howe_lab_seas/Users/akoenig/output/:/output $IMG_PATH/gazebo_ros.img /bin/sh $CLUSTER_PATH/run_sim.sh
 echo "========================="
 echo "Starting training session"
 echo "========================="
-singularity exec -e --overlay $IMG_PATH/overlay.img --bind $SCRATCH/howe_lab_seas/Users/akoenig/output/:/output $IMG_PATH/gazebo_ros.img /bin/sh $CLUSTER_PATH/run_agent.sh  \
-    --experiment_id=%j          \
-    --x_error=0.04              \
-    --y_error=0.04              \
-    --z_error=0.04              \
-    --time_steps=$TIME_STEPS    \  # this var is set in experiments.sh
-    --max_ep_len=15             \
-    --framework=$FRAMEWORK      \  # this var is set in experiments.sh
-    --log_name=$LOG_NAME        \  # this var is set in experiments.sh
+EXEC_SCRIPT="$CLUSTER_PATH/run_agent.sh --x_error 0.04              \
+                                        --y_error 0.04              \
+                                        --z_error 0.04              \
+                                        --time_steps $TIME_STEPS    \
+                                        --max_ep_len 15             \
+                                        --framework $FRAMEWORK      \
+                                        --log_name $LOG_NAME        \
+                                        "
+singularity exec -e --bind $SCRATCH/howe_lab_seas/Users/akoenig/output/:/output $IMG_PATH/gazebo_ros.img /bin/sh -c "$EXEC_SCRIPT"
 echo "==================="
 echo "Killing simulation"
 echo "==================="

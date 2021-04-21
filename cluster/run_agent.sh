@@ -4,9 +4,6 @@
 while [[ "$#" -gt 0 ]]
 do
 case $1 in
-    -i|--experiment_id)
-    EXPERIMENT_ID=$2
-    ;;
     -x|--x_error)
     X_ERROR=$2
     ;;
@@ -33,7 +30,6 @@ shift
 done
 
 echo "Running agent with the following args:"
-echo "EXPERIMENT_ID: $EXPERIMENT_ID"
 echo "X_ERROR: $X_ERROR"
 echo "Y_ERROR: $Y_ERROR"
 echo "Z_ERROR: $Z_ERROR"
@@ -47,5 +43,5 @@ echo "LOG_NAME: $LOG_NAME"
 cd ~/overlay/work/catkin_ws/src/grasp_refinement/agent/src
 
 echo "Entering training loop..."
-python3 main.py --framework=${FRAMEWORK} --log_name=${LOG_NAME} --time_steps=${TIME_STEPS} --max_ep_len=${MAX_EP_LEN} --x_error -${X_ERROR} ${X_ERROR} --y_error -${Y_ERROR} ${Y_ERROR} --z_error -${Z_ERROR} ${Z_ERROR}             
+python3 main.py --framework=${FRAMEWORK} --output_dir=/output/agents --log_name=${LOG_NAME} --time_steps=${TIME_STEPS} --max_ep_len=${MAX_EP_LEN} --x_error -${X_ERROR} ${X_ERROR} --y_error -${Y_ERROR} ${Y_ERROR} --z_error -${Z_ERROR} ${Z_ERROR}             
 echo "Done! Have a nice day."
