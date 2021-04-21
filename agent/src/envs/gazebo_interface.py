@@ -195,6 +195,34 @@ class GazeboInterface:
         return get_homo_matrix_from_tq(wrist_p, wrist_q)
 
     def reset_world(self, pos_error):
+        self.desired_obj_name = "cylinder_small"
+        self.desired_pose_name = "1"
+        self.obj_p = rospy.get_param(f"{self.desired_obj_name}/pose_{self.desired_pose_name}/object_p")
+        self.obj_q = rospy.get_param(f"{self.desired_obj_name}/pose_{self.desired_pose_name}/object_q")
+        self.wrist_p = rospy.get_param(f"{self.desired_obj_name}/pose_{self.desired_pose_name}/wrist_p")
+        self.wrist_q = rospy.get_param(f"{self.desired_obj_name}/pose_{self.desired_pose_name}/wrist_q")
+
+        # move object out of the way
+        self.set_model_pose_tq([1,0,1], [0,0,0,1], self.object_name)
+        self.sim_unpause()
+        
+        # open fingers and move wrist to start position
+        self.open_hand(True, self.srv_tolerance, self.srv_time_out)
+        wrist_waypoint_pose = self.get_wrist_waypoint_pose(self.wrist_p, self.wrist_q, self.obj_p)
+        self.cmd_wrist_abs(wrist_waypoint_pose, True)
+
+        # put object back and move to init pose
+        self.set_model_pose_tq(self.obj_p, self.obj_q, self.object_name)
+        wrist_init_pose = self.get_wrist_init_pose(self.wrist_p, self.wrist_q, pos_error)
+        self.cmd_wrist_abs(wrist_init_pose, True)
+
+        # close fingers
+        self.close_until_contact_and_tighten()
+        self.wait_until_grasp_stabilizes()
+
+        self.sim_pause()
+
+    def reset_world_mult_obj(self, pos_error):
 
         # move object out of the way
         self.set_model_pose_tq([1,0,1], [0,0,0,1], self.object_name)
