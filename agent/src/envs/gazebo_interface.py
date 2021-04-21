@@ -120,7 +120,7 @@ class GazeboInterface:
 
     def set_model_pose(self, pose, model_name, reference_frame="world"):
         t, q = get_tq_from_homo_matrix(pose)
-        self.set_model_pose_tq(t,q,model_name,reference_frame)
+        self.set_model_pose_tq(t, q, model_name, reference_frame)
 
     def set_model_pose_tq(self, t, q, model_name, reference_frame="world"):
         state = ModelState()
@@ -184,7 +184,6 @@ class GazeboInterface:
     def delete_object(self):
         req = DeleteModelRequest()
         req.model_name = "object"
-        self.delete_model(req)
         self.service_call_with_retries(self.delete_model, req, self.delete_model_name)
 
     def get_wrist_waypoint_pose(self, wrist_p, wrist_q, obj_p, offset_dist=0.05):
@@ -197,18 +196,25 @@ class GazeboInterface:
 
     def reset_world(self, pos_error):
 
-        self.delete_object()
-        self.sim_unpause()
+        # move object out of the way
+        self.set_model_pose_tq([1,0,1], [0,0,0,1], self.object_name)
 
+        self.sim_unpause()
+        
         # open fingers and move wrist to start position
         self.open_hand(True, self.srv_tolerance, self.srv_time_out)
         self.select_random_object_wrist_pair()
         wrist_waypoint_pose = self.get_wrist_waypoint_pose(self.wrist_p, self.wrist_q, self.obj_p)
         self.cmd_wrist_abs(wrist_waypoint_pose, True)
 
-        # spawn object and move to init pose
+        # swap objects
+        self.sim_pause()
+        self.delete_object()
         self.spawn_object()
         self.set_model_pose_tq(self.obj_p, self.obj_q, self.object_name)
+        self.sim_unpause()
+
+        # spawn object and move to init pose
         wrist_init_pose = self.get_wrist_init_pose(self.wrist_p, self.wrist_q, pos_error)
         self.cmd_wrist_abs(wrist_init_pose, True)
 
@@ -275,7 +281,7 @@ class GazeboInterface:
         req = SpawnModelRequest()
         req.model_name = "object"
         req.model_xml = open(
-            f"/home/parallels/catkin_ws/src/grasp_refinement/reflex_stack/simulation/description/urdf/objects/{self.desired_obj_name}.urdf", "r"
+            f"/n/home10/akoenig/overlay/work/catkin_ws/src/grasp_refinement/reflex_stack/simulation/description/urdf/objects/{self.desired_obj_name}.urdf", "r"
         ).read()
         req.reference_frame = "world"
         req.initial_pose = Pose(
