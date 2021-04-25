@@ -17,7 +17,7 @@ From: osrf/ros:noetic-desktop-focal
   
   echo "\n\n\n====INSTALLING RL PACKAGES====\n\n\n"
   apt -y install python3-pip
-  pip3 install gym stable_baselines3
+  pip3 install gym stable_baselines3 tensorboard
   apt-get -y install python3-tk
 
   echo "\n\n\n====INSTALLING GAZEBO DEPENDENCIES====\n\n\n"
