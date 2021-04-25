@@ -18,6 +18,10 @@ def main(args):
     ckpt_path = os.path.join(args.output_dir, "models", args.environment, args.log_name)
     model_path = os.path.join(ckpt_path, "final_model")
 
+    print("Log path \t", log_path)
+    print("Ckpt path \t", ckpt_path)
+    print("Model path \t", model_path)
+
     print("Loading environment...")
     if args.environment == "refinement":
         from envs.refinement import GazeboEnv
@@ -35,21 +39,9 @@ def main(args):
     else:
         raise ValueError("Invalid environment name.")
 
-    # set random seeds
-    # env.seed(args.seed)
-    # env.action_space.seed(args.seed)
-    # set_random_seed(args.seed)
-
-    # import torch
-    # torch.manual_seed(0)
-    # import random
-    # random.seed(0)
-    # np.random.seed(0)
-
     # prepare model
     n_actions = env.action_space.shape[-1]
     action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
-    # model = TD3(MlpPolicy, env, action_noise=action_noise, verbose=1, tensorboard_log=log_path, seed=args.seed)
     model = TD3(MlpPolicy, env, action_noise=action_noise, verbose=1, tensorboard_log=log_path)
 
     if args.train:
@@ -96,8 +88,29 @@ if __name__ == "__main__":
     parser.add_argument("--x_error", nargs="+", default=[0, 0], type=float, help="Positional error along x direction")
     parser.add_argument("--y_error", nargs="+", default=[0, 0], type=float, help="Positional error along y direction")
     parser.add_argument("--z_error", nargs="+", default=[0, 0], type=float, help="Positional error along z direction")
-    parser.add_argument("--framework", type=int, default=2, help="Which reward framework to train with (1 or 2).")
+    parser.add_argument("--framework", type=int, default=1, help="Which reward framework to train with (1 or 2).")
 
     args = parser.parse_args()
+
+    print("==================")
+    print("received arguments")
+    print("==================")
+    print("--environment \t", args.environment)
+    print("--train \t", args.train)
+    print("--seed \t\t", args.seed)
+    print("--max_ep_len \t", args.max_ep_len)
+    print("--joint_lim \t", args.joint_lim)
+    print("--exec_secs \t", args.exec_secs)
+    print("--obj_shift_tol ", args.obj_shift_tol)
+    print("--time_steps \t", args.time_steps)
+    print("--reward_weight ", args.reward_weight)
+    print("--log_name \t", args.log_name)
+    print("--output_dir \t", args.output_dir)
+    print("--chkpt_freq \t", args.chkpt_freq)
+    print("--x_error \t", args.x_error)
+    print("--y_error \t", args.y_error)
+    print("--z_error \t", args.z_error)
+    print("--framework \t", args.framework)
+    print("==================")
 
     main(args)
