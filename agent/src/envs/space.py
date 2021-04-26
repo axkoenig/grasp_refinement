@@ -30,14 +30,14 @@ class Space:
         for i in range(self.dim):
             min_vals = np.append(min_vals, self.vars[i].min_val)
         print("Min values of " + self.__class__.__name__ + f" are {min_vals}.")
-        return min_vals
+        return np.float32(min_vals)
 
     def get_max_vals(self):
         max_vals = np.empty((0,))
         for i in range(self.dim):
             max_vals = np.append(max_vals, self.vars[i].max_val)
         print("Max values of " + self.__class__.__name__ + f" are {max_vals}.")
-        return max_vals
+        return np.float32(max_vals)
 
     def get_cur_vals(self, verbose=False):
         cur_vals = np.empty((0,))
@@ -45,7 +45,7 @@ class Space:
             if verbose:
                 print("Cur value of " + self.vars[i].name + f" is {self.vars[i].cur_val}.")
             cur_vals = np.append(cur_vals, self.vars[i].cur_val)
-        return cur_vals
+        return np.float32(cur_vals)
 
     def get_cur_vals_by_name(self, name, verbose=False):
         "Returns a concatenation of all curent values that match the given name."
@@ -55,7 +55,7 @@ class Space:
                 cur_vals = np.append(cur_vals, self.vars[i].cur_val)
         if verbose:
             print("Cur values of " + self.__class__.__name__ + f" that match the name {name} are {cur_vals}.")
-        return cur_vals
+        return np.float32(cur_vals)
 
     def set_cur_val_by_name(self, name, cur_val):
         for i in range(self.dim):
