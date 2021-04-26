@@ -39,8 +39,8 @@ class GazeboEnv(gym.Env):
         self.acts = ActionSpace()
         self.obs = ObservationSpace()
 
-        self.action_space = gym.spaces.Box(low=self.acts.get_min_vals(), high=self.acts.get_max_vals(), dtype=np.float32)
-        self.observation_space = gym.spaces.Box(low=self.obs.get_min_vals(), high=self.obs.get_max_vals(), dtype=np.float32)
+        self.action_space = gym.spaces.Box(low=self.acts.get_min_vals(), high=self.acts.get_max_vals())
+        self.observation_space = gym.spaces.Box(low=self.obs.get_min_vals(), high=self.obs.get_max_vals())
         self.reward_range = (-np.inf, np.inf)
 
         self.reward_pub = rospy.Publisher("agent/reward", Float64, queue_size=5)
