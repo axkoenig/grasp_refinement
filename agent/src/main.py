@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 from argparse import ArgumentParser
 import os
 
@@ -33,7 +36,11 @@ def main(args):
             args.joint_lim,
             args.obj_shift_tol,
             args.reward_weight,
-            [args.x_error, args.y_error, args.z_error],
+            [
+                [args.x_error_min, args.x_error_max],
+                [args.y_error_min, args.y_error_max],
+                [args.z_error_min, args.z_error_max],
+            ],
             args.framework,
         )
     else:
@@ -85,13 +92,16 @@ if __name__ == "__main__":
     parser.add_argument("--log_name", type=str, default="test", help="Name for log.")
     parser.add_argument("--output_dir", type=str, default="./", help="Path of output directory.")
     parser.add_argument("--chkpt_freq", type=int, default=300, help="Save model every n training steps.")
-    parser.add_argument("--x_error", nargs="+", default=[0, 0], type=float, help="Positional error along x direction")
-    parser.add_argument("--y_error", nargs="+", default=[0, 0], type=float, help="Positional error along y direction")
-    parser.add_argument("--z_error", nargs="+", default=[0, 0], type=float, help="Positional error along z direction")
+    parser.add_argument("--x_error_min", type=float, default=0, help="Positional error along x direction")
+    parser.add_argument("--y_error_min", type=float, default=0, help="Positional error along y direction")
+    parser.add_argument("--z_error_min", type=float, default=0, help="Positional error along z direction")
+    parser.add_argument("--x_error_max", type=float, default=0, help="Positional error along x direction")
+    parser.add_argument("--y_error_max", type=float, default=0, help="Positional error along y direction")
+    parser.add_argument("--z_error_max", type=float, default=0, help="Positional error along z direction")
     parser.add_argument("--framework", type=int, default=1, help="Which reward framework to train with (1 or 2).")
-
-    args = parser.parse_args()
-
+    
+    args, unknown = parser.parse_known_args()
+    
     print("==================")
     print("received arguments")
     print("==================")
@@ -107,9 +117,12 @@ if __name__ == "__main__":
     print("--log_name \t", args.log_name)
     print("--output_dir \t", args.output_dir)
     print("--chkpt_freq \t", args.chkpt_freq)
-    print("--x_error \t", args.x_error)
-    print("--y_error \t", args.y_error)
-    print("--z_error \t", args.z_error)
+    print("--x_error_min \t", args.x_error_min)
+    print("--y_error_min \t", args.y_error_min)
+    print("--z_error_min \t", args.z_error_min)
+    print("--x_error_max \t", args.x_error_max)
+    print("--y_error_max \t", args.y_error_max)
+    print("--z_error_max \t", args.z_error_max)
     print("--framework \t", args.framework)
     print("==================")
 
