@@ -86,10 +86,16 @@ void HandState::sim_state_callback(const sensor_listener::ContactFrames &msg)
             vars.contact_force_magnitudes.push_back(msg.contact_frames[i].contact_force_magnitude);
             vars.contact_torque_magnitudes.push_back(msg.contact_frames[i].contact_torque_magnitude);
             vars.sum_contact_forces += msg.contact_frames[i].contact_force_magnitude;
+            int finger_id = msg.contact_frames[i].finger_id;
+            vars.link_ids.push_back(finger_id);
             if (!msg.contact_frames[i].palm_contact)
             {
-                int finger_id = msg.contact_frames[i].finger_id;
-                vars.finger_ids.push_back(finger_id);
+                // this should never happen but checking anyway due to vector accessing below 
+                if (finger_id < 1 || finger_id > 3)
+                {
+                    ROS_ERROR("Your finger id is out of bounds. Ignoring this.");
+                    continue;
+                }
                 vars.fingers_in_contact[finger_id - 1] = true;
                 vars.num_sensors_in_contact_per_finger[finger_id - 1] += 1; // TODO actually this variable now represents num_sim_contacts_per_finger
             }
