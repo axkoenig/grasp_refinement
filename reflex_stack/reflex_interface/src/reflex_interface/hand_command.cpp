@@ -199,7 +199,6 @@ bool HandCommand::callbackCloseUntilContact(std_srvs::Trigger::Request &req, std
         // this service is blocking by default
         ros::Duration allowed_duration(close_until_contact_time_out);
         ros::Time start_time = ros::Time::now();
-        std::vector<bool> fingers_in_contact = {0, 0, 0}; // example: finger 1 in contact {1, 0, 0}
         std::vector<bool> contact_memory = {0, 0, 0};     // example: finger 1 and 2 were in contact throughout this service call {1, 1, 0}
 
         ros::Rate rate(close_until_contact_pub_rate);
@@ -216,8 +215,7 @@ bool HandCommand::callbackCloseUntilContact(std_srvs::Trigger::Request &req, std
                 res.message = "All fingers have been in contact.";
                 return true;
             }
-
-            fingers_in_contact = state->getVars().fingers_in_contact;
+            std::vector<bool> fingers_in_contact = state->getVars().fingers_in_contact; // example: finger 1 in contact {1, 0, 0}
             float increment[4] = {0, 0, 0, 0};
 
             for (int i = 0; i < state->num_fingers; i++)
