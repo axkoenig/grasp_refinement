@@ -26,7 +26,7 @@ public:
     std::vector<tf2::Vector3> contact_torques;
     std::vector<tf2::Vector3> contact_positions;
     std::vector<tf2::Vector3> contact_normals;
-    std::vector<int> finger_ids; // to which finger does each contact belong (each int ranges from 1 to 3)
+    std::vector<int> link_ids; // to which link does each contact belong (ranges from 0 to 3, 0 means palm contact, 1-3 are fingerIds)
     std::vector<int> sensor_ids; // to which sensor does each contact belong (each int ranges from 1 to 9)
     std::vector<float> contact_force_magnitudes;
     std::vector<float> contact_torque_magnitudes;

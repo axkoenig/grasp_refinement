@@ -10,7 +10,7 @@ void HandStateVariables::clear_all()
     contact_torques.clear();
     contact_positions.clear();
     contact_normals.clear();
-    finger_ids.clear();
+    link_ids.clear();
     sensor_ids.clear(); // to which sensor does each contact belong (each int ranges from 1 to 9)
     contact_force_magnitudes.clear();
     contact_torque_magnitudes.clear();
