@@ -368,7 +368,8 @@ float GraspQuality::getSlipMarginWithTaskWrenches(std::vector<tf2::Vector3> &con
     // calculate effective grasp matrix
 
     // compute grasp matrix pseudoinverse (mxn)
-    Eigen::MatrixXd G_pinv = G.completeOrthogonalDecomposition().pseudoInverse();
+    Eigen::MatrixXd G_pinv(num_contacts * 6, 6);
+    G_pinv = G.completeOrthogonalDecomposition().pseudoInverse();
 
     float lowest_slip_margin = 0;
     std::vector<float> contact_force_magnitudes;
