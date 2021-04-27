@@ -165,9 +165,12 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
             scr.normal = create_vec_from_msg(msg.states[j].contact_normals[i]);
             scr.torque = create_vec_from_msg(msg.states[j].wrenches[i].torque);
 
+            // ROS_INFO_STREAM("state[" << j << "] normal [" << i << "]" << scr.normal[0] << ", " << scr.normal[1] << ", " << scr.normal[2]);
+            // ROS_INFO_STREAM("state[" << j << "] force [" << i << "]" << scr.force[0] << ", " << scr.force[1] << ", " << scr.force[2]);
+            // ROS_INFO_STREAM("state[" << j << "] angle [" << i << "]" << acos(scr.force.dot(scr.normal) / (scr.normal.length() * scr.force.length())) * 180 / M_PI);
+
             // this is our fix for the Gazebo bug (see description above)
             float angle = acos(link_z.dot(scr.normal) / (scr.normal.length() * link_z.length()));
-            float invert_or_leave = 1;
             if (abs(angle) > M_PI / 2)
             {
                 scr.normal *= -1;
@@ -187,7 +190,7 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
             // check if this contact belongs to any of the previous contacts or
             // if we should save it as a new contact point
             bool merged = false;
-            for (int c = 0; c < unique_contacts.size(); c++)
+            for (int c = 0; c < int(unique_contacts.size()); c++)
             {
                 if (tf2::tf2Distance2(unique_contacts[c].results[0].position, scr.position) < unique_contacts[c].merge_contacts_dist)
                 {
@@ -221,7 +224,7 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
         sensors[first_sensor_idx + i].addPressureToBuffer(pressures[i]);
     }
 
-    for (int i = 0; i < unique_contacts.size(); i++)
+    for (int i = 0; i < int(unique_contacts.size()); i++)
     {
         sensor_listener::ContactFrame cf_msg;
 
@@ -244,14 +247,20 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
         cf_msg.contact_torque_magnitude = avg_scr.torque.length();
         cf_msg.contact_force_magnitude = avg_scr.force.length();
         cf_msg.contact_wrench.force = tf2::toMsg(avg_scr.force);
+        cf_msg.contact_wrench.force = tf2::toMsg(avg_scr.normal.normalize() * avg_scr.force.length());
         cf_msg.contact_wrench.torque = tf2::toMsg(avg_scr.torque);
         cf_msg.contact_frame = tf2::toMsg(contact_frame);
         cf_msg.contact_position = tf2::toMsg(avg_scr.position);
         cf_msg.contact_normal = tf2::toMsg(avg_scr.normal);
 
+        // ROS_INFO_STREAM("normal [" << i << "]" << avg_scr.normal[0] << ", " << avg_scr.normal[1] << ", " << avg_scr.normal[2]);
+        // ROS_INFO_STREAM("force [" << i << "]" << avg_scr.force[0] << ", " << avg_scr.force[1] << ", " << avg_scr.force[2]);
+        // ROS_INFO_STREAM("angle " << acos(avg_scr.force.dot(avg_scr.normal) / (avg_scr.normal.length() * avg_scr.force.length())) * 180 / M_PI);
+
         // all is well, add contact frame to vector
         contact_frames.push_back(cf_msg);
     }
+    // ROS_WARN("===");
 };
 
 int ReflexFinger::which_sensor(const float &contact_x, const float sensor_boundaries[], const int &num_boundaries)

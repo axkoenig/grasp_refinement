@@ -82,8 +82,8 @@ void FingerState::fillContactInfo(std::vector<tf2::Vector3> &contact_positions,
     // obtain only the link poses that are in contact
     bool has_prox_contact = hasProximalContact();
     bool has_dist_contact = hasDistalContact();
-    tf2::Transform prox_link_pose;
-    tf2::Transform dist_link_pose;
+    tf2::Transform prox_link_pose = tf2::Transform::getIdentity();
+    tf2::Transform dist_link_pose = tf2::Transform::getIdentity();
 
     if (!has_prox_contact && !has_dist_contact)
     {

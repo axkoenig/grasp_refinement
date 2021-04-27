@@ -6,13 +6,13 @@
 class MotorState
 {
 private:
-    int motor_id;
-    float joint_angle;
-    float raw_angle;
-    float velocity;
-    float load;
-    float voltage;
-    float temperature;
+    int motor_id = 0;
+    float joint_angle = 0;
+    float raw_angle = 0;
+    float velocity = 0;
+    float load = 0;
+    float voltage = 0;
+    float temperature = 0;
     std::string error_state = "";
 
 public:

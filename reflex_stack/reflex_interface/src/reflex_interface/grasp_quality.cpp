@@ -32,7 +32,7 @@ GraspQuality::GraspQuality(float mu_epsilon, float mu_delta, int num_edges, Cont
 bool GraspQuality::isValidNumContacts()
 {
     num_contacts = contact_positions.size();
-    if (num_contacts != contact_normals.size())
+    if (num_contacts != int(contact_normals.size()))
     {
         ROS_ERROR("Number of contact positions and normals must be equal.");
         return false;

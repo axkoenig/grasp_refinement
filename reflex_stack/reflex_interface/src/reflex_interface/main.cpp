@@ -17,8 +17,8 @@ int main(int argc, char **argv)
     bool use_sim_data_obj;
     getParam(&nh, &use_sim_data_hand, "use_sim_data_hand");
     getParam(&nh, &use_sim_data_obj, "use_sim_data_obj");
-    
-    ReflexInterface ri = ReflexInterface(&nh, use_sim_data_hand, use_sim_data_obj);
+
+    ReflexInterface(&nh, use_sim_data_hand, use_sim_data_obj);
     ros::MultiThreadedSpinner spinner(0);
     spinner.spin();
 }

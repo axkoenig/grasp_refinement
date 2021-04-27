@@ -123,8 +123,6 @@ bool HandCommand::waitUntilFinished(float tolerance, float time_out)
         {
             return true;
         }
-
-        ros::spinOnce();
         rate.sleep();
     }
     return false;
@@ -238,10 +236,8 @@ bool HandCommand::callbackCloseUntilContact(std_srvs::Trigger::Request &req, std
             this->executePosIncrement(increment);
 
             // make sure to process callbacks in HandState class
-            ros::spinOnce();
             rate.sleep();
         }
-
         res.success = false;
         res.message = "Did not obtain contact on all fingers within time-out of " + std::to_string(close_until_contact_time_out) + " secs.";
         return true;

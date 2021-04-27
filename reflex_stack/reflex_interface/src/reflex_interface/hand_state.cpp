@@ -71,7 +71,7 @@ void HandState::sim_state_callback(const sensor_listener::ContactFrames &msg)
     {
         // reset variables
         vars.clear_all();
-        vars.num_contacts = msg.num_contact_frames;
+        vars.num_contacts = msg.contact_frames.size();
 
         for (int i = 0; i < vars.num_contacts; i++)
         {
@@ -126,7 +126,6 @@ void HandState::reflex_state_callback(const reflex_msgs::Hand &msg)
                 finger_states[i]->setPreshapeAngle(msg.motor[3].joint_angle);
             }
         }
-
         for (int i = 0; i < num_motors; i++)
         {
             motor_states[i]->setJointAngle(msg.motor[i].joint_angle);
@@ -169,7 +168,6 @@ void HandState::updateQualityMetrics()
         // broadcast Gazebo object pose to ROS tf tree
         obj_measured = getModelPoseSim(nh, object_name, "world", false);
         broadcastModelState(obj_measured, "world", "reflex_interface/obj_measured", &br_obj_measured);
-
         grasp_quality.fillEpsilonFTSeparate(vars.contact_positions, vars.contact_normals, obj_measured.getOrigin(), vars.epsilon_force, vars.epsilon_torque);
         // ROS_WARN("=== COMPUTING CURRENT DELTA ===");
         vars.delta_cur = grasp_quality.getSlipMargin(vars.contact_normals, vars.contact_forces, vars.contact_force_magnitudes, vars.num_contacts);

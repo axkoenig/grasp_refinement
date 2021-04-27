@@ -48,7 +48,7 @@ public:
                         bool verbose = false);
 
     template <class T>
-    bool isSameSize(const int desired_size, const std::vector<T> &vector) { return vector.size() == desired_size; };
+    bool isSameSize(const int desired_size, const std::vector<T> &vector) { return int(vector.size()) == desired_size; };
     void updateGraspWrenchSpace(bool verbose);
     bool isValidNumContacts();
     Eigen::MatrixXd getCrossProductMatrix(const tf2::Vector3 &r);
