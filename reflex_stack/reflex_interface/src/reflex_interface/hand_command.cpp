@@ -18,6 +18,8 @@ HandCommand::HandCommand(ros::NodeHandle *nh, HandState *state, bool use_sim_dat
     close_until_contact_service = nh->advertiseService(close_until_contact_srv_name, &HandCommand::callbackCloseUntilContact, this);
     tighten_grip_service = nh->advertiseService(tighten_grip_srv_name, &HandCommand::callbackTightenGrip, this);
 
+    sim_state_sub = nh->subscribe("reflex/sim_contact_frames", 1, &HandCommand::sim_state_callback, this);
+
     if (!use_sim_data_hand)
     {
         // calibrate fingers and tactile if working on real hand
@@ -36,6 +38,25 @@ HandCommand::HandCommand(ros::NodeHandle *nh, HandState *state, bool use_sim_dat
         // because fingers could crash into each other on real hand
         sph_close_service = nh->advertiseService(sph_close_srv_name, &HandCommand::callbackSphClose, this);
         pinch_service = nh->advertiseService(pinch_srv_name, &HandCommand::callbackPinch, this);
+    }
+}
+
+void HandCommand::sim_state_callback(const sensor_listener::ContactFrames &msg)
+{
+    fingers_in_contact = {0, 0, 0};
+    for (int i = 0; i < int(msg.contact_frames.size()); i++)
+    {
+        int finger_id = msg.contact_frames[i].finger_id;
+        if (!msg.contact_frames[i].palm_contact)
+        {
+            // this should never happen but checking anyway due to vector accessing below
+            if (finger_id < 1 || finger_id > 3)
+            {
+                ROS_ERROR("Your finger id is out of bounds. Ignoring this.");
+                continue;
+            }
+            fingers_in_contact[finger_id - 1] = true;
+        }
     }
 }
 
@@ -199,7 +220,7 @@ bool HandCommand::callbackCloseUntilContact(std_srvs::Trigger::Request &req, std
         // this service is blocking by default
         ros::Duration allowed_duration(close_until_contact_time_out);
         ros::Time start_time = ros::Time::now();
-        std::vector<bool> contact_memory = {0, 0, 0};     // example: finger 1 and 2 were in contact throughout this service call {1, 1, 0}
+        std::vector<bool> contact_memory = {0, 0, 0};                    // example: finger 1 and 2 were in contact throughout this service call {1, 1, 0}
 
         ros::Rate rate(close_until_contact_pub_rate);
 
@@ -215,7 +236,6 @@ bool HandCommand::callbackCloseUntilContact(std_srvs::Trigger::Request &req, std
                 res.message = "All fingers have been in contact.";
                 return true;
             }
-            std::vector<bool> fingers_in_contact = state->getVars().fingers_in_contact; // example: finger 1 in contact {1, 0, 0}
             float increment[4] = {0, 0, 0, 0};
 
             for (int i = 0; i < state->num_fingers; i++)
