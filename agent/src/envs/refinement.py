@@ -23,7 +23,7 @@ class GazeboEnv(gym.Env):
         self.obj_shift_tol = obj_shift_tol
         self.reward_weight = reward_weight
         self.pos_error = pos_error
-        self.framework = framework 
+        self.framework = framework
 
         self.num_contacts = 0
         self.epsilon_force = 0
@@ -120,18 +120,21 @@ class GazeboEnv(gym.Env):
             self.gi.pos_incr(self.get_f_incr(action[5]), self.get_f_incr(action[6]), self.get_f_incr(action[7]), 0, False, False, 0, 0)
 
         # reward is relative grasp improvement w.r.t. starting config
-        if self.framework == 1:
+        if self.framework == 1 or self.framework == 3:
             reward = self.collect_reward(self.exec_secs) - self.start_reward
-            
+
         logs = {}
         self.done = self.check_if_done()
         if self.done:
             self.drop_test()
-        
+
         # reward is binary grasp success
         if self.framework == 2:
             reward = int(self.sustained_holding) if self.done else 0
-            
+        elif self.framework == 3:
+            binary_reward = int(self.sustained_holding) if self.done else 0
+            reward += 10 * binary_reward
+
         rospy.loginfo(f"REWARD \t {reward}")
         self.reward_pub.publish(Float64(reward))
 
@@ -166,7 +169,7 @@ class GazeboEnv(gym.Env):
         elif self.cur_time_step == self.max_ep_len:
             rospy.loginfo(f"Episode lasted {self.cur_time_step} time steps. Setting done = True.")
             return True
-        return False 
+        return False
 
     def reset(self):
         rospy.loginfo("Resetting world.")
