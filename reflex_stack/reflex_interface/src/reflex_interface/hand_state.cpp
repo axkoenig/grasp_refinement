@@ -19,11 +19,6 @@ HandState::HandState(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_d
     reflex_state_sub = nh->subscribe("reflex_takktile/hand_state", 1, &HandState::reflex_state_callback, this);
     hand_state_pub = nh->advertise<reflex_interface::HandStateStamped>("/reflex_interface/hand_state", 1);
 
-    if (use_sim_data_obj)
-    {
-        getParam(nh, &object_name, "object_name", false);
-    }
-
     if (use_sim_data_hand)
     {
         sim_state_sub = nh->subscribe("reflex/sim_contact_frames", 1, &HandState::sim_state_callback, this);
@@ -172,18 +167,16 @@ void HandState::updateQualityMetrics()
     if (use_sim_data_obj)
     {
         // broadcast Gazebo object pose to ROS tf tree
+        getParam(nh, &object_name, "object_name", false);
         obj_measured = getModelPoseSim(nh, object_name, "world", false);
         broadcastModelState(obj_measured, "world", "reflex_interface/obj_measured", &br_obj_measured);
         grasp_quality.fillEpsilonFTSeparate(vars.contact_positions, vars.contact_normals, obj_measured.getOrigin(), vars.epsilon_force, vars.epsilon_torque);
-        // ROS_WARN("=== COMPUTING CURRENT DELTA ===");
         vars.delta_cur = grasp_quality.getSlipMargin(vars.contact_normals, vars.contact_forces, vars.contact_force_magnitudes, vars.num_contacts);
-        // ROS_WARN("=== COMPUTING TASK FORCE DELTA ===");
         vars.delta_task = grasp_quality.getSlipMarginWithTaskWrenches(vars.contact_forces, vars.contact_normals, vars.contact_frames, obj_measured.getOrigin(), vars.num_contacts);
     }
     else
     {
         // on real hand (without knowing the object pose) we can only calculate the epsilon force
-        // TODO implement separate force epsilon
     }
 }
 

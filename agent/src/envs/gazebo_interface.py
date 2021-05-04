@@ -2,6 +2,7 @@ import random
 
 import numpy as np
 import rospy
+import roslib
 import tf2_ros
 import tf
 import geometry_msgs.msg
@@ -115,6 +116,7 @@ class GazeboInterface:
             success, msg = self.service_call(service, request, service_name)
             if success:
                 return
+            rospy.loginfo(f"Service call to {service_name} failed with msg: '{msg}'. Trying again ...")
             tries += 1
         rospy.loginfo(f"Service call to {service_name} failed even after {max_retries}. Exception was: {msg}.")
 
@@ -164,7 +166,7 @@ class GazeboInterface:
         if wait_until_reached_pose:
             self.wait_until_reached_pose(self.last_wrist_pose)
 
-    def wait_until_reached_pose(self, pose, t_tol=0.005, q_tol=0.02):
+    def wait_until_reached_pose(self, pose, t_tol=0.01, q_tol=0.02):
         r = rospy.Rate(5)
         t, q = get_tq_from_homo_matrix(pose)
         while not rospy.is_shutdown():
@@ -181,9 +183,9 @@ class GazeboInterface:
     def wait_until_grasp_stabilizes(self):
         rospy.sleep(0.2)
 
-    def delete_object(self):
+    def delete_object(self, name="object"):
         req = DeleteModelRequest()
-        req.model_name = "object"
+        req.model_name = name
         self.service_call_with_retries(self.delete_model, req, self.delete_model_name)
 
     def get_wrist_waypoint_pose(self, wrist_p, wrist_q, obj_p, offset_dist=0.05):
@@ -195,56 +197,31 @@ class GazeboInterface:
         return get_homo_matrix_from_tq(wrist_p, wrist_q)
 
     def reset_world(self, pos_error):
-        self.desired_obj_name = "cylinder_small"
-        self.desired_pose_name = "1"
-        self.obj_p = rospy.get_param(f"{self.desired_obj_name}/pose_{self.desired_pose_name}/object_p")
-        self.obj_q = rospy.get_param(f"{self.desired_obj_name}/pose_{self.desired_pose_name}/object_q")
-        self.wrist_p = rospy.get_param(f"{self.desired_obj_name}/pose_{self.desired_pose_name}/wrist_p")
-        self.wrist_q = rospy.get_param(f"{self.desired_obj_name}/pose_{self.desired_pose_name}/wrist_q")
-
-        # move object out of the way
-        self.set_model_pose_tq([1,0,1], [0,0,0,1], self.object_name)
         self.sim_unpause()
-        
-        # open fingers and move wrist to start position
-        self.open_hand(True, self.srv_tolerance, self.srv_time_out)
-        wrist_waypoint_pose = self.get_wrist_waypoint_pose(self.wrist_p, self.wrist_q, self.obj_p)
-        self.cmd_wrist_abs(wrist_waypoint_pose, True)
 
-        # put object back and move to init pose
-        self.set_model_pose_tq(self.obj_p, self.obj_q, self.object_name)
-        wrist_init_pose = self.get_wrist_init_pose(self.wrist_p, self.wrist_q, pos_error)
-        self.cmd_wrist_abs(wrist_init_pose, True)
+        # move old object out of way
+        self.set_model_pose_tq([1, 0, 1], [0, 0, 0, 1], self.object_name)
 
-        # close fingers
-        self.close_until_contact_and_tighten()
-        self.wait_until_grasp_stabilizes()
-
-        self.sim_pause()
-
-    def reset_world_mult_obj(self, pos_error):
-
-        # move object out of the way
-        self.set_model_pose_tq([1,0,1], [0,0,0,1], self.object_name)
-
-        self.sim_unpause()
-        
         # open fingers and move wrist to start position
         self.open_hand(True, self.srv_tolerance, self.srv_time_out)
         self.select_random_object_wrist_pair()
         wrist_waypoint_pose = self.get_wrist_waypoint_pose(self.wrist_p, self.wrist_q, self.obj_p)
         self.cmd_wrist_abs(wrist_waypoint_pose, True)
 
-        # swap objects
-        self.sim_pause()
-        self.delete_object()
-        self.spawn_object()
-        self.set_model_pose_tq(self.obj_p, self.obj_q, self.object_name)
-        self.sim_unpause()
+        # only spawn if object does not exist yet
+        if self.new_obj_name is not self.object_name:
+            self.spawn_object()
+        self.set_model_pose_tq(self.obj_p, self.obj_q, self.new_obj_name)
 
-        # spawn object and move to init pose
+        # move to init pose
         wrist_init_pose = self.get_wrist_init_pose(self.wrist_p, self.wrist_q, pos_error)
         self.cmd_wrist_abs(wrist_init_pose, True)
+
+        # delete old object
+        if self.new_obj_name is not self.object_name:
+            rospy.set_param("object_name", self.new_obj_name)
+            self.delete_object(self.object_name)
+            self.object_name = self.new_obj_name
 
         # close fingers
         self.close_until_contact_and_tighten()
@@ -252,7 +229,7 @@ class GazeboInterface:
 
         self.sim_pause()
 
-    def close_until_contact_and_tighten(self, tighten_incr=0.1):
+    def close_until_contact_and_tighten(self, tighten_incr=0.05):
         res = self.close_until_contact(TriggerRequest())
         if self.verbose:
             rospy.loginfo("Closed reflex fingers until contact: \n" + str(res))
@@ -294,25 +271,23 @@ class GazeboInterface:
 
     def select_random_object_wrist_pair(self):
         # select new object randomly
-        self.desired_obj_name = random.choice(self.object_names)
-        self.pose_list = rospy.get_param(f"{self.desired_obj_name}/pose_list")
+        self.new_obj_name = random.choice(self.object_names)
+        self.pose_list = rospy.get_param(f"{self.new_obj_name}/pose_list")
         self.desired_pose_name = random.choice(self.pose_list)
 
         # get object and grasp pose from yaml file
-        self.obj_p = rospy.get_param(f"{self.desired_obj_name}/pose_{self.desired_pose_name}/object_p")
-        self.obj_q = rospy.get_param(f"{self.desired_obj_name}/pose_{self.desired_pose_name}/object_q")
-        self.wrist_p = rospy.get_param(f"{self.desired_obj_name}/pose_{self.desired_pose_name}/wrist_p")
-        self.wrist_q = rospy.get_param(f"{self.desired_obj_name}/pose_{self.desired_pose_name}/wrist_q")
+        self.obj_p = rospy.get_param(f"{self.new_obj_name}/pose_{self.desired_pose_name}/object_p")
+        self.obj_q = rospy.get_param(f"{self.new_obj_name}/pose_{self.desired_pose_name}/object_q")
+        self.wrist_p = rospy.get_param(f"{self.new_obj_name}/pose_{self.desired_pose_name}/wrist_p")
+        self.wrist_q = rospy.get_param(f"{self.new_obj_name}/pose_{self.desired_pose_name}/wrist_q")
 
     def spawn_object(self):
-        # use service to spawn urdf model
         req = SpawnModelRequest()
-        req.model_name = "object"
-        req.model_xml = open(
-            f"/n/home10/akoenig/overlay/work/catkin_ws/src/grasp_refinement/reflex_stack/simulation/description/urdf/objects/{self.desired_obj_name}.urdf", "r"
-        ).read()
+        req.model_name = self.new_obj_name
+        urdf_location = roslib.packages.get_pkg_dir("description") + f"/urdf/objects/{self.new_obj_name}.urdf"
+        req.model_xml = open(urdf_location, "r").read()
         req.reference_frame = "world"
         req.initial_pose = Pose(
-            Point(self.obj_p[0], self.obj_p[1], self.obj_p[1]), Quaternion(self.obj_q[0], self.obj_q[1], self.obj_q[2], self.obj_q[3])
+            Point(self.obj_p[0], self.obj_p[1], self.obj_p[2]), Quaternion(self.obj_q[0], self.obj_q[1], self.obj_q[2], self.obj_q[3])
         )
         self.service_call_with_retries(self.spawn_model, req, self.spawn_model_name)
