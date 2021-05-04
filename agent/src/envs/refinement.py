@@ -133,7 +133,7 @@ class GazeboEnv(gym.Env):
             reward = int(self.sustained_holding) if self.done else 0
         elif self.framework == 3:
             binary_reward = int(self.sustained_holding) if self.done else 0
-            reward += 10 * binary_reward
+            reward += 1 * binary_reward
 
         rospy.loginfo(f"REWARD \t {reward}")
         self.reward_pub.publish(Float64(reward))
