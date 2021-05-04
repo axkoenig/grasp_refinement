@@ -51,10 +51,15 @@ def main(args):
     action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
     model = TD3(MlpPolicy, env, action_noise=action_noise, verbose=1, tensorboard_log=log_path)
 
+    print("Training with arguments")
+    hparams = vars(args)
+    for key, value in hparams.items():
+        print(key, ": ", value)
+
     if args.train:
-        callbacks = [CheckpointCallback(save_freq=args.chkpt_freq, save_path=ckpt_path, name_prefix="chkpt"), TensorboardCallback()]
+        callbacks = [CheckpointCallback(save_freq=args.chkpt_freq, save_path=ckpt_path, name_prefix="chkpt"), TensorboardCallback(hparams)]
         print("Training model...")
-        model.learn(total_timesteps=args.time_steps, tb_log_name=args.log_name, callback=callbacks)
+        model.learn(total_timesteps=args.time_steps, tb_log_name=args.log_name, callback=callbacks, log_interval=args.log_interval)
         model.save(model_path)
         print("Saved model under: " + model_path)
 
@@ -84,7 +89,7 @@ if __name__ == "__main__":
     parser.add_argument("--train", type=int, default=1, help="Whether to train or evaluate the model.")
     parser.add_argument("--seed", type=int, default=0, help="Seed for random number generators.")
     parser.add_argument("--max_ep_len", type=float, default=15, help="Maximum time steps in one episode.")
-    parser.add_argument("--joint_lim", type=float, default=2, help="End episode if joint limit reached.")
+    parser.add_argument("--joint_lim", type=float, default=3, help="End episode if joint limit reached.")
     parser.add_argument("--exec_secs", type=float, default=0.3, help="How long to execute same command on hand.")
     parser.add_argument("--obj_shift_tol", type=float, default=0.03, help="How far object is allowed to shift.")
     parser.add_argument("--time_steps", type=float, default=2000, help="How many time steps to train.")
@@ -99,31 +104,7 @@ if __name__ == "__main__":
     parser.add_argument("--y_error_max", type=float, default=0, help="Positional error along y direction")
     parser.add_argument("--z_error_max", type=float, default=0, help="Positional error along z direction")
     parser.add_argument("--framework", type=int, default=1, help="Which reward framework to train with (1 or 2).")
-    
-    args, unknown = parser.parse_known_args()
-    
-    print("==================")
-    print("received arguments")
-    print("==================")
-    print("--environment \t", args.environment)
-    print("--train \t", args.train)
-    print("--seed \t\t", args.seed)
-    print("--max_ep_len \t", args.max_ep_len)
-    print("--joint_lim \t", args.joint_lim)
-    print("--exec_secs \t", args.exec_secs)
-    print("--obj_shift_tol ", args.obj_shift_tol)
-    print("--time_steps \t", args.time_steps)
-    print("--reward_weight ", args.reward_weight)
-    print("--log_name \t", args.log_name)
-    print("--output_dir \t", args.output_dir)
-    print("--chkpt_freq \t", args.chkpt_freq)
-    print("--x_error_min \t", args.x_error_min)
-    print("--y_error_min \t", args.y_error_min)
-    print("--z_error_min \t", args.z_error_min)
-    print("--x_error_max \t", args.x_error_max)
-    print("--y_error_max \t", args.y_error_max)
-    print("--z_error_max \t", args.z_error_max)
-    print("--framework \t", args.framework)
-    print("==================")
+    parser.add_argument("--log_interval", type=int, default=1, help="After how many episodes to log.")
 
+    args, unknown = parser.parse_known_args()
     main(args)
