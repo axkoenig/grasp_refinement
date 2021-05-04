@@ -10,7 +10,7 @@ On your local machine.
 
 ```bash
 # 1. Build the singularity recipe to get a clean image with all required dependencies (e.g., Gazebo 11, ROS Noetic, RL packages)
-sudo singularity build singularityMar23.img singularity.recipe 
+sudo singularity build gazebo_ros.img singularity.recipe 
 
 # 2. Create an overlay directory and build an overlay image
 mkdir -p overlay/upper overlay/work
@@ -18,7 +18,7 @@ dd if=/dev/zero of=overlay.img bs=1M count=500 && mkfs.ext3 -d overlay overlay.i
 
 # 3. Upload both images to your research cluster
 sudo sftp akoenig@login.rc.fas.harvard.edu
-put -r /home/parallels/catkin_ws/src/grasp_refinement/singularityMar23.img
+put -r /home/parallels/catkin_ws/src/grasp_refinement/gazebo_ros.img
 put -r /home/parallels/catkin_ws/src/grasp_refinement/overlay.img
 
 ``` 
@@ -30,7 +30,7 @@ On your remote machine do these steps.
 mkdir -p overlay/upper overlay/work
 
 # fire up your simulation container with the writable overlay to build the software
-singularity shell --overlay overlay.img singularityMar23.img
+singularity shell --overlay overlay.img gazebo_ros.img
 
 # create catkin workspace inside the overlay container and init a catkin workspace
 mkdir ~/overlay/work/catkin_ws/src -p
@@ -53,8 +53,10 @@ roslaunch description reflex.launch gui:=false
 To train on the cluster.
 
 ```bash
-sbatch slurm_run.sh     
-scancel -u akoenig      # cancel all jobs
+.cluster/experiments.sh -n 1   # start experiments
+squeue -u akoenig              # viel all jobs
+scancel -u akoenig             # cancel all jobs
+screen -r       # reattach to screen
 ``` 
 
 
