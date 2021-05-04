@@ -23,6 +23,7 @@
 # Y_ERROR_MAX
 # Z_ERROR_MIN
 # Z_ERROR_MAX
+# SEED
 # ==== 
 LOG_FILE_SIM=$HOME_DIR/output/slurm_logs/sim_${LOG_NAME}.txt
 LOG_FILE_AGENT=$HOME_DIR/output/slurm_logs/agent_${LOG_NAME}.txt
@@ -45,7 +46,7 @@ echo "========================="
 read -r -d '' AGENT_EXEC << EOM
 . /opt/ros/noetic/setup.sh
 . $HOME_DIR/overlay/work/catkin_ws/devel/setup.sh
-script -c "python3 $HOME_DIR/overlay/work/catkin_ws/src/grasp_refinement/agent/src/main.py --framework=${FRAMEWORK} --output_dir=$HOME_DIR/output/agents --log_name=${LOG_NAME} --time_steps=${TIME_STEPS} --max_ep_len=${MAX_EP_LEN} --x_error_min ${X_ERROR_MIN} --x_error_max ${X_ERROR_MAX} --y_error_min ${Y_ERROR_MIN} --y_error_max ${Y_ERROR_MAX} --z_error_min ${Z_ERROR_MIN} --z_error_max ${Z_ERROR_MAX}" $LOG_FILE_AGENT
+script -c "python3 $HOME_DIR/overlay/work/catkin_ws/src/grasp_refinement/agent/src/main.py --framework=${FRAMEWORK} --seed=${SEED} --output_dir=$HOME_DIR/output/agents --log_name=${LOG_NAME} --time_steps=${TIME_STEPS} --max_ep_len=${MAX_EP_LEN} --x_error_min ${X_ERROR_MIN} --x_error_max ${X_ERROR_MAX} --y_error_min ${Y_ERROR_MIN} --y_error_max ${Y_ERROR_MAX} --z_error_min ${Z_ERROR_MIN} --z_error_max ${Z_ERROR_MAX}" $LOG_FILE_AGENT
 EOM
 echo -e "Executing the following script ...\n$AGENT_EXEC"
 singularity exec -e --bind $HOME_DIR/output/:/output $HOME_DIR/gazebo_ros.img /bin/sh -c "$AGENT_EXEC"
