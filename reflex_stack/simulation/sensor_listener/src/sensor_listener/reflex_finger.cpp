@@ -246,8 +246,8 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
         cf_msg.palm_contact = false;
         cf_msg.contact_torque_magnitude = avg_scr.torque.length();
         cf_msg.contact_force_magnitude = avg_scr.force.length();
-        cf_msg.contact_wrench.force = tf2::toMsg(avg_scr.force);
-        cf_msg.contact_wrench.force = tf2::toMsg(avg_scr.normal.normalize() * avg_scr.force.length());
+        // cf_msg.contact_wrench.force = tf2::toMsg(avg_scr.force);
+        cf_msg.contact_wrench.force = tf2::toMsg(avg_scr.normal.normalize() * avg_scr.force.length());  // TODO this is a temporary solution to deal with unrealisitc force readings during contact
         cf_msg.contact_wrench.torque = tf2::toMsg(avg_scr.torque);
         cf_msg.contact_frame = tf2::toMsg(contact_frame);
         cf_msg.contact_position = tf2::toMsg(avg_scr.position);

@@ -62,11 +62,11 @@ void ReflexPalm::contacts_callback(const gazebo_msgs::ContactsState &msg)
 
         // this is our dirty fix for the Gazebo bug that flips contact normals (see https://github.com/dartsim/dart/issues/1425)
         float angle = acos(link_y.dot(contact_normal) / (contact_normal.length() * link_y.length()));
-        float invert_or_leave = 1;
         if (abs(angle) > M_PI / 2)
         {
-            invert_or_leave = -1;
-            contact_normal *= invert_or_leave;
+            contact_torque_world *= -1;
+            contact_force_world *= -1;
+            contact_normal *= -1;
         }
 
         // calculate rotation of contact frame (x must align with contact normal)
@@ -79,11 +79,15 @@ void ReflexPalm::contacts_callback(const gazebo_msgs::ContactsState &msg)
         cf_msg.finger_id = 0;
         cf_msg.palm_contact = true;
         cf_msg.contact_torque_magnitude = contact_torque_world.length();
-        cf_msg.contact_wrench.force = tf2::toMsg(invert_or_leave * contact_force_world);
-        cf_msg.contact_wrench.torque = tf2::toMsg(invert_or_leave * contact_torque_world);
+        cf_msg.contact_wrench.force = tf2::toMsg(contact_force_world);
+        cf_msg.contact_wrench.torque = tf2::toMsg(contact_torque_world);
         cf_msg.contact_frame = tf2::toMsg(contact_frame);
         cf_msg.contact_position = tf2::toMsg(contact_position);
         cf_msg.contact_normal = tf2::toMsg(contact_normal);
+
+        // ROS_INFO_STREAM("normal [" << i << "]" << contact_normal[0] << ", " << contact_normal[1] << ", " << contact_normal[2]);
+        // ROS_INFO_STREAM("force [" << i << "]" << contact_force_world[0] << ", " << contact_force_world[1] << ", " << contact_force_world[2]);
+        // ROS_INFO_STREAM("angle " << acos(contact_force_world.dot(contact_normal) / (contact_normal.length() * contact_force_world.length())) * 180 / M_PI);
 
         // all is well, add contact frame to vector
         contact_frames.push_back(cf_msg);
