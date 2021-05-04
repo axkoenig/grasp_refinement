@@ -166,10 +166,12 @@ class GazeboInterface:
         if wait_until_reached_pose:
             self.wait_until_reached_pose(self.last_wrist_pose)
 
-    def wait_until_reached_pose(self, pose, t_tol=0.01, q_tol=0.02):
+    def wait_until_reached_pose(self, pose, t_tol=0.01, q_tol=0.02, time_out=10):
         r = rospy.Rate(5)
         t, q = get_tq_from_homo_matrix(pose)
-        while not rospy.is_shutdown():
+        begin = rospy.get_rostime()
+        d = rospy.Duration.from_sec(time_out)
+        while rospy.get_rostime() - begin < d:
             mat_shell = self.get_wrist_pose()
             t_cur, q_cur = get_tq_from_homo_matrix(mat_shell)
             if np.linalg.norm(t_cur - t) > t_tol and self.verbose:
@@ -179,6 +181,7 @@ class GazeboInterface:
             elif np.linalg.norm(t_cur - t) < t_tol and np.linalg.norm(q_cur - q) < q_tol:
                 return
             r.sleep()
+        rospy.loginfo(f"Did not reach pose in time out of {time_out} secs. You're probably crashing into something ...")
 
     def wait_until_grasp_stabilizes(self):
         rospy.sleep(0.2)
