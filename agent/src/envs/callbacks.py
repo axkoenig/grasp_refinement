@@ -2,7 +2,7 @@ from stable_baselines3.common.callbacks import BaseCallback
 
 
 class TensorboardCallback(BaseCallback):
-    def __init__(self, verbose=1):
+    def __init__(self, hparams, verbose=1):
         super(TensorboardCallback, self).__init__(verbose)
         self.cum_num_contacts = 0
         self.cum_dist_tcp_obj = 0
@@ -12,6 +12,11 @@ class TensorboardCallback(BaseCallback):
         self.cum_joint_diff = 0
         self.cum_delta_task = 0
         self.cum_sum_contact_forces = 0
+
+        self.hparams = hparams
+
+    def _on_training_start(self) -> None:
+        self.logger.record_dict(self.hparams)
 
     def _on_rollout_end(self) -> None:
         self.logger.record("rollout/cum_num_contacts", self.cum_num_contacts)
