@@ -49,8 +49,10 @@ class TensorboardCallback(BaseCallback):
         self.cur_epsilon_torque = self.get_env_attr("epsilon_torque")
         self.cur_delta_task = self.get_env_attr("delta_task")
         self.cur_obj_shift = self.get_env_attr("obj_shift")
-        self.cur_joint_diff = self.get_env_attr("prox_diff")
         self.cur_sum_contact_forces = self.get_env_attr("sum_contact_forces")
+        # calc symmetry of grasp 
+        prox_angles = self.get_env_attr("prox_angles")
+        self.cur_joint_diff = abs(prox_angles[0] - prox_angles[1]) + abs(prox_angles[1] - prox_angles[2]) + abs(prox_angles[0] - prox_angles[2])
 
         self.logger.record("step/cur_num_contacts", self.cur_num_contacts)
         self.logger.record("step/cur_dist_tcp_obj", self.cur_dist_tcp_obj)
