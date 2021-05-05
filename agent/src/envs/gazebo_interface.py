@@ -211,7 +211,7 @@ class GazeboInterface:
         self.sim_unpause()
 
         # back off fingers by a small amount
-        res = self.pos_incr(back_off_finger, back_off_finger, back_off_finger, 0, True, True, self.srv_tolerance, self.srv_time_out)
+        res = self.pos_incr(back_off_finger, back_off_finger, back_off_finger, 0, True, True, self.srv_tolerance, 1)
         if self.verbose:
             rospy.loginfo("Backed off fingers: \n" + str(res))
 

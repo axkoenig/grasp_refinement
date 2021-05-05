@@ -50,7 +50,7 @@ class TensorboardCallback(BaseCallback):
         self.cur_delta_task = self.get_env_attr("delta_task")
         self.cur_obj_shift = self.get_env_attr("obj_shift")
         self.cur_sum_contact_forces = self.get_env_attr("sum_contact_forces")
-        # calc symmetry of grasp 
+        # calc symmetry of grasp
         prox_angles = self.get_env_attr("prox_angles")
         self.cur_joint_diff = abs(prox_angles[0] - prox_angles[1]) + abs(prox_angles[1] - prox_angles[2]) + abs(prox_angles[0] - prox_angles[2])
 
@@ -74,7 +74,6 @@ class TensorboardCallback(BaseCallback):
 
         # on episode end
         if self.get_env_attr("done"):
-            self.logger.record("episode/num_regrasps", self.get_env_attr("num_regrasps"))
             self.logger.record("drop_test/delta_cur_lifting", self.get_env_attr("delta_cur_lifting"))
             self.logger.record("drop_test/delta_cur_holding", self.get_env_attr("delta_cur_holding"))
             self.logger.record("drop_test/eps_force_lifting", self.get_env_attr("eps_force_lifting"))
@@ -83,5 +82,8 @@ class TensorboardCallback(BaseCallback):
             self.logger.record("drop_test/eps_torque_holding", self.get_env_attr("eps_torque_holding"))
             self.logger.record("drop_test/sustained_lifting", self.get_env_attr("sustained_lifting"))
             self.logger.record("drop_test/sustained_holding", self.get_env_attr("sustained_holding"))
+
+            self.logger.record("rollout/ep_num_regrasps", self.get_env_attr("num_regrasps"))
+            self.training_env.set_attr("num_regrasps", 0)
 
         return True

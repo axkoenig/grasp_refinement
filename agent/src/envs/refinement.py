@@ -112,7 +112,7 @@ class GazeboEnv(gym.Env):
             wrist_p_incr = [action[1], action[2], action[3]]
             wrist_q_incr = tf.transformations.quaternion_from_euler(action[4], action[5], action[6])
             self.gi.regrasp(wrist_p_incr, wrist_q_incr)
-            self.num_regrasps += 1
+            self.num_regrasps += 1  # we reset this var in the tensorboard callback once recorded
         else:
             rospy.loginfo(">>STAYING<<")
             self.gi.pos_incr(self.get_f_incr(action[7]), self.get_f_incr(action[8]), self.get_f_incr(action[9]), 0, False, False, 0, 0)
@@ -159,7 +159,6 @@ class GazeboEnv(gym.Env):
 
         # reset vars
         obs = np.zeros(self.observation_space.shape)
-        self.num_regrasps = 0
         self.cur_time_step = 0
         return obs
 
