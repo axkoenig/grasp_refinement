@@ -13,7 +13,14 @@ from gazebo_msgs.srv import GetModelState, GetLinkState, SetModelState, DeleteMo
 from gazebo_msgs.msg import ModelState, ContactsState
 from reflex_interface.srv import PosIncrement
 
-from .helpers import get_tq_from_homo_matrix, get_homo_matrix_from_transform_msg, get_homo_matrix_from_tq, get_homo_matrix_from_pose_msg, StringServiceRequest, service_call_with_retries
+from .helpers import (
+    get_tq_from_homo_matrix,
+    get_homo_matrix_from_transform_msg,
+    get_homo_matrix_from_tq,
+    get_homo_matrix_from_pose_msg,
+    StringServiceRequest,
+    service_call_with_retries,
+)
 
 
 class GazeboInterface:
@@ -180,17 +187,15 @@ class GazeboInterface:
         # only spawn if object does not exist yet
         if self.new_obj_name is not self.object_name:
             self.spawn_object()
-        self.set_model_pose_tq(self.obj_t, self.obj_q, self.new_obj_name)
+            rospy.set_param("object_name", self.new_obj_name)
+            self.delete_object(self.object_name)    # delete old object
+            self.object_name = self.new_obj_name
+
+        self.set_model_pose_tq(self.obj_t, self.obj_q, self.object_name)
 
         # move to init pose
         wrist_init_pose = self.get_wrist_init_pose(self.wrist_p, self.wrist_q, hparams)
         self.cmd_wrist_abs(wrist_init_pose, True)
-
-        # delete old object
-        if self.new_obj_name is not self.object_name:
-            rospy.set_param("object_name", self.new_obj_name)
-            self.delete_object(self.object_name)
-            self.object_name = self.new_obj_name
 
         # close fingers
         self.close_until_contact_and_tighten()
