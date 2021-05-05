@@ -10,7 +10,7 @@ from geometry_msgs.msg import Pose, Point, Quaternion
 from std_srvs.srv import Empty, Trigger, TriggerRequest
 from reflex_interface.srv import GraspPrimitive
 from gazebo_msgs.srv import GetModelState, GetLinkState, SetModelState, DeleteModel, SpawnModel, DeleteModelRequest, SpawnModelRequest
-from gazebo_msgs.msg import ModelState, ContactsState
+from gazebo_msgs.msg import ModelState, ModelStates, ContactsState
 from reflex_interface.srv import PosIncrement
 
 from .helpers import (
@@ -185,10 +185,10 @@ class GazeboInterface:
         self.cmd_wrist_abs(wrist_waypoint_pose, True)
 
         # only spawn if object does not exist yet
-        if self.new_obj_name is not self.object_name:
+        msg = rospy.wait_for_message("/gazebo/model_states", ModelStates)
+        if self.new_obj_name not in msg.name:
             self.spawn_object()
-            rospy.set_param("object_name", self.new_obj_name)
-            self.delete_object(self.object_name)    # delete old object
+            self.delete_object(self.object_name)  # delete old object
             self.object_name = self.new_obj_name
 
         self.set_model_pose_tq(self.obj_t, self.obj_q, self.object_name)
@@ -212,15 +212,23 @@ class GazeboInterface:
         if self.verbose:
             rospy.loginfo("Tightened fingers by " + str(tighten_incr) + ": \n" + str(res))
 
-    def regrasp(self, wrist_p_incr, wrist_q_incr, back_off_finger=-0.3):
-        self.sim_unpause()
-
-        # back off fingers by a small amount
-        res = self.pos_incr(back_off_finger, back_off_finger, back_off_finger, 0, True, True, self.srv_tolerance, 1)
+    def intelligent_reopen(self, prox_angles, back_off=-0.3, min_angle=1):
+        # calc back off to guarantee a minimum reopening angle (otherwise a finger may get stuck in a closed position)
+        back_offs = [0, 0, 0]
+        for i in range(3):
+            if prox_angles[i] + back_off > min_angle:
+                back_offs[i] = min_angle - prox_angles[i]
+            else:
+                back_offs[i] = back_off
+        rospy.loginfo("Backing fingers off by: \t" + str(back_offs))
+        res = self.pos_incr(back_offs[0], back_offs[1], back_offs[2], 0, True, True, self.srv_tolerance, 1)
         if self.verbose:
             rospy.loginfo("Backed off fingers: \n" + str(res))
 
-        # apply relative wrist increment
+    def regrasp(self, wrist_p_incr, wrist_q_incr, prox_angles):
+        self.sim_unpause()
+
+        self.intelligent_reopen(prox_angles)
         self.cmd_wrist_pose_incr(wrist_p_incr, wrist_q_incr)
         self.close_until_contact_and_tighten()
         self.wait_until_grasp_stabilizes()
@@ -277,4 +285,7 @@ class GazeboInterface:
         req.initial_pose = Pose(
             Point(self.obj_t[0], self.obj_t[1], self.obj_t[2]), Quaternion(self.obj_q[0], self.obj_q[1], self.obj_q[2], self.obj_q[3])
         )
-        service_call_with_retries(self.spawn_sdf_model, req)
+        res = service_call_with_retries(self.spawn_sdf_model, req)
+
+        if res.success:
+            rospy.set_param("object_name", self.new_obj_name)
