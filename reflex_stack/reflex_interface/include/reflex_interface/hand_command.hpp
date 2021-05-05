@@ -42,7 +42,7 @@ private:
 
     float tighten_incr = 0.0349066; // this is 2 degrees
     float close_until_contact_incr = 0.1;
-    float close_until_contact_up_lim = 3;
+    float close_until_contact_up_lim = 3.5;
     float close_until_contact_time_out = 6;
     float close_until_contact_pub_rate = 20;
 
