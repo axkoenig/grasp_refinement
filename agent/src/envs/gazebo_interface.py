@@ -39,8 +39,8 @@ class GazeboInterface:
 
         # some vars
         self.num_srv_tries = 0
-        self.srv_time_out = 6
-        self.srv_tolerance = 0.1
+        self.srv_time_out = 5
+        self.srv_tolerance = 0.01
 
         # setup broadcaster for desired wrist pose
         self.ts_wrist = geometry_msgs.msg.TransformStamped()
@@ -174,13 +174,13 @@ class GazeboInterface:
         # open fingers and move wrist to start position
         self.open_hand(True, self.srv_tolerance, self.srv_time_out)
         self.select_random_object_wrist_pair()
-        wrist_waypoint_pose = self.get_wrist_waypoint_pose(self.wrist_p, self.wrist_q, self.obj_p)
+        wrist_waypoint_pose = self.get_wrist_waypoint_pose(self.wrist_p, self.wrist_q, self.obj_t)
         self.cmd_wrist_abs(wrist_waypoint_pose, True)
 
         # only spawn if object does not exist yet
         if self.new_obj_name is not self.object_name:
             self.spawn_object()
-        self.set_model_pose_tq(self.obj_p, self.obj_q, self.new_obj_name)
+        self.set_model_pose_tq(self.obj_t, self.obj_q, self.new_obj_name)
 
         # move to init pose
         wrist_init_pose = self.get_wrist_init_pose(self.wrist_p, self.wrist_q, hparams)
@@ -195,6 +195,7 @@ class GazeboInterface:
         # close fingers
         self.close_until_contact_and_tighten()
         self.wait_until_grasp_stabilizes()
+        self.start_obj_t, _ = get_tq_from_homo_matrix(self.get_object_pose())
 
         self.sim_pause()
 
@@ -211,6 +212,8 @@ class GazeboInterface:
 
         # back off fingers by a small amount
         res = self.pos_incr(back_off_finger, back_off_finger, back_off_finger, 0, True, True, self.srv_tolerance, self.srv_time_out)
+        if self.verbose:
+            rospy.loginfo("Backed off fingers: \n" + str(res))
 
         # apply relative wrist increment
         self.cmd_wrist_pose_incr(wrist_p_incr, wrist_q_incr)
@@ -255,7 +258,7 @@ class GazeboInterface:
         self.desired_pose_name = random.choice(self.pose_list)
 
         # get object and grasp pose from yaml file
-        self.obj_p = rospy.get_param(f"{self.new_obj_name}/pose_{self.desired_pose_name}/object_p")
+        self.obj_t = rospy.get_param(f"{self.new_obj_name}/pose_{self.desired_pose_name}/object_p")
         self.obj_q = rospy.get_param(f"{self.new_obj_name}/pose_{self.desired_pose_name}/object_q")
         self.wrist_p = rospy.get_param(f"{self.new_obj_name}/pose_{self.desired_pose_name}/wrist_p")
         self.wrist_q = rospy.get_param(f"{self.new_obj_name}/pose_{self.desired_pose_name}/wrist_q")
@@ -267,6 +270,6 @@ class GazeboInterface:
         req.model_xml = open(urdf_location, "r").read()
         req.reference_frame = "world"
         req.initial_pose = Pose(
-            Point(self.obj_p[0], self.obj_p[1], self.obj_p[2]), Quaternion(self.obj_q[0], self.obj_q[1], self.obj_q[2], self.obj_q[3])
+            Point(self.obj_t[0], self.obj_t[1], self.obj_t[2]), Quaternion(self.obj_q[0], self.obj_q[1], self.obj_q[2], self.obj_q[3])
         )
         service_call_with_retries(self.spawn_sdf_model, req)

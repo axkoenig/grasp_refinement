@@ -137,8 +137,8 @@ class GazeboEnv(gym.Env):
 
     def is_done(self):
         # get object shift and distance to object
-        t_obj, _ = get_tq_from_homo_matrix(self.gi.get_object_pose())
-        self.obj_shift = np.linalg.norm(t_obj - self.gi.obj_p)
+        obj_t, _ = get_tq_from_homo_matrix(self.gi.get_object_pose())
+        self.obj_shift = np.linalg.norm(obj_t - self.gi.start_obj_t)
         self.dist_tcp_obj = self.gi.get_dist_tcp_obj()
 
         # check if should end episode
