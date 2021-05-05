@@ -98,8 +98,9 @@ void HandState::sim_state_callback(const sensor_listener::ContactFrames &msg)
         updateHandStateSim();
         // TODO shift this to wrist_controller
         // broadcast Gazebo wrist pose to ROS tf tree
-        tf2::Transform wrist_measured = getLinkPoseSim(nh, "shell", "world", false);
-        broadcastModelState(wrist_measured, "world", "reflex_interface/wrist_measured", &br_reflex_measured);
+        // TODO maybe add back in (once ROS fixes this bug https://github.com/ros/geometry2/issues/467 and I dont get bombarded with warning messages anymore)
+        // tf2::Transform wrist_measured = getLinkPoseSim(nh, "shell", "world", false);
+        // broadcastModelState(wrist_measured, "world", "reflex_interface/wrist_measured", &br_reflex_measured);
 
         updateQualityMetrics();
         hand_state_pub.publish(getHandStateMsg());
@@ -169,7 +170,8 @@ void HandState::updateQualityMetrics()
         // broadcast Gazebo object pose to ROS tf tree
         getParam(nh, &object_name, "object_name", false);
         obj_measured = getModelPoseSim(nh, object_name, "world", false);
-        broadcastModelState(obj_measured, "world", "reflex_interface/obj_measured", &br_obj_measured);
+        // TODO maybe add back in (once ROS fixes this bug https://github.com/ros/geometry2/issues/467 and I dont get bombarded with warning messages anymore)
+        // broadcastModelState(obj_measured, "world", "reflex_interface/obj_measured", &br_obj_measured);
         grasp_quality.fillEpsilonFTSeparate(vars.contact_positions, vars.contact_normals, obj_measured.getOrigin(), vars.epsilon_force, vars.epsilon_torque);
         vars.delta_cur = grasp_quality.getSlipMargin(vars.contact_normals, vars.contact_forces, vars.contact_force_magnitudes, vars.num_contacts);
         vars.delta_task = grasp_quality.getSlipMarginWithTaskWrenches(vars.contact_forces, vars.contact_normals, vars.contact_frames, obj_measured.getOrigin(), vars.num_contacts);
