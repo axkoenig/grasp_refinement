@@ -16,6 +16,7 @@ class TensorboardCallback(BaseCallback):
         self.hparams = hparams
 
     def _on_training_start(self) -> None:
+        self.hparams = {f"hparams/{key}": val for key, val in self.hparams.items()}
         self.logger.record_dict(self.hparams)
 
     def _on_rollout_end(self) -> None:
