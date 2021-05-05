@@ -27,7 +27,7 @@ LOG_PATH=$HOME_DIR/output/slurm_logs
 echo "Submitting ${NUM_EXPERIMENTS} experiments for each framework..."
 
 # hyper-params for training
-TIME_STEPS=20000
+TIME_STEPS=4000
 MAX_EP_LEN=15
 X_ERROR_MAX=0.04
 X_ERROR_MIN=-$X_ERROR_MAX
