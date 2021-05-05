@@ -220,7 +220,8 @@ bool HandCommand::callbackCloseUntilContact(std_srvs::Trigger::Request &req, std
         // this service is blocking by default
         ros::Duration allowed_duration(close_until_contact_time_out);
         ros::Time start_time = ros::Time::now();
-        std::vector<bool> contact_memory = {0, 0, 0};                    // example: finger 1 and 2 were in contact throughout this service call {1, 1, 0}
+        std::vector<bool> contact_memory = {0, 0, 0};    // example: finger 1 and 2 were in contact throughout this service call {1, 1, 0}
+        std::vector<bool> contact_or_up_lim = {0, 0, 0}; // example: finger 1 reached upper joint limit and finger 2 in contact {1, 1, 0}
 
         ros::Rate rate(close_until_contact_pub_rate);
 
@@ -228,29 +229,47 @@ bool HandCommand::callbackCloseUntilContact(std_srvs::Trigger::Request &req, std
         {
             // stop if all fingers have been in contact at least once throughout this service call or if all are currently in contact
             bool allFingersHaveMadeContact = std::all_of(contact_memory.begin(), contact_memory.end(), [](bool v) { return v; });
-            bool stop = allFingersHaveMadeContact || state->allFingersInContact();
+            bool stop_good = allFingersHaveMadeContact || state->allFingersInContact();
+            bool stop_bad = std::all_of(contact_or_up_lim.begin(), contact_or_up_lim.end(), [](bool v) { return v; });
 
-            if (stop)
+            if (stop_good)
             {
                 res.success = true;
                 res.message = "All fingers have been in contact.";
                 return true;
             }
+            else if (stop_bad)
+            {
+                res.success = false;
+                res.message = "Stopping early as all fingers either reached their specified max joint value of " + std::to_string(close_until_contact_up_lim) + " or made contact.";
+                return true;
+            }
+
             float increment[4] = {0, 0, 0, 0};
 
             for (int i = 0; i < state->num_fingers; i++)
             {
                 if (!fingers_in_contact[i] && !contact_memory[i])
                 {
-                    // for all fingers that did not have contact yet: tighten up
-                    increment[i] = close_until_contact_incr;
+                    if (cur_cmd[i] > close_until_contact_up_lim)
+                    {
+                        // remember that this finger already reached its upper joint limit
+                        contact_or_up_lim[i] = true;
+                    }
+                    else
+                    {
+                        // for all fingers that did not have contact yet: tighten up
+                        increment[i] = close_until_contact_incr;
+                    }
                 }
                 else if (fingers_in_contact[i])
                 {
                     // memorize that we obtained a contact at this finger
-                    contact_memory[i] = 1;
+                    contact_memory[i] = true;
+                    contact_or_up_lim[i] = true;
                 }
             }
+
             this->executePosIncrement(increment);
 
             // make sure to process callbacks in HandState class
