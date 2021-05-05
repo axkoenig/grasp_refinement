@@ -15,21 +15,17 @@ from .gazebo_interface import GazeboInterface
 
 
 class GazeboEnv(gym.Env):
-    def __init__(self, exec_secs, max_ep_len, joint_lim, obj_shift_tol, reward_weight, pos_error, framework):
+    def __init__(self, hparams):
 
-        self.exec_secs = exec_secs
-        self.max_ep_len = max_ep_len
-        self.joint_lim = joint_lim
-        self.obj_shift_tol = obj_shift_tol
-        self.reward_weight = reward_weight
-        self.pos_error = pos_error
-        self.framework = framework
+        self.hparams = hparams
 
-        self.num_contacts = 0
+        # quality metrics
         self.epsilon_force = 0
         self.epsilon_torque = 0
         self.delta_task = 0
         self.delta_cur = 0
+
+        # counters
         self.num_regrasps = 0
         self.cur_time_step = 0
 
@@ -106,22 +102,22 @@ class GazeboEnv(gym.Env):
     def step(self, action):
         self.cur_time_step += 1
         rospy.loginfo(f"Action Regrasp \t {action[0]}")
-        rospy.loginfo(f"Action Wrist \t {action[1]}, {action[2]}, {action[3]}, {action[4]}")
-        rospy.loginfo(f"Action Finger \t {action[5]}, {action[6]}, {action[7]}")
+        rospy.loginfo(f"Action Wrist \t {action[1]}, {action[2]}, {action[3]}, {action[4]}, {action[5]}, {action[6]}")
+        rospy.loginfo(f"Action Finger \t {action[7]}, {action[8]}, {action[9]}")
 
         if action[0] >= 0.5:
             rospy.loginfo(">>REGRASPING<<")
             wrist_p_incr = [action[1], action[2], action[3]]
-            wrist_q_incr = tf.transformations.quaternion_from_euler(0, action[4], 0)
+            wrist_q_incr = tf.transformations.quaternion_from_euler(action[4], action[5], action[6])
             self.gi.regrasp(wrist_p_incr, wrist_q_incr)
             self.num_regrasps += 1
         else:
             rospy.loginfo(">>STAYING<<")
-            self.gi.pos_incr(self.get_f_incr(action[5]), self.get_f_incr(action[6]), self.get_f_incr(action[7]), 0, False, False, 0, 0)
+            self.gi.pos_incr(self.get_f_incr(action[7]), self.get_f_incr(action[8]), self.get_f_incr(action[9]), 0, False, False, 0, 0)
 
         # reward is relative grasp improvement w.r.t. starting config
-        if self.framework == 1 or self.framework == 3:
-            reward = self.collect_reward(self.exec_secs) - self.start_reward
+        if self.hparams["framework"] == 1 or self.hparams["framework"] == 3:
+            reward = self.collect_reward(self.hparams["exec_secs"]) - self.start_reward
 
         logs = {}
         self.done = self.check_if_done()
@@ -129,9 +125,9 @@ class GazeboEnv(gym.Env):
             self.drop_test()
 
         # reward is binary grasp success
-        if self.framework == 2:
+        if self.hparams["framework"] == 2:
             reward = int(self.sustained_holding) if self.done else 0
-        elif self.framework == 3:
+        elif self.hparams["framework"] == 3:
             binary_reward = int(self.sustained_holding) if self.done else 0
             reward += 1 * binary_reward
 
@@ -160,21 +156,21 @@ class GazeboEnv(gym.Env):
         self.dist_tcp_obj = self.gi.get_dist_tcp_obj()
 
         # check if should end episode
-        if self.obj_shift > self.obj_shift_tol:
-            rospy.loginfo(f"Object shift is above {self.obj_shift_tol} m. Setting done = True.")
+        if self.obj_shift > self.hparams["obj_shift_tol"]:
+            rospy.loginfo(f"Object shift is above {self.hparams['obj_shift_tol']} m. Setting done = True.")
             return True
-        elif not all(prox_angle < self.joint_lim for prox_angle in prox_angles):
-            rospy.loginfo(f"One angle is above {self.joint_lim} rad. Setting done = True.")
+        elif not all(prox_angle < self.hparams["joint_lim"] for prox_angle in prox_angles):
+            rospy.loginfo(f"One angle is above {self.hparams['joint_lim']} rad. Setting done = True.")
             return True
-        elif self.cur_time_step == self.max_ep_len:
+        elif self.cur_time_step == self.hparams["max_ep_len"]:
             rospy.loginfo(f"Episode lasted {self.cur_time_step} time steps. Setting done = True.")
             return True
         return False
 
     def reset(self):
         rospy.loginfo("Resetting world.")
-        self.gi.reset_world(self.pos_error)
-        self.start_reward = self.collect_reward(self.exec_secs)
+        self.gi.reset_world(self.hparams)
+        self.start_reward = self.collect_reward(self.hparams["exec_secs"])
 
         prox_angles = [
             self.obs.get_cur_vals_by_name("prox_angle_f1"),

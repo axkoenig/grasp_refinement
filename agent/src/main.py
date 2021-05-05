@@ -14,6 +14,8 @@ from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.env_checker import check_env
 
+from envs.refinement import GazeboEnv
+from envs.callbacks import TensorboardCallback
 
 def main(args):
 
@@ -25,36 +27,18 @@ def main(args):
     print("Ckpt path \t", ckpt_path)
     print("Model path \t", model_path)
 
-    print("Loading environment...")
-    if args.environment == "refinement":
-        from envs.refinement import GazeboEnv
-        from envs.callbacks import TensorboardCallback
-
-        env = GazeboEnv(
-            args.exec_secs,
-            args.max_ep_len,
-            args.joint_lim,
-            args.obj_shift_tol,
-            args.reward_weight,
-            [
-                [args.x_error_min, args.x_error_max],
-                [args.y_error_min, args.y_error_max],
-                [args.z_error_min, args.z_error_max],
-            ],
-            args.framework,
-        )
-    else:
-        raise ValueError("Invalid environment name.")
-
-    # prepare model
-    n_actions = env.action_space.shape[-1]
-    action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
-    model = TD3(MlpPolicy, env, action_noise=action_noise, verbose=1, tensorboard_log=log_path)
-
     print("Training with arguments")
     hparams = vars(args)
     for key, value in hparams.items():
         print(key, ": ", value)
+
+    print("Loading environment...")
+    env = GazeboEnv(hparams)
+
+    print("Preparing model...")
+    n_actions = env.action_space.shape[-1]
+    action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
+    model = TD3(MlpPolicy, env, action_noise=action_noise, verbose=1, tensorboard_log=log_path)
 
     if args.train:
         callbacks = [CheckpointCallback(save_freq=args.chkpt_freq, save_path=ckpt_path, name_prefix="chkpt"), TensorboardCallback(hparams)]
@@ -93,7 +77,6 @@ if __name__ == "__main__":
     parser.add_argument("--exec_secs", type=float, default=0.3, help="How long to execute same command on hand.")
     parser.add_argument("--obj_shift_tol", type=float, default=0.03, help="How far object is allowed to shift.")
     parser.add_argument("--time_steps", type=float, default=2000, help="How many time steps to train.")
-    parser.add_argument("--reward_weight", type=float, default=1, help="Weight in reward function.")
     parser.add_argument("--log_name", type=str, default="test", help="Name for log.")
     parser.add_argument("--output_dir", type=str, default="./", help="Path of output directory.")
     parser.add_argument("--chkpt_freq", type=int, default=300, help="Save model every n training steps.")
@@ -103,6 +86,12 @@ if __name__ == "__main__":
     parser.add_argument("--x_error_max", type=float, default=0, help="Positional error along x direction")
     parser.add_argument("--y_error_max", type=float, default=0, help="Positional error along y direction")
     parser.add_argument("--z_error_max", type=float, default=0, help="Positional error along z direction")
+    parser.add_argument("--roll_error_min", type=float, default=0, help="Orientational error along x direction")
+    parser.add_argument("--pitch_error_min", type=float, default=0, help="Orientational error along y direction")
+    parser.add_argument("--yaw_error_min", type=float, default=0, help="Orientational error along z direction")
+    parser.add_argument("--roll_error_max", type=float, default=0, help="Orientational error along x direction")
+    parser.add_argument("--pitch_error_max", type=float, default=0, help="Orientational error along y direction")
+    parser.add_argument("--yaw_error_max", type=float, default=0, help="Orientational error along z direction")
     parser.add_argument("--framework", type=int, default=1, help="Which reward framework to train with (1 or 2).")
     parser.add_argument("--log_interval", type=int, default=1, help="After how many episodes to log.")
 
