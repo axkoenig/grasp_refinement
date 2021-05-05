@@ -13,44 +13,34 @@ from gazebo_msgs.srv import GetModelState, GetLinkState, SetModelState, DeleteMo
 from gazebo_msgs.msg import ModelState, ContactsState
 from reflex_interface.srv import PosIncrement
 
-from .helpers import get_tq_from_homo_matrix, get_homo_matrix_from_msg, get_homo_matrix_from_tq
+from .helpers import get_tq_from_homo_matrix, get_homo_matrix_from_transform_msg, get_homo_matrix_from_tq, get_homo_matrix_from_pose_msg, StringServiceRequest, service_call_with_retries
 
 
 class GazeboInterface:
     def __init__(self, verbose=True):
         self.verbose = verbose
 
-        self.unpause_name = "/gazebo/unpause_physics"
-        self.pause_name = "/gazebo/pause_physics"
-        self.set_model_state_name = "/gazebo/set_model_state"
-        self.delete_model_name = "/gazebo/delete_model"
-        self.spawn_model_name = "/gazebo/spawn_sdf_model"
-
         self.object_name = rospy.get_param("/object_name")
         self.object_names = rospy.get_param("/object_names")
 
         # gazebo services
-        self.unpause = rospy.ServiceProxy(self.unpause_name, Empty)
-        self.pause = rospy.ServiceProxy(self.pause_name, Empty)
-        self.set_model_state = rospy.ServiceProxy(self.set_model_state_name, SetModelState)
-        self.delete_model = rospy.ServiceProxy(self.delete_model_name, DeleteModel)
-        self.spawn_model = rospy.ServiceProxy(self.spawn_model_name, SpawnModel)
-        self.num_srv_tries = 0
+        self.unpause_physics = rospy.ServiceProxy("/gazebo/unpause_physics", Empty)
+        self.pause_physics = rospy.ServiceProxy("/gazebo/pause_physics", Empty)
+        self.set_model_state = rospy.ServiceProxy("/gazebo/set_model_state", SetModelState)
+        self.delete_model = rospy.ServiceProxy("/gazebo/delete_model", DeleteModel)
+        self.spawn_sdf_model = rospy.ServiceProxy("/gazebo/spawn_sdf_model", SpawnModel)
+        self.get_model_state = rospy.ServiceProxy("/gazebo/get_model_state", GetModelState)
+        self.get_link_state = rospy.ServiceProxy("/gazebo/get_link_state", GetLinkState)
 
         # reflex services
         self.open_hand = rospy.ServiceProxy("/reflex_interface/open", GraspPrimitive)
         self.close_until_contact = rospy.ServiceProxy("/reflex_interface/close_until_contact", Trigger)
         self.pos_incr = rospy.ServiceProxy("/reflex_interface/position_increment", PosIncrement)
+
+        # some vars
+        self.num_srv_tries = 0
         self.srv_time_out = 6
         self.srv_tolerance = 0.1
-
-        # setup listener to measured wrist and object poses
-        self.mes_wrist_name = "reflex_interface/wrist_measured"
-        self.mes_wrist_buf = tf2_ros.Buffer()
-        self.mes_wrist_listener = tf2_ros.TransformListener(self.mes_wrist_buf)
-        self.mes_obj_name = "reflex_interface/obj_measured"
-        self.mes_obj_buf = tf2_ros.Buffer()
-        self.mes_obj_listener = tf2_ros.TransformListener(self.mes_obj_buf)
 
         # setup broadcaster for desired wrist pose
         self.ts_wrist = geometry_msgs.msg.TransformStamped()
@@ -59,10 +49,10 @@ class GazeboInterface:
         rospy.sleep(1)  # broadcaster needs some time to start
 
     def sim_unpause(self):
-        self.service_call_with_retries(self.unpause, None, self.unpause_name)
+        service_call_with_retries(self.unpause_physics, None)
 
     def sim_pause(self):
-        self.service_call_with_retries(self.pause, None, self.pause_name)
+        service_call_with_retries(self.pause_physics, None)
 
     def ros_vector_to_list(self, ros_vector):
         return [ros_vector.x, ros_vector.y, ros_vector.z]
@@ -75,50 +65,26 @@ class GazeboInterface:
         self.sim_pause()
 
     def get_object_pose(self):
-        return self.get_measured_pose(self.mes_obj_buf, self.mes_obj_name)
+        req = StringServiceRequest(self.object_name, "world")
+        res = service_call_with_retries(self.get_model_state, req)
+        return get_homo_matrix_from_pose_msg(res.pose)
 
     def get_wrist_pose(self):
-        return self.get_measured_pose(self.mes_wrist_buf, self.mes_wrist_name)
-
-    def get_measured_pose(self, buffer, name, frame="world"):
-        try:
-            trans = buffer.lookup_transform(frame, name, rospy.Time())
-            return get_homo_matrix_from_msg(trans.transform, name, frame)
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
-            rospy.loginfo("Couldn't look up object pose. Exception: " + str(e))
+        req = StringServiceRequest("shell", "world")
+        res = service_call_with_retries(self.get_link_state, req)
+        return get_homo_matrix_from_pose_msg(res.link_state.pose)
 
     def get_trans_tcp_obj(self):
-        mat_shell = self.get_wrist_pose()
-        mat_obj = self.get_object_pose()
-
         # add tcp offset to current shell transform
         mat_tcp = tf.transformations.translation_matrix([0.02, 0, 0.09228])
-        mat_tcp = np.dot(mat_shell, mat_tcp)
+        mat_tcp = np.dot(self.get_wrist_pose(), mat_tcp)
 
         # get transform from tcp to object
-        mat_tcp_to_obj = np.dot(tf.transformations.inverse_matrix(mat_tcp), mat_obj)
+        mat_tcp_to_obj = np.dot(tf.transformations.inverse_matrix(mat_tcp), self.get_object_pose())
         return tf.transformations.translation_from_matrix(mat_tcp_to_obj)
 
     def get_dist_tcp_obj(self):
         return np.linalg.norm(self.get_trans_tcp_obj())
-
-    def service_call(self, service, request, service_name):
-        rospy.wait_for_service(service_name)
-        try:
-            service(request) if request else service()
-            return True, f"Service call to {service_name} succeeded."
-        except rospy.ServiceException as e:
-            return False, f"Service call to {service_name} failed with exception: {str(e)}"
-
-    def service_call_with_retries(self, service, request, service_name, max_retries=10):
-        tries = 0
-        while tries < max_retries:
-            success, msg = self.service_call(service, request, service_name)
-            if success:
-                return
-            rospy.loginfo(f"Service call to {service_name} failed with msg: '{msg}'. Trying again ...")
-            tries += 1
-        rospy.loginfo(f"Service call to {service_name} failed even after {max_retries}. Exception was: {msg}.")
 
     def set_model_pose(self, pose, model_name, reference_frame="world"):
         t, q = get_tq_from_homo_matrix(pose)
@@ -135,7 +101,7 @@ class GazeboInterface:
         state.pose.orientation.y = q[1]
         state.pose.orientation.z = q[2]
         state.pose.orientation.w = q[3]
-        self.service_call_with_retries(self.set_model_state, state, self.set_model_state_name)
+        service_call_with_retries(self.set_model_state, state)
 
     def send_transform(self, pose):
         t, q = get_tq_from_homo_matrix(pose)
@@ -189,7 +155,7 @@ class GazeboInterface:
     def delete_object(self, name="object"):
         req = DeleteModelRequest()
         req.model_name = name
-        self.service_call_with_retries(self.delete_model, req, self.delete_model_name)
+        service_call_with_retries(self.delete_model, req)
 
     def get_wrist_waypoint_pose(self, wrist_p, wrist_q, obj_p, offset_dist=0.05):
         # returns a wrist pose that is 5cm offset from wrist_p in the normal direction from the object
@@ -270,9 +236,9 @@ class GazeboInterface:
         roll = np.random.uniform(hparams["roll_error_min"], hparams["roll_error_max"])
         pitch = np.random.uniform(hparams["pitch_error_min"], hparams["pitch_error_max"])
         yaw = np.random.uniform(hparams["yaw_error_min"], hparams["yaw_error_max"])
-        
+
         rospy.loginfo(f"Random offset for init wrist pose is \n [x: {x}, y: {y}, z: {z}], [roll: {roll}, pitch: {pitch}, yaw: {yaw}].")
-        
+
         # construct matrix that offsets from ground truth pose
         q = tf.transformations.quaternion_from_euler(roll, pitch, yaw)
         mat_t_offset = tf.transformations.translation_matrix([x, y, z])
@@ -303,4 +269,4 @@ class GazeboInterface:
         req.initial_pose = Pose(
             Point(self.obj_p[0], self.obj_p[1], self.obj_p[2]), Quaternion(self.obj_q[0], self.obj_q[1], self.obj_q[2], self.obj_q[3])
         )
-        self.service_call_with_retries(self.spawn_model, req, self.spawn_model_name)
+        service_call_with_retries(self.spawn_sdf_model, req)
