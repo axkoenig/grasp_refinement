@@ -39,7 +39,6 @@ class GazeboEnv(gym.Env):
         self.observation_space = gym.spaces.Box(low=self.obs.get_min_vals(), high=self.obs.get_max_vals())
         self.reward_range = (-np.inf, np.inf)
 
-        self.reward_pub = rospy.Publisher("agent/reward", Float64, queue_size=5)
         self.hand_state_sub = rospy.Subscriber("reflex_interface/hand_state", HandStateStamped, self.hand_state_callback, queue_size=5)
 
     def seed(self, seed=None):
@@ -53,12 +52,14 @@ class GazeboEnv(gym.Env):
         self.delta_task = msg.delta_task
         self.delta_cur = msg.delta_cur
         self.sum_contact_forces = msg.sum_contact_forces
+        self.prox_angles = [0,0,0]
 
         self.obs.set_cur_val_by_name("preshape_angle", msg.preshape_angle)
 
         for i in range(self.obs.num_fingers):
             # joint positions
             id_str = "_f" + str(i + 1)
+            self.prox_angles[i] = msg.finger_state[i].proximal_angle
             self.obs.set_cur_val_by_name("prox_angle" + id_str, msg.finger_state[i].proximal_angle)
             self.obs.set_cur_val_by_name("dist_angle" + id_str, msg.finger_state[i].distal_angle)
 
@@ -101,9 +102,10 @@ class GazeboEnv(gym.Env):
 
     def step(self, action):
         self.cur_time_step += 1
-        rospy.loginfo(f"Action Regrasp \t {action[0]}")
-        rospy.loginfo(f"Action Wrist \t {action[1]}, {action[2]}, {action[3]}, {action[4]}, {action[5]}, {action[6]}")
-        rospy.loginfo(f"Action Finger \t {action[7]}, {action[8]}, {action[9]}")
+        rospy.loginfo("===STEP===")
+        rospy.loginfo(f"Action Regrasp: \t {action[0]}")
+        rospy.loginfo(f"Action Wrist: \t {action[1]}, {action[2]}, {action[3]}, {action[4]}, {action[5]}, {action[6]}")
+        rospy.loginfo(f"Action Finger: \t {action[7]}, {action[8]}, {action[9]}")
 
         if action[0] >= 0.5:
             rospy.loginfo(">>REGRASPING<<")
@@ -115,41 +117,25 @@ class GazeboEnv(gym.Env):
             rospy.loginfo(">>STAYING<<")
             self.gi.pos_incr(self.get_f_incr(action[7]), self.get_f_incr(action[8]), self.get_f_incr(action[9]), 0, False, False, 0, 0)
 
-        # reward is relative grasp improvement w.r.t. starting config
         if self.hparams["framework"] == 1 or self.hparams["framework"] == 3:
-            reward = self.collect_reward(self.hparams["exec_secs"]) - self.start_reward
+            reward = self.collect_reward(self.hparams["exec_secs"])
 
         logs = {}
-        self.done = self.check_if_done()
+        self.done = self.is_done()
         if self.done:
             self.drop_test()
 
-        # reward is binary grasp success
         if self.hparams["framework"] == 2:
             reward = int(self.sustained_holding) if self.done else 0
         elif self.hparams["framework"] == 3:
             binary_reward = int(self.sustained_holding) if self.done else 0
-            reward += 1 * binary_reward
+            reward += 2 * binary_reward
 
-        rospy.loginfo(f"REWARD \t {reward}")
-        self.reward_pub.publish(Float64(reward))
+        rospy.loginfo(f"--> REWARD: \t {reward}")
 
         return self.obs.get_cur_vals(), reward, self.done, logs
 
-    def check_if_done(self):
-
-        #### STUFF ABOUT PROX ANGLES
-        prox_angles = [
-            self.obs.get_cur_vals_by_name("prox_angle_f1"),
-            self.obs.get_cur_vals_by_name("prox_angle_f2"),
-            self.obs.get_cur_vals_by_name("prox_angle_f3"),
-        ]
-
-        self.prox_diff = abs(prox_angles[0] - prox_angles[1]) + abs(prox_angles[1] - prox_angles[2]) + abs(prox_angles[0] - prox_angles[2])
-        self.prox_diff = self.prox_diff[0]  # convert to float
-        rel_prox_diff_change = self.prox_diff - self.start_prox_diff
-        #### END STUFF ABOUT PROX ANGLES
-
+    def is_done(self):
         # get object shift and distance to object
         t_obj, _ = get_tq_from_homo_matrix(self.gi.get_object_pose())
         self.obj_shift = np.linalg.norm(t_obj - self.gi.obj_p)
@@ -159,7 +145,7 @@ class GazeboEnv(gym.Env):
         if self.obj_shift > self.hparams["obj_shift_tol"]:
             rospy.loginfo(f"Object shift is above {self.hparams['obj_shift_tol']} m. Setting done = True.")
             return True
-        elif not all(prox_angle < self.hparams["joint_lim"] for prox_angle in prox_angles):
+        elif not all(prox_angle < self.hparams["joint_lim"] for prox_angle in self.prox_angles):
             rospy.loginfo(f"One angle is above {self.hparams['joint_lim']} rad. Setting done = True.")
             return True
         elif self.cur_time_step == self.hparams["max_ep_len"]:
@@ -168,23 +154,11 @@ class GazeboEnv(gym.Env):
         return False
 
     def reset(self):
-        rospy.loginfo("Resetting world.")
+        rospy.loginfo("===RESETTING===")
         self.gi.reset_world(self.hparams)
-        self.start_reward = self.collect_reward(self.hparams["exec_secs"])
-
-        prox_angles = [
-            self.obs.get_cur_vals_by_name("prox_angle_f1"),
-            self.obs.get_cur_vals_by_name("prox_angle_f2"),
-            self.obs.get_cur_vals_by_name("prox_angle_f3"),
-        ]
-        self.start_prox_diff = abs(prox_angles[0] - prox_angles[1]) + abs(prox_angles[1] - prox_angles[2]) + abs(prox_angles[0] - prox_angles[2])
-        self.start_prox_diff = self.start_prox_diff[0]
-        rospy.loginfo(f"start_reward is {self.start_reward}")
-        rospy.loginfo(f"start_prox_diff is {self.start_prox_diff}")
 
         # reset vars
         obs = np.zeros(self.observation_space.shape)
-        self.last_reset_time = rospy.get_rostime()
         self.num_regrasps = 0
         self.cur_time_step = 0
         return obs
