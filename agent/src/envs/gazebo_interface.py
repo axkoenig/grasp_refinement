@@ -199,7 +199,7 @@ class GazeboInterface:
 
         return get_homo_matrix_from_tq(wrist_p, wrist_q)
 
-    def reset_world(self, pos_error):
+    def reset_world(self, hparams):
         self.sim_unpause()
 
         # move old object out of way
@@ -217,7 +217,7 @@ class GazeboInterface:
         self.set_model_pose_tq(self.obj_p, self.obj_q, self.new_obj_name)
 
         # move to init pose
-        wrist_init_pose = self.get_wrist_init_pose(self.wrist_p, self.wrist_q, pos_error)
+        wrist_init_pose = self.get_wrist_init_pose(self.wrist_p, self.wrist_q, hparams)
         self.cmd_wrist_abs(wrist_init_pose, True)
 
         # delete old object
@@ -240,7 +240,7 @@ class GazeboInterface:
         if self.verbose:
             rospy.loginfo("Tightened fingers by " + str(tighten_incr) + ": \n" + str(res))
 
-    def regrasp(self, wrist_p_incr, wrist_q_incr, back_off_finger=-0.2):
+    def regrasp(self, wrist_p_incr, wrist_q_incr, back_off_finger=-0.3):
         self.sim_unpause()
 
         # back off fingers by a small amount
@@ -262,15 +262,25 @@ class GazeboInterface:
                 return False
         return True
 
-    def get_wrist_init_pose(self, wrist_p, wrist_q, pos_error):
-        self.wrist_init_pose = get_homo_matrix_from_tq(wrist_p, wrist_q)
+    def get_wrist_init_pose(self, wrist_p, wrist_q, hparams):
         # generate random offset from initial wrist pose
-        x_offset = np.random.uniform(min(pos_error[0]), max(pos_error[0]))
-        y_offset = np.random.uniform(min(pos_error[1]), max(pos_error[1]))
-        z_offset = np.random.uniform(min(pos_error[2]), max(pos_error[2]))
-        rospy.loginfo(f"Random offset for init wrist pose is [x: {x_offset}, y: {y_offset}, z: {z_offset}].")
-        mat_offset = tf.transformations.translation_matrix([x_offset, y_offset, z_offset])
-        return np.dot(self.wrist_init_pose, mat_offset)
+        x = np.random.uniform(hparams["x_error_min"], hparams["x_error_max"])
+        y = np.random.uniform(hparams["y_error_min"], hparams["y_error_max"])
+        z = np.random.uniform(hparams["z_error_min"], hparams["z_error_max"])
+        roll = np.random.uniform(hparams["roll_error_min"], hparams["roll_error_max"])
+        pitch = np.random.uniform(hparams["pitch_error_min"], hparams["pitch_error_max"])
+        yaw = np.random.uniform(hparams["yaw_error_min"], hparams["yaw_error_max"])
+        
+        rospy.loginfo(f"Random offset for init wrist pose is \n [x: {x}, y: {y}, z: {z}], [roll: {roll}, pitch: {pitch}, yaw: {yaw}].")
+        
+        # construct matrix that offsets from ground truth pose
+        q = tf.transformations.quaternion_from_euler(roll, pitch, yaw)
+        mat_t_offset = tf.transformations.translation_matrix([x, y, z])
+        mat_q_offset = tf.transformations.quaternion_matrix(q)
+        mat_offset = np.dot(mat_t_offset, mat_q_offset)
+
+        truth_wrist_init_pose = get_homo_matrix_from_tq(wrist_p, wrist_q)
+        return np.dot(truth_wrist_init_pose, mat_offset)
 
     def select_random_object_wrist_pair(self):
         # select new object randomly
