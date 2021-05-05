@@ -156,11 +156,8 @@ class GazeboEnv(gym.Env):
     def reset(self):
         rospy.loginfo("===RESETTING===")
         self.gi.reset_world(self.hparams)
-
-        # reset vars
-        obs = np.zeros(self.observation_space.shape)
         self.cur_time_step = 0
-        return obs
+        return self.obs.get_cur_vals()
 
     def drop_test(self, lift_vel=0.1, lift_dist=0.15, z_incr=0.0001, secs_to_hold=3):
         counter = 0
