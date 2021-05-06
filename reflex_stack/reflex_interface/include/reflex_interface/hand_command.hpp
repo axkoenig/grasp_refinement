@@ -66,10 +66,6 @@ private:
     std::array<float, 4> sph_open_pos = {1.2, 1.2, 1.2, M_PI / 4};
     std::array<float, 4> sph_close_pos = {2.5, 2.5, 2.5, M_PI / 4};
     std::array<float, 4> cur_cmd = open_pos;
-    // TODO REMOVE THIS (hand state should do this)
-    std::vector<bool> fingers_in_contact = {0, 0, 0};
-    ros::Subscriber sim_state_sub;
-    void sim_state_callback(const sensor_listener::ContactFrames &msg);
     
     std::string getStatusMsg();
 
