@@ -61,95 +61,79 @@ tf2::Vector3 HandState::create_vec_from_msg(const geometry_msgs::Vector3 &msg)
 }
 
 void HandState::sim_state_callback(const sensor_listener::ContactFrames &msg)
-{
-    try
-    {
-        // reset variables
-        vars.clear_all();
-        vars.num_contacts = msg.contact_frames.size();
+{ // reset variables
+    vars.clear_all();
+    vars.num_contacts = msg.contact_frames.size();
 
-        for (int i = 0; i < vars.num_contacts; i++)
+    for (int i = 0; i < vars.num_contacts; i++)
+    {
+        tf2::Transform transform;
+        tf2::fromMsg(msg.contact_frames[i].contact_frame, transform);
+        vars.contact_frames.push_back(transform);
+        vars.contact_forces.push_back(create_vec_from_msg(msg.contact_frames[i].contact_wrench.force));
+        vars.contact_torques.push_back(create_vec_from_msg(msg.contact_frames[i].contact_wrench.torque));
+        vars.contact_positions.push_back(create_vec_from_msg(msg.contact_frames[i].contact_position));
+        vars.contact_normals.push_back(create_vec_from_msg(msg.contact_frames[i].contact_normal));
+        vars.sensor_ids.push_back(msg.contact_frames[i].sensor_id);
+        vars.contact_force_magnitudes.push_back(msg.contact_frames[i].contact_force_magnitude);
+        vars.contact_torque_magnitudes.push_back(msg.contact_frames[i].contact_torque_magnitude);
+        vars.sum_contact_forces += msg.contact_frames[i].contact_force_magnitude;
+        int finger_id = msg.contact_frames[i].finger_id;
+        vars.link_ids.push_back(finger_id);
+        if (!msg.contact_frames[i].palm_contact)
         {
-            tf2::Transform transform;
-            tf2::fromMsg(msg.contact_frames[i].contact_frame, transform);
-            vars.contact_frames.push_back(transform);
-            vars.contact_forces.push_back(create_vec_from_msg(msg.contact_frames[i].contact_wrench.force));
-            vars.contact_torques.push_back(create_vec_from_msg(msg.contact_frames[i].contact_wrench.torque));
-            vars.contact_positions.push_back(create_vec_from_msg(msg.contact_frames[i].contact_position));
-            vars.contact_normals.push_back(create_vec_from_msg(msg.contact_frames[i].contact_normal));
-            vars.sensor_ids.push_back(msg.contact_frames[i].sensor_id);
-            vars.contact_force_magnitudes.push_back(msg.contact_frames[i].contact_force_magnitude);
-            vars.contact_torque_magnitudes.push_back(msg.contact_frames[i].contact_torque_magnitude);
-            vars.sum_contact_forces += msg.contact_frames[i].contact_force_magnitude;
-            int finger_id = msg.contact_frames[i].finger_id;
-            vars.link_ids.push_back(finger_id);
-            if (!msg.contact_frames[i].palm_contact)
+            // this should never happen but checking anyway due to vector accessing below
+            if (finger_id < 1 || finger_id > 3)
             {
-                // this should never happen but checking anyway due to vector accessing below 
-                if (finger_id < 1 || finger_id > 3)
-                {
-                    ROS_ERROR("Your finger id is out of bounds. Ignoring this.");
-                    continue;
-                }
-                vars.fingers_in_contact[finger_id - 1] = true;
-                vars.num_sensors_in_contact_per_finger[finger_id - 1] += 1; // TODO actually this variable now represents num_sim_contacts_per_finger
+                ROS_ERROR("Your finger id is out of bounds. Ignoring this.");
+                continue;
             }
+            vars.fingers_in_contact[finger_id - 1] = true;
+            vars.num_sensors_in_contact_per_finger[finger_id - 1] += 1; // TODO actually this variable now represents num_sim_contacts_per_finger
         }
-        updateHandStateSim();
-        // TODO shift this to wrist_controller
-        // broadcast Gazebo wrist pose to ROS tf tree
-        // TODO maybe add back in (once ROS fixes this bug https://github.com/ros/geometry2/issues/467 and I dont get bombarded with warning messages anymore)
-        // tf2::Transform wrist_measured = getLinkPoseSim(nh, "shell", "world", false);
-        // broadcastModelState(wrist_measured, "world", "reflex_interface/wrist_measured", &br_reflex_measured);
+    }
+    updateHandStateSim();
+    // TODO shift this to wrist_controller
+    // broadcast Gazebo wrist pose to ROS tf tree
+    // TODO maybe add back in (once ROS fixes this bug https://github.com/ros/geometry2/issues/467 and I dont get bombarded with warning messages anymore)
+    // tf2::Transform wrist_measured = getLinkPoseSim(nh, "shell", "world", false);
+    // broadcastModelState(wrist_measured, "world", "reflex_interface/wrist_measured", &br_reflex_measured);
 
-        updateQualityMetrics();
-        hand_state_pub.publish(getHandStateMsg());
-    }
-    catch (std::exception &e)
-    {
-        ROS_ERROR("Whoops! Exception occured in sim_state_callback: %s", e.what());
-    }
+    updateQualityMetrics();
+    hand_state_pub.publish(getHandStateMsg());
 }
 
 void HandState::reflex_state_callback(const reflex_msgs::Hand &msg)
 {
-    try
+    for (int i = 0; i < num_fingers; i++)
     {
-        for (int i = 0; i < num_fingers; i++)
-        {
-            finger_states[i]->setProximalAngle(msg.finger[i].proximal);
-            finger_states[i]->setDistalAngle(msg.finger[i].distal_approx);
-            finger_states[i]->setSensorContacts(msg.finger[i].contact);
-            finger_states[i]->setSensorPressures(msg.finger[i].pressure);
+        finger_states[i]->setProximalAngle(msg.finger[i].proximal);
+        finger_states[i]->setDistalAngle(msg.finger[i].distal_approx);
+        finger_states[i]->setSensorContacts(msg.finger[i].contact);
+        finger_states[i]->setSensorPressures(msg.finger[i].pressure);
 
-            if (i != 2)
-            {
-                // set preshape angle for fingers 1 and 2 (finger 3 doesn't have a preshape angle)
-                finger_states[i]->setPreshapeAngle(msg.motor[3].joint_angle);
-            }
-        }
-        for (int i = 0; i < num_motors; i++)
+        if (i != 2)
         {
-            motor_states[i]->setJointAngle(msg.motor[i].joint_angle);
-            motor_states[i]->setRawAngle(msg.motor[i].raw_angle);
-            motor_states[i]->setVelocity(msg.motor[i].velocity);
-            motor_states[i]->setLoad(msg.motor[i].load);
-            motor_states[i]->setVoltage(msg.motor[i].voltage);
-            motor_states[i]->setTemperature(msg.motor[i].temperature);
-            motor_states[i]->setErrorState(msg.motor[i].error_state);
-        }
-
-        if (!use_sim_data_hand)
-        {
-            updateHandStateReal();
-            updateQualityMetrics();
-            hand_state_pub.publish(getHandStateMsg());
+            // set preshape angle for fingers 1 and 2 (finger 3 doesn't have a preshape angle)
+            finger_states[i]->setPreshapeAngle(msg.motor[3].joint_angle);
         }
     }
-
-    catch (std::exception &e)
+    for (int i = 0; i < num_motors; i++)
     {
-        ROS_ERROR("Whoops! Exception occured in reflex_state_callback: %s", e.what());
+        motor_states[i]->setJointAngle(msg.motor[i].joint_angle);
+        motor_states[i]->setRawAngle(msg.motor[i].raw_angle);
+        motor_states[i]->setVelocity(msg.motor[i].velocity);
+        motor_states[i]->setLoad(msg.motor[i].load);
+        motor_states[i]->setVoltage(msg.motor[i].voltage);
+        motor_states[i]->setTemperature(msg.motor[i].temperature);
+        motor_states[i]->setErrorState(msg.motor[i].error_state);
+    }
+
+    if (!use_sim_data_hand)
+    {
+        updateHandStateReal();
+        updateQualityMetrics();
+        hand_state_pub.publish(getHandStateMsg());
     }
 }
 
