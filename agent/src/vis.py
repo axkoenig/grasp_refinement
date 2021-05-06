@@ -8,22 +8,26 @@ import numpy as np
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
 
-def get_experiment_data(log_path, date, framework, misc, try_id, scalar_name, window_size=5, verbose=False, log_interval=4):
+def get_experiment_data(log_path, prefix, framework, try_id, scalar_name, window_size=4, verbose=False):
 
     # load tensorboard logs
-    experiment_path = os.path.join(log_path, f"{date}_F{framework}_{misc}_try{try_id}_1")
+    experiment_path = os.path.join(log_path, f"{prefix}_f{framework}_id{try_id}_1")
     event_acc = EventAccumulator(experiment_path)
     event_acc.Reload()
-    world_times, time_step, vals = zip(*event_acc.Scalars(scalar_name))
+    world_times, time_steps, vals = zip(*event_acc.Scalars(scalar_name))
 
     # smooth data with moving average filter
     vals_smooth = np.convolve(vals, np.ones(window_size), "valid") / window_size
-    num_episodes = np.arange(log_interval, len(vals_smooth) * log_interval + log_interval, log_interval)
+    time_steps_smooth = np.convolve(time_steps, np.ones(window_size), "valid") / window_size
+
+    # linearly interpolate the missing time steps
+    dense_time_steps = np.arange(int(time_steps_smooth[0]), int(time_steps_smooth[-1]) + 1)
+    dense_vals = np.interp(dense_time_steps, time_steps_smooth, vals_smooth)
 
     # create pd dataframe
-    data = {"num_episodes": num_episodes, scalar_name: vals_smooth}
+    data = {"dense_time_steps": dense_time_steps, scalar_name: dense_vals}
     df = pd.DataFrame(data)
-    df["date"] = date
+    df["prefix"] = prefix
     df["framework"] = framework
     df["try_id"] = try_id
 
@@ -34,11 +38,35 @@ def get_experiment_data(log_path, date, framework, misc, try_id, scalar_name, wi
     return df
 
 
-def add_to_df(df, log_path, date, framework, misc, end_try_id, scalar_name):
-    try_ids = list(range(0, end_try_id + 1))
+def add_to_df(df, log_path, prefix, framework, end_try_id, scalar_name):
+    try_ids = list(range(1, end_try_id + 1))
     for try_id in try_ids:
-        df = df.append(get_experiment_data(log_path, date, framework, misc, try_id, scalar_name))
+        df = df.append(get_experiment_data(log_path, prefix, framework, try_id, scalar_name))
     return df
+
+
+def get_all_data(args, verbose=True):
+    # loads data from tensorboard logfiles
+    df = pd.DataFrame()
+    for framework in range(1, 4):
+        df = add_to_df(df, args.log_path, args.prefix, framework, args.max_num_trials, args.scalar_name)
+    if verbose: 
+        print(df)
+    return df
+
+
+def plot(args, df, num_frameworks=3):
+    palette = sns.color_palette("tab10", num_frameworks)
+    sns.set(style="darkgrid", font_scale=1.5)
+    
+    ax = sns.lineplot(data=df, x="dense_time_steps", y=args.scalar_name, palette=palette, hue="framework")
+    ax.set_title(f"{args.max_num_trials} Trainings Runs")
+    ax.set_xlabel("Number of Time Steps")
+    ax.set_ylabel(args.scalar_name)
+    
+    plt.tight_layout(pad=0.5)
+    plt.ylim(0, 1.2)
+    plt.show()
 
 
 if __name__ == "__main__":
@@ -46,28 +74,28 @@ if __name__ == "__main__":
     parser.add_argument(
         "--log_path",
         type=str,
-        default="/home/parallels/catkin_ws/src/grasp_refinement/agent/src/logs/refinement",
+        default="/home/parallels/cluster_logs",
         help="Path to tensorboard log.",
+    )
+    parser.add_argument(
+        "--prefix",
+        type=str,
+        default="05May_MultObjWRot",
+        help="Prefix comment of your experiment.",
+    )
+    parser.add_argument(
+        "--scalar_name",
+        type=str,
+        default="drop_test/sustained_holding",
+        help="Which metric to plot.",
+    )
+    parser.add_argument(
+        "--max_num_trials",
+        type=int,
+        default=5,
+        help="How many trials were in your experiment.",
     )
     args = parser.parse_args()
 
-    df = pd.DataFrame()
-    misc = "Lim3_X0.03_Z0.02"
-    scalar_name = "drop_test/sustained_holding"
-    df = add_to_df(df, args.log_path, "29Apr", 1, misc, 5, scalar_name)
-    df = add_to_df(df, args.log_path, "30Apr", 1, misc, 8, scalar_name)
-    df = add_to_df(df, args.log_path, "29Apr", 2, misc, 5, scalar_name)
-    df = add_to_df(df, args.log_path, "30Apr", 2, misc, 8, scalar_name)
-    df = add_to_df(df, args.log_path, "29Apr", 3, misc, 4, scalar_name)
-    df = add_to_df(df, args.log_path, "30Apr", 3, misc, 8, scalar_name)
-
-    print(df)
-
-    sns.set(style="darkgrid", font_scale=1.5)
-    ax = sns.lineplot(data=df, x="num_episodes", y=scalar_name, hue="framework")
-    ax.set_title("Avg. of [F1: 13], [F2: 13], [F3: 12] runs")
-    ax.set_xlabel("Number of Episodes")
-    ax.set_ylabel(scalar_name)
-    plt.tight_layout(pad=0.5)
-    plt.ylim(0, 1.2)
-    plt.show()
+    df = get_all_data(args)
+    plot(args, df)
