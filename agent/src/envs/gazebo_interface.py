@@ -220,7 +220,8 @@ class GazeboInterface:
                 back_offs[i] = min_angle - prox_angles[i]
             else:
                 back_offs[i] = back_off
-        rospy.loginfo("Backing fingers off by: \t" + str(back_offs))
+        if self.verbose: 
+            rospy.loginfo("Backing fingers off by: \t" + str(back_offs))
         res = self.pos_incr(back_offs[0], back_offs[1], back_offs[2], 0, True, True, self.srv_tolerance, 1)
         if self.verbose:
             rospy.loginfo("Backed off fingers: \n" + str(res))
