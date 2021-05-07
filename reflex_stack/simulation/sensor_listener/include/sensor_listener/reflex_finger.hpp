@@ -54,7 +54,7 @@ private:
     void flex_to_distal_callback(const control_msgs::JointControllerState &msg);
 
 public:
-    ReflexSensor sensors[9];
+    ReflexSensor *sensors[9];
     std::vector<sensor_listener::ContactFrame> prox_contact_frames;
     std::vector<sensor_listener::ContactFrame> dist_contact_frames;
     ReflexFinger(const int &finger_id);

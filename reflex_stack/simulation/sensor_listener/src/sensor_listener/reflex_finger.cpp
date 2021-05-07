@@ -11,6 +11,12 @@ ReflexFinger::ReflexFinger(const int &finger_id)
     this->finger_id = finger_id;
     std::string finger_id_str = std::to_string(this->finger_id);
 
+    // init sensors
+    for (int i = 0; i < 9; i++)
+    {
+        sensors[i] = new ReflexSensor(nh);
+    }
+
     std::string proximal_topic = "gazebo/finger_" + finger_id_str + "_proximal_position_controller/state";
     std::string proximal_to_flex_topic = "gazebo/finger_" + finger_id_str + "_proximal_to_flex_position_controller/state";
     std::string flex_to_distal_topic = "gazebo/finger_" + finger_id_str + "_flex_to_distal_position_controller/state";
@@ -102,8 +108,8 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
     {
         for (int i = 0; i < num_sensors_on_link; i++)
         {
-            sensors[first_sensor_idx + i].addContactToBuffer(false);
-            sensors[first_sensor_idx + i].addPressureToBuffer(0.0);
+            sensors[first_sensor_idx + i]->addContactToBuffer(false);
+            sensors[first_sensor_idx + i]->addPressureToBuffer(0.0);
         }
         return;
     }
@@ -220,8 +226,8 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
             pressures[i] /= num_real_contacts[i];
         }
         // save final values for each sensor
-        sensors[first_sensor_idx + i].addContactToBuffer(contacts[i]);
-        sensors[first_sensor_idx + i].addPressureToBuffer(pressures[i]);
+        sensors[first_sensor_idx + i]->addContactToBuffer(contacts[i]);
+        sensors[first_sensor_idx + i]->addPressureToBuffer(pressures[i]);
     }
 
     for (int i = 0; i < int(unique_contacts.size()); i++)
@@ -247,7 +253,7 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
         cf_msg.contact_torque_magnitude = avg_scr.torque.length();
         cf_msg.contact_force_magnitude = avg_scr.force.length();
         // cf_msg.contact_wrench.force = tf2::toMsg(avg_scr.force);
-        cf_msg.contact_wrench.force = tf2::toMsg(avg_scr.normal.normalize() * avg_scr.force.length());  // TODO this is a temporary solution to deal with unrealisitc force readings during contact
+        cf_msg.contact_wrench.force = tf2::toMsg(avg_scr.normal.normalize() * avg_scr.force.length()); // TODO this is a temporary solution to deal with unrealisitc force readings during contact
         cf_msg.contact_wrench.torque = tf2::toMsg(avg_scr.torque);
         cf_msg.contact_frame = tf2::toMsg(contact_frame);
         cf_msg.contact_position = tf2::toMsg(avg_scr.position);
