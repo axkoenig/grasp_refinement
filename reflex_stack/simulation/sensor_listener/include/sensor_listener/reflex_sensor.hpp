@@ -14,11 +14,12 @@ private:
     int buf_size = 5;
     std::vector<bool> contact_buffer = {0, 0, 0, 0, 0};
     std::vector<float> pressure_buffer = {0, 0, 0, 0, 0};
-    int default_contact_threshold = 10; // we set this on real reflex in reflex interface
+    int default_contact_threshold = 0;  // we get this param from the ros param server
     int max_pressure_val = 127;         // on real reflex, this is different on each sensor, but roughly 127
     float pressure_at_max_val = 40;     // 40 Newtons on sensor in simulation corresponds to maximum pressure reading
 
 public:
+    ReflexSensor(ros::NodeHandle &nh);
     int getPressure();
     bool getContact();
     void addContactToBuffer(const bool contact);

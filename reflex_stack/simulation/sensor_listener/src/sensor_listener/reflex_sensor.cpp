@@ -1,6 +1,12 @@
 #include <numeric>
 
 #include "sensor_listener/reflex_sensor.hpp"
+#include "gazebo_interface/gazebo_interface.hpp"
+
+ReflexSensor::ReflexSensor(ros::NodeHandle &nh)
+{
+    getParam(&nh, &default_contact_threshold, "default_contact_threshold");
+}
 
 int ReflexSensor::getPressure()
 {

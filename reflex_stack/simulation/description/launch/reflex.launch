@@ -9,6 +9,11 @@
     <arg name="launch_finger_controllers" default="true" />
     <arg name="base_link_name" default="shell" />
 
+    <!-- this is a parameter on real reflex which we simulate: any sensor pressure below the threshold will not be reported as a contact 
+         the param is necessary on real hand because sensors are noisy and usually report pressures \in [-3,3] if there is no contact. -->
+    <arg name="default_contact_threshold" default="5" />
+    <param name="default_contact_threshold" value="$(arg default_contact_threshold)" />
+	
     <!-- grasp and object poses -->
     <rosparam file="$(find description)/config/grasp_poses.yaml"/>
 
