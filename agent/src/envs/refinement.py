@@ -31,7 +31,7 @@ class GazeboEnv(gym.Env):
 
         rospy.init_node("agent", anonymous=True)
 
-        self.gi = GazeboInterface()
+        self.gi = GazeboInterface(verbose=False)
         self.acts = ActionSpace()
         self.obs = ObservationSpace()
 
@@ -52,7 +52,7 @@ class GazeboEnv(gym.Env):
         self.delta_task = msg.delta_task
         self.delta_cur = msg.delta_cur
         self.sum_contact_forces = msg.sum_contact_forces
-        self.prox_angles = [0,0,0]
+        self.prox_angles = [0, 0, 0]
 
         self.obs.set_cur_val_by_name("preshape_angle", msg.preshape_angle)
 
@@ -97,25 +97,23 @@ class GazeboEnv(gym.Env):
     def get_reward(self):
         return self.epsilon_force + 10 * self.epsilon_torque + 1 / 10 * self.delta_task
 
-    def get_f_incr(self, action):
-        return deg2rad(2) if action >= 0.5 else 0
-
     def step(self, action):
         self.cur_time_step += 1
         rospy.loginfo("===STEP===")
-        rospy.loginfo(f"Action Regrasp: \t {action[0]}")
-        rospy.loginfo(f"Action Wrist: \t {action[1]}, {action[2]}, {action[3]}, {action[4]}, {action[5]}, {action[6]}")
-        rospy.loginfo(f"Action Finger: \t {action[7]}, {action[8]}, {action[9]}")
+        action_dict = self.acts.get_action_dict(action, verbose=True)
 
-        if action[0] >= 0.5:
+        if action_dict["trigger_regrasp"]:
             rospy.loginfo(">>REGRASPING<<")
-            wrist_p_incr = [action[1], action[2], action[3]]
-            wrist_q_incr = tf.transformations.quaternion_from_euler(action[4], action[5], action[6])
-            self.gi.regrasp(wrist_p_incr, wrist_q_incr, self.prox_angles)
+            rot = action_dict["wrist_rot"]
+            wrist_q = tf.transformations.quaternion_from_euler(rot[0], rot[1], rot[2])
+            self.gi.regrasp(action_dict["wrist_trans"], wrist_q, self.prox_angles)
             self.num_regrasps += 1  # we reset this var in the tensorboard callback once recorded
         else:
-            rospy.loginfo(">>STAYING<<")
-            self.gi.pos_incr(self.get_f_incr(action[7]), self.get_f_incr(action[8]), self.get_f_incr(action[9]), 0, False, False, 0, 0)
+            rospy.loginfo(">>WRIST STAYING<<")
+            if action_dict["trigger_finger_adjust"]:
+                rospy.loginfo(">>ADJUSTING FINGERS<<")
+                f = action_dict["fingers_incr"]
+                self.gi.pos_incr(f[0], f[1], f[2], 0, False, False, 0,0)
 
         if self.hparams["framework"] == 1 or self.hparams["framework"] == 3:
             reward = self.collect_reward(self.hparams["exec_secs"])
