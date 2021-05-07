@@ -7,7 +7,7 @@
 
 std::string node_name = "sensor_listener";
 std::string hand_state_topic = "reflex_takktile/hand_state";
-std::string contact_frames_topic = "reflex/sim_contact_frames";
+std::string contact_frames_topic = "reflex_takktile/sim_contact_frames";
 
 int main(int argc, char **argv)
 {
@@ -39,8 +39,8 @@ int main(int argc, char **argv)
 
             for (int j = 0; j < hand.num_sensors; j++)
             {
-                hand_msg.finger[i].pressure[j] = hand.fingers[i].sensors[j].getPressure();
-                hand_msg.finger[i].contact[j] = hand.fingers[i].sensors[j].getContact();
+                hand_msg.finger[i].pressure[j] = hand.fingers[i].sensors[j]->getPressure();
+                hand_msg.finger[i].contact[j] = hand.fingers[i].sensors[j]->getContact();
             }
 
             // fill contact frames message with prox and distal contacts

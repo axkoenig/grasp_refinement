@@ -21,7 +21,7 @@ HandState::HandState(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_d
 
     if (use_sim_data_hand)
     {
-        sim_state_sub = nh->subscribe("reflex/sim_contact_frames", 1, &HandState::sim_state_callback, this);
+        sim_state_sub = nh->subscribe("reflex_takktile/sim_contact_frames", 1, &HandState::sim_state_callback, this);
     }
 }
 
