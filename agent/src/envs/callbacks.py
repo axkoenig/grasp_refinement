@@ -79,16 +79,16 @@ class TensorboardCallback(BaseCallback):
             self.logger.record("drop_test/delta_cur_lifting", self.get_env_attr("delta_cur"))
             self.logger.record("drop_test/eps_force_lifting", self.get_env_attr("epsilon_force"))
             self.logger.record("drop_test/eps_torque_lifting", self.get_env_attr("epsilon_torque"))
-            self.logger.record("rollout/ep_num_regrasps", self.get_env_attr("num_regrasps"))
-            self.training_env.set_attr("num_regrasps", 0)
         elif stage == Stage.HOLD: 
             self.logger.record("drop_test/delta_cur_holding", self.get_env_attr("delta_cur"))
             self.logger.record("drop_test/eps_force_holding", self.get_env_attr("epsilon_force"))
             self.logger.record("drop_test/eps_torque_holding", self.get_env_attr("epsilon_torque"))
-            self.logger.record("drop_test/sustained_lifting", self.get_env_attr("sustained_lifting"))
-            self.training_env.set_attr("sustained_lifting", 0)
-        elif self.get_env_attr("done"):
-            self.logger.record("drop_test/sustained_holding", self.get_env_attr("sustained_holding"))
-            self.training_env.set_attr("sustained_holding", 0)
+        
+        # record grasp outcome and reset variables
+        if self.get_env_attr("done"):
+            self.logger.record("drop_test/sustained_holding", int(self.get_env_attr("sustained_holding")))
+            self.logger.record("drop_test/sustained_lifting", int(self.get_env_attr("sustained_lifting")))
+            self.logger.record("rollout/ep_num_regrasps", self.get_env_attr("num_regrasps"))
+            self.training_env.set_attr("num_regrasps", 0)
 
         return True

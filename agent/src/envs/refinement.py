@@ -34,8 +34,8 @@ class GazeboEnv(gym.Env):
         self.epsilon_torque = 0
         self.delta_task = 0
         self.delta_cur = 0
-        self.sustained_holding = 0
-        self.sustained_lifting = 0
+        self.sustained_holding = False
+        self.sustained_lifting = False
 
         # counters
         self.num_regrasps = 0
@@ -69,14 +69,17 @@ class GazeboEnv(gym.Env):
     def step(self, action):
         self.gi.sim_unpause()
         self.update_stage()
-        rospy.loginfo(f"==={self.stage.name}-STEP===")
+        rospy.loginfo(f"==={self.stage.name}-STEP:[{self.cur_time_step}]===")
 
         action_dict = self.acts.get_action_dict(action, verbose=True)
         self.act(action_dict)
 
-        reward = self.get_reward()
+        reward = self.get_reward_quality_metrics()
         logs = {}
         self.done = True if self.stage == Stage.END else False
+        if self.done: 
+            reward += self.get_reward_binary()
+
         rospy.loginfo(f"--> REWARD: \t {reward}")
 
         return self.obs.get_cur_vals(), reward, self.done, logs
@@ -87,7 +90,7 @@ class GazeboEnv(gym.Env):
         self.last_time_stamp = rospy.Time.now()
         self.stage = Stage.REFINE
         self.cur_time_step = 0
-        self.gi.sim_pause() # when NN is updating after resetting, we pause simulation 
+        self.gi.sim_pause()  # when NN is updating after resetting, we pause simulation
         return self.obs.get_cur_vals()
 
     ### OTHER METHODS
@@ -122,7 +125,9 @@ class GazeboEnv(gym.Env):
         step_size = 1 / self.get_rate_of_cur_stage()
         d = rospy.Time.now() - self.last_time_stamp
         while rospy.Time.now() - self.last_time_stamp < rospy.Duration(step_size):
-            rospy.loginfo_throttle(60, "Your last %s step only took %f seconds. Waiting to keep min step size of %f", self.stage.name, d.to_sec(), step_size)
+            rospy.loginfo_throttle(
+                step_size, "Your last %s step only took %f seconds. Waiting to keep min step size of %f", self.stage.name, d.to_sec(), step_size
+            )
             rospy.sleep(0.01)
         self.last_time_stamp = rospy.Time.now()
 
@@ -189,23 +194,23 @@ class GazeboEnv(gym.Env):
             f = action_dict["fingers_incr"]
             self.gi.pos_incr(f[0], f[1], f[2], 0, False, False, 0, 0)
 
-    def get_reward(self, w_binary_rew=2):
-        if self.stage != Stage.END:
-            # we are waiting 80% of one time step to collect reward here and we leave 20% for other code to run
-            # later on we make sure we get the exact update rate via the wait_if_necessary method
-            exec_secs = 0.8 * (1 / self.get_rate_of_cur_stage())
-            if self.hparams["framework"] == 1 or self.hparams["framework"] == 3:
-                return self.collect_reward(exec_secs)
-            else:
-                rospy.sleep(exec_secs)
-                return 0
+    def get_reward_quality_metrics(self):
+        # we are waiting 80% of one time step to collect reward here and we leave 20% for other code to run
+        # later on we make sure we get the exact update rate via the wait_if_necessary method
+        exec_secs = 0.8 * (1 / self.get_rate_of_cur_stage())
+        if self.hparams["framework"] == 1 or self.hparams["framework"] == 3:
+            return self.collect_reward(exec_secs)
         else:
-            if self.hparams["framework"] == 2:
-                return int(self.sustained_holding)
-            elif self.hparams["framework"] == 3:
-                return w_binary_rew * int(self.sustained_holding)
-            else:
-                return 0
+            rospy.sleep(exec_secs)
+            return 0
+
+    def get_reward_binary(self, w_binary_rew=2):
+        if self.hparams["framework"] == 2:
+            return int(self.sustained_holding)
+        elif self.hparams["framework"] == 3:
+            return w_binary_rew * int(self.sustained_holding)
+        else:
+            return 0
 
     def update_stage(self):
         self.cur_time_step += 1
@@ -232,7 +237,7 @@ class GazeboEnv(gym.Env):
             self.hold_thread.start()
         elif self.cur_time_step == self.hparams["hold_steps"] and self.stage == Stage.HOLD:
             rospy.loginfo("Done with %i hold steps. New stage is END.", self.hparams["hold_steps"])
-            self.hold_thread.join()
+            self.hold_thread.join()  # wait for holding to be done (to get holding outcome)
             self.stage = Stage.END
 
     def end_refinement_early(self):
