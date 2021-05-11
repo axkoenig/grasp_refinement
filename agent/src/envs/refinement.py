@@ -255,11 +255,10 @@ class GazeboEnv(gym.Env):
 
     def lift_object(self):
         counter = 0
-        rate = 100
+        rate = 50
         r = rospy.Rate(rate)
-        z_incr = self.hparams["lift_dist"] * self.hparams["secs_to_lift"] / rate
-        self.last_time_stamp = rospy.Time.now()
-
+        z_incr = self.hparams["lift_dist"] / (self.hparams["secs_to_lift"] * rate)
+        
         rospy.loginfo("Starting to lift object.")
         while counter * z_incr <= self.hparams["lift_dist"]:
             lift_mat = tf.transformations.translation_matrix([0, 0, z_incr])
@@ -272,7 +271,6 @@ class GazeboEnv(gym.Env):
         rospy.loginfo("Sustained lifting: \t" + str(self.sustained_lifting))
 
     def hold_object(self):
-        self.last_time_stamp = rospy.Time.now()
         rospy.loginfo("Starting to hold object.")
         rospy.sleep(self.hparams["secs_to_hold"])
         self.sustained_holding = self.gi.object_lifted()
