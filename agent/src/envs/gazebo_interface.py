@@ -167,12 +167,13 @@ class GazeboInterface:
     def get_cur_obj_name(self):
         msg = rospy.wait_for_message("/gazebo/model_states", ModelStates)
         models = msg.name
-        if "ground_plane" in models:
-            models.remove("ground_plane")
-        if "reflex" in models:
-            models.remove("reflex")
+        irrelevant_objects = ["ground_plane", "reflex"]
+        for obj in irrelevant_objects:
+            if obj in models:
+                models.remove(obj)
         if len(models) != 1:
-            raise ValueError("You have more models than expected in your world!")
+            rospy.warn("You have more or less than one model in your world! Returning '' for object name.")
+            return ""
         return models[0]
 
     def reset_world(self, hparams):
@@ -187,8 +188,7 @@ class GazeboInterface:
         self.cmd_wrist_abs(wrist_waypoint_pose, True)
 
         # only spawn if object does not exist yet
-        msg = rospy.wait_for_message("/gazebo/model_states", ModelStates)
-        if self.new_obj_name not in msg.name:
+        if self.new_obj_name != self.object_name:
             self.spawn_object()
             self.delete_object(self.object_name)  # delete old object
             self.object_name = self.new_obj_name
