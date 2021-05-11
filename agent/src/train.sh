@@ -9,15 +9,15 @@ z_error_max=0.05
 z_error_min=-$z_error_max
 
 # rot offset
-roll_error_max=0.1
+roll_error_max=15
 roll_error_min=-$roll_error_max
-pitch_error_max=0.1
+pitch_error_max=15
 pitch_error_min=-$pitch_error_max
-yaw_error_max=0.1
+yaw_error_max=15
 yaw_error_min=-$yaw_error_max
 
 time_steps=3000
-prefix="10May_AllControlNewActions_Debugged"
+prefix="10May_NewControlNewActions_Night"
 
 # occasionally run this
 # rosclean purge -y

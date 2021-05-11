@@ -16,6 +16,8 @@ from stable_baselines3.common.env_checker import check_env
 
 from envs.refinement import GazeboEnv
 from envs.callbacks import TensorboardCallback
+from envs.helpers import deg2rad
+
 
 def main(args):
 
@@ -29,8 +31,14 @@ def main(args):
 
     print("Training with arguments")
     hparams = vars(args)
+
+    # convert degrees to radians
+    names = ["roll_error_min", "roll_error_max", "pitch_error_min", "pitch_error_max", "yaw_error_min", "yaw_error_max"]
+    for name in names:
+        hparams[name] = deg2rad(hparams[name])
+
     for key, value in hparams.items():
-        print(f'- {key:20}{value}')
+        print(f"- {key:20}{value}")
 
     print("Loading environment...")
     env = GazeboEnv(hparams)
@@ -86,20 +94,21 @@ if __name__ == "__main__":
     parser.add_argument("--log_name", type=str, default="test", help="Name for log.")
     parser.add_argument("--output_dir", type=str, default="./", help="Path of output directory.")
     parser.add_argument("--chkpt_freq", type=int, default=300, help="Save model every n training steps.")
-    parser.add_argument("--x_error_min", type=float, default=0, help="Positional error along x direction")
-    parser.add_argument("--y_error_min", type=float, default=0, help="Positional error along y direction")
-    parser.add_argument("--z_error_min", type=float, default=0, help="Positional error along z direction")
-    parser.add_argument("--x_error_max", type=float, default=0, help="Positional error along x direction")
-    parser.add_argument("--y_error_max", type=float, default=0, help="Positional error along y direction")
-    parser.add_argument("--z_error_max", type=float, default=0, help="Positional error along z direction")
-    parser.add_argument("--roll_error_min", type=float, default=0, help="Orientational error along x direction")
-    parser.add_argument("--pitch_error_min", type=float, default=0, help="Orientational error along y direction")
-    parser.add_argument("--yaw_error_min", type=float, default=0, help="Orientational error along z direction")
-    parser.add_argument("--roll_error_max", type=float, default=0, help="Orientational error along x direction")
-    parser.add_argument("--pitch_error_max", type=float, default=0, help="Orientational error along y direction")
-    parser.add_argument("--yaw_error_max", type=float, default=0, help="Orientational error along z direction")
+    parser.add_argument("--x_error_min", type=float, default=0, help="Positional error along x direction [m]")
+    parser.add_argument("--y_error_min", type=float, default=0, help="Positional error along y direction [m]")
+    parser.add_argument("--z_error_min", type=float, default=0, help="Positional error along z direction [m]")
+    parser.add_argument("--x_error_max", type=float, default=0, help="Positional error along x direction [m]")
+    parser.add_argument("--y_error_max", type=float, default=0, help="Positional error along y direction [m]")
+    parser.add_argument("--z_error_max", type=float, default=0, help="Positional error along z direction [m]")
+    parser.add_argument("--roll_error_min", type=float, default=0, help="Orientational error along x direction [deg]")
+    parser.add_argument("--pitch_error_min", type=float, default=0, help="Orientational error along y direction [deg]")
+    parser.add_argument("--yaw_error_min", type=float, default=0, help="Orientational error along z direction [deg]")
+    parser.add_argument("--roll_error_max", type=float, default=0, help="Orientational error along x direction [deg]")
+    parser.add_argument("--pitch_error_max", type=float, default=0, help="Orientational error along y direction [deg]")
+    parser.add_argument("--yaw_error_max", type=float, default=0, help="Orientational error along z direction [deg]")
     parser.add_argument("--framework", type=int, default=1, help="Which reward framework to train with (1 or 2).")
     parser.add_argument("--log_interval", type=int, default=1, help="After how many episodes to log.")
 
     args, unknown = parser.parse_known_args()
+
     main(args)
