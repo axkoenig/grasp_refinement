@@ -34,6 +34,8 @@ class GazeboEnv(gym.Env):
         self.epsilon_torque = 0
         self.delta_task = 0
         self.delta_cur = 0
+        self.sustained_holding = 0
+        self.sustained_lifting = 0
 
         # counters
         self.num_regrasps = 0
