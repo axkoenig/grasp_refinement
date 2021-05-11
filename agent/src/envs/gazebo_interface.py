@@ -15,7 +15,6 @@ from reflex_interface.srv import PosIncrement
 
 from .helpers import (
     get_tq_from_homo_matrix,
-    get_homo_matrix_from_transform_msg,
     get_homo_matrix_from_tq,
     get_homo_matrix_from_pose_msg,
     StringServiceRequest,
@@ -53,7 +52,7 @@ class GazeboInterface:
         self.ts_wrist = geometry_msgs.msg.TransformStamped()
         self.br = tf2_ros.TransformBroadcaster()
         self.sim_unpause()  # make sure simulation is not paused
-        rospy.sleep(1)      # broadcaster needs some time to start
+        rospy.sleep(1)  # broadcaster needs some time to start
 
     def sim_unpause(self):
         service_call_with_retries(self.unpause_physics, None)
@@ -165,8 +164,20 @@ class GazeboInterface:
 
         return get_homo_matrix_from_tq(wrist_p, wrist_q)
 
+    def get_cur_obj_name(self):
+        msg = rospy.wait_for_message("/gazebo/model_states", ModelStates)
+        models = msg.name
+        if "ground_plane" in models:
+            models.remove("ground_plane")
+        if "reflex" in models:
+            models.remove("reflex")
+        if len(models) != 1:
+            raise ValueError("You have more models than expected in your world!")
+        return models[0]
+
     def reset_world(self, hparams):
         # move old object out of way
+        self.object_name = self.get_cur_obj_name()
         self.set_model_pose_tq([1, 0, 1], [0, 0, 0, 1], self.object_name)
 
         # open fingers and move wrist to start position
@@ -209,7 +220,7 @@ class GazeboInterface:
                 back_offs[i] = min_angle - prox_angles[i]
             else:
                 back_offs[i] = back_off
-        if self.verbose: 
+        if self.verbose:
             rospy.loginfo("Backing fingers off by: \t" + str(back_offs))
         res = self.pos_incr(back_offs[0], back_offs[1], back_offs[2], 0, True, True, self.srv_tolerance, 1)
         if self.verbose:
