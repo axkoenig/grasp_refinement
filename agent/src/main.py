@@ -42,6 +42,7 @@ def main(args):
 
     print("Loading environment...")
     env = GazeboEnv(hparams)
+    # check_env(env)
 
     print("Preparing model...")
     n_actions = env.action_space.shape[-1]
