@@ -6,12 +6,9 @@ import numpy as np
 import rospy
 import tf
 
-from std_msgs.msg import Float64, Int32
 from reflex_interface.msg import HandStateStamped
-from reflex_msgs.msg import PoseCommand
 
-from .helpers import rad2deg, deg2rad, get_homo_matrix_from_tq, get_tq_from_homo_matrix
-from .space import Space
+from .helpers import get_tq_from_homo_matrix
 from .space_act import ActionSpace
 from .space_obs import ObservationSpace
 from .gazebo_interface import GazeboInterface
@@ -25,9 +22,10 @@ class Stage(Enum):
 
 
 class GazeboEnv(gym.Env):
-    def __init__(self, hparams):
+    def __init__(self, hparams, name="TRAIN"):
 
         self.hparams = hparams
+        self.name = name
 
         # quality metrics
         self.epsilon_force = 0
@@ -41,8 +39,6 @@ class GazeboEnv(gym.Env):
         self.num_regrasps = 0
         self.cur_time_step = 0
         self.stage = Stage(0)
-
-        rospy.init_node("agent", anonymous=True)
 
         self.gi = GazeboInterface(verbose=False)
         self.acts = ActionSpace()
@@ -69,7 +65,7 @@ class GazeboEnv(gym.Env):
     def step(self, action):
         self.gi.sim_unpause()
         self.update_stage()
-        rospy.loginfo(f"==={self.stage.name}-STEP:[{self.cur_time_step}]===")
+        rospy.loginfo(f"==={self.name}-{self.stage.name}-STEP:[{self.cur_time_step}]===")
 
         action_dict = self.acts.get_action_dict(action, verbose=True)
         self.act(action_dict)
@@ -87,7 +83,7 @@ class GazeboEnv(gym.Env):
         return self.obs.get_cur_vals(), reward, self.done, logs
 
     def reset(self):
-        rospy.loginfo("===RESETTING===")
+        rospy.loginfo(f"==={self.name}-RESETTING===")
         self.gi.reset_world(self.hparams)
         self.last_time_stamp = rospy.Time.now()
         self.stage = Stage.REFINE
