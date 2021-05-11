@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 import os
 
 import numpy as np
-import gym
+import rospy
 
 from stable_baselines3 import TD3
 from stable_baselines3.td3.policies import MlpPolicy
@@ -20,6 +20,7 @@ from envs.helpers import deg2rad
 
 
 def main(args):
+    rospy.init_node("agent")
 
     log_path = os.path.join(args.output_dir, "logs", args.environment)
     ckpt_path = os.path.join(args.output_dir, "models", args.environment, args.log_name)
