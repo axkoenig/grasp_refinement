@@ -161,7 +161,7 @@ class GazeboEnv(gym.Env):
                     self.obs.set_cur_val_by_name("tactile_contact" + id_str, 1)
 
                 else:
-                    self.obs.set_cur_val_by_name("tactile_position" + id_str, [0, 0, 0])
+                    self.obs.set_cur_val_by_name("tactile_position" + id_str, self.obs.tactile_pos_default)
                     self.obs.set_cur_val_by_name("tactile_contact" + id_str, 0)
 
     def collect_reward(self, duration, rate=60):

@@ -12,6 +12,7 @@ class ObservationSpace(Space):
         self.num_sensors = 9
         self.prox_angle_max = 3
         self.preshape_angle_max = np.pi / 2
+        self.tactile_pos_default = [0, 0, 0.06]
 
         for i in range(self.num_fingers):
             id_str = "_f" + str(i + 1)
@@ -23,7 +24,7 @@ class ObservationSpace(Space):
             for j in range(self.num_sensors):
                 id_str = "_f" + str(i + 1) + "_s" + str(j + 1)
                 self.add_variable(1, "sensor_pressure" + id_str, 0, 0, 127)
-                self.add_variable(1, "tactile_position" + id_str, [0, 0, 0], [-0.2, -0.16, 0.06], [0.2, 0.16, 0.2])
+                self.add_variable(1, "tactile_position" + id_str, self.tactile_pos_default, [-0.2, -0.16, 0.06], [0.2, 0.16, 0.2])
                 self.add_variable(1, "tactile_contact" + id_str, 0, 0, 1)
 
         self.add_variable(1, "preshape_angle", 0, 0, self.preshape_angle_max)
