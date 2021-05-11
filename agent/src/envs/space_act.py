@@ -15,7 +15,7 @@ class ActionSpace(Space):
         self.max_wrist_rot = deg2rad(5)
         self.min_wrist_rot = -self.max_wrist_rot
         self.max_finger_incr = deg2rad(2)
-        self.min_finger_incr = -self.max_finger_incr
+        self.min_finger_incr = -self.max_finger_incr / 4
 
         self.max_action = 1
         self.min_action = -self.max_action
@@ -37,10 +37,10 @@ class ActionSpace(Space):
             "trigger_regrasp": True if action[0] > 0 else False,
             "wrist_trans": self.map_vals_to_range(self.min_wrist_trans, self.max_wrist_trans, action[1:4]),
             "wrist_rot": self.map_vals_to_range(self.min_wrist_rot, self.max_wrist_rot, action[4:7]),
-            "trigger_finger_adjust": True if action[7] > 0 else False,
+            "trigger_fingers": True if action[7] > 0 else False,
             "fingers_incr": self.map_vals_to_range(self.min_finger_incr, self.max_finger_incr, action[8:11]),
         }
         if verbose:
             for key, value in action_dict.items():
-                print(key, ": ", value)
+                print(f'- {key:20}{value}')
         return action_dict
