@@ -42,7 +42,8 @@ def main(args):
 
     print("Loading environment...")
     env = GazeboEnv(hparams)
-    # check_env(env)
+    if args.check_env:
+        check_env(env)
 
     print("Preparing model...")
     n_actions = env.action_space.shape[-1]
@@ -109,6 +110,7 @@ if __name__ == "__main__":
     parser.add_argument("--yaw_error_max", type=float, default=0, help="Orientational error along z direction [deg]")
     parser.add_argument("--framework", type=int, default=1, help="Which reward framework to train with (1 or 2).")
     parser.add_argument("--log_interval", type=int, default=1, help="After how many episodes to log.")
+    parser.add_argument("--check_env", type=bool, default=False, help="Whether to check environment or not.")
 
     args, unknown = parser.parse_known_args()
 
