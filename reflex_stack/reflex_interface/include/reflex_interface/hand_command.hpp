@@ -59,14 +59,14 @@ private:
 
     // format {finger1, finger2, finger3, preshape}
     std::array<float, 4> low_limits = {0, 0, 0, 0};
-    std::array<float, 4> high_limits = {3.55, 3.55, 3.55, M_PI / 2};    // reflex motors command 3.55 means finger is barely touching palm
+    std::array<float, 4> high_limits = {3.55, 3.55, 3.55, M_PI / 2}; // reflex motors command 3.55 means finger is barely touching palm
     std::array<float, 4> open_pos = {0, 0, 0, 0};
     std::array<float, 4> close_pos = {2.5, 2.5, 2.5, 0};
     std::array<float, 4> pinch_pos = {2, 2, 0, M_PI / 2};
     std::array<float, 4> sph_open_pos = {1.2, 1.2, 1.2, M_PI / 4};
     std::array<float, 4> sph_close_pos = {2.5, 2.5, 2.5, M_PI / 4};
     std::array<float, 4> cur_cmd = open_pos;
-    
+
     std::string getStatusMsg();
 
     bool callbackOpen(reflex_interface::GraspPrimitive::Request &req, reflex_interface::GraspPrimitive::Response &res);
