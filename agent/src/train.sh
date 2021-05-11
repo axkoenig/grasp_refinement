@@ -17,9 +17,12 @@ yaw_error_max=0.1
 yaw_error_min=-$yaw_error_max
 
 time_steps=3000
-rosclean purge -y
+prefix="10May_AllControlNewActions_Debugged"
 
-read -r -d '' HPARAMS << EOM
+# occasionally run this
+# rosclean purge -y
+
+read -r -d '' HPARAMS <<EOM
 --time_steps=$time_steps \ 
 --max_ep_len=15 \
 --x_error_min ${x_error_min} --x_error_max ${x_error_max} \
@@ -32,9 +35,9 @@ EOM
 
 trap "exit" INT
 for i in 1 2 3 4 5 6 7 8 9 10; do
-    python main.py --framework=1 --seed=${i} --log_name=04May_Rot_MultObj_f1_id${i} $HPARAMS
-    python main.py --framework=2 --seed=${i} --log_name=04May_Rot_MultObj_f2_id${i} $HPARAMS
-    python main.py --framework=3 --seed=${i} --log_name=04May_Rot_MultObj_f3_id${i} $HPARAMS
+    python main.py --framework=1 --seed=${i} --log_name=${prefix}_f1_id${i} $HPARAMS
+    python main.py --framework=2 --seed=${i} --log_name=${prefix}_f2_id${i} $HPARAMS
+    python main.py --framework=3 --seed=${i} --log_name=${prefix}_f3_id${i} $HPARAMS
 done
 
 echo "Done! Have a nice day."
