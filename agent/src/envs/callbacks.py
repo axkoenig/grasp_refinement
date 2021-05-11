@@ -1,5 +1,6 @@
 from stable_baselines3.common.callbacks import BaseCallback
 
+from .refinement import Stage
 
 class TensorboardCallback(BaseCallback):
     def __init__(self, hparams, verbose=1):
@@ -72,18 +73,22 @@ class TensorboardCallback(BaseCallback):
         self.cum_delta_task += self.cur_delta_task
         self.cum_sum_contact_forces += self.cur_sum_contact_forces
 
-        # on episode end
-        if self.get_env_attr("done"):
-            self.logger.record("drop_test/delta_cur_lifting", self.get_env_attr("delta_cur_lifting"))
-            self.logger.record("drop_test/delta_cur_holding", self.get_env_attr("delta_cur_holding"))
-            self.logger.record("drop_test/eps_force_lifting", self.get_env_attr("eps_force_lifting"))
-            self.logger.record("drop_test/eps_force_holding", self.get_env_attr("eps_force_holding"))
-            self.logger.record("drop_test/eps_torque_lifting", self.get_env_attr("eps_torque_lifting"))
-            self.logger.record("drop_test/eps_torque_holding", self.get_env_attr("eps_torque_holding"))
-            self.logger.record("drop_test/sustained_lifting", self.get_env_attr("sustained_lifting"))
-            self.logger.record("drop_test/sustained_holding", self.get_env_attr("sustained_holding"))
+        stage = self.get_env_attr("stage")
 
+        if stage == Stage.LIFT:
+            self.logger.record("drop_test/delta_cur_lifting", self.get_env_attr("delta_cur"))
+            self.logger.record("drop_test/eps_force_lifting", self.get_env_attr("epsilon_force"))
+            self.logger.record("drop_test/eps_torque_lifting", self.get_env_attr("epsilon_torque"))
             self.logger.record("rollout/ep_num_regrasps", self.get_env_attr("num_regrasps"))
             self.training_env.set_attr("num_regrasps", 0)
+        elif stage == Stage.HOLD: 
+            self.logger.record("drop_test/delta_cur_holding", self.get_env_attr("delta_cur"))
+            self.logger.record("drop_test/eps_force_holding", self.get_env_attr("epsilon_force"))
+            self.logger.record("drop_test/eps_torque_holding", self.get_env_attr("epsilon_torque"))
+            self.logger.record("drop_test/sustained_lifting", self.get_env_attr("sustained_lifting"))
+            self.training_env.set_attr("sustained_lifting", 0)
+        elif self.get_env_attr("done"):
+            self.logger.record("drop_test/sustained_holding", self.get_env_attr("sustained_holding"))
+            self.training_env.set_attr("sustained_holding", 0)
 
         return True
