@@ -52,8 +52,8 @@ class GazeboInterface:
         # setup broadcaster for desired wrist pose
         self.ts_wrist = geometry_msgs.msg.TransformStamped()
         self.br = tf2_ros.TransformBroadcaster()
-        self.sim_unpause()
-        rospy.sleep(1)  # broadcaster needs some time to start
+        self.sim_unpause()  # make sure simulation is not paused
+        rospy.sleep(1)      # broadcaster needs some time to start
 
     def sim_unpause(self):
         service_call_with_retries(self.unpause_physics, None)
@@ -63,13 +63,6 @@ class GazeboInterface:
 
     def ros_vector_to_list(self, ros_vector):
         return [ros_vector.x, ros_vector.y, ros_vector.z]
-
-    def run_for_seconds(self, secs, print_string=""):
-        self.sim_unpause()
-        if len(print_string) > 0:
-            rospy.loginfo(print_string)
-        rospy.sleep(secs)
-        self.sim_pause()
 
     def get_object_pose(self):
         req = StringServiceRequest(self.object_name, "world")
@@ -173,8 +166,6 @@ class GazeboInterface:
         return get_homo_matrix_from_tq(wrist_p, wrist_q)
 
     def reset_world(self, hparams):
-        self.sim_unpause()
-
         # move old object out of way
         self.set_model_pose_tq([1, 0, 1], [0, 0, 0, 1], self.object_name)
 
@@ -202,8 +193,6 @@ class GazeboInterface:
         self.wait_until_grasp_stabilizes()
         self.start_obj_t, _ = get_tq_from_homo_matrix(self.get_object_pose())
 
-        self.sim_pause()
-
     def close_until_contact_and_tighten(self, tighten_incr=0.05):
         res = self.close_until_contact(TriggerRequest())
         if self.verbose:
@@ -227,14 +216,11 @@ class GazeboInterface:
             rospy.loginfo("Backed off fingers: \n" + str(res))
 
     def regrasp(self, wrist_p_incr, wrist_q_incr, prox_angles):
-        self.sim_unpause()
 
         self.intelligent_reopen(prox_angles)
         self.cmd_wrist_pose_incr(wrist_p_incr, wrist_q_incr)
         self.close_until_contact_and_tighten()
         self.wait_until_grasp_stabilizes()
-
-        self.sim_pause()
 
     def object_lifted(self):
         msg = rospy.wait_for_message("/gazebo/object_sensor_bumper", ContactsState)
