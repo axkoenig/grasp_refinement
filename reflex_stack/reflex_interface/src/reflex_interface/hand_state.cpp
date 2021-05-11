@@ -1,6 +1,7 @@
 #include <vector>
 #include <algorithm>
 #include <numeric>
+#include <boost/thread/lock_guard.hpp>
 
 #include <std_msgs/Float64.h>
 #include <std_msgs/Int32.h>
@@ -27,6 +28,7 @@ HandState::HandState(ros::NodeHandle *nh, bool use_sim_data_hand, bool use_sim_d
 
 bool HandState::allFingersInContact()
 {
+    boost::lock_guard<boost::mutex> guard(mtx);
     return std::all_of(vars.fingers_in_contact.begin(), vars.fingers_in_contact.end(), [](bool v) { return v; });
 }
 
@@ -61,7 +63,9 @@ tf2::Vector3 HandState::create_vec_from_msg(const geometry_msgs::Vector3 &msg)
 }
 
 void HandState::sim_state_callback(const sensor_listener::ContactFrames &msg)
-{ // reset variables
+{
+    // reset variables
+    mtx.lock();
     vars.clear_all();
     vars.num_contacts = msg.contact_frames.size();
 
@@ -92,6 +96,7 @@ void HandState::sim_state_callback(const sensor_listener::ContactFrames &msg)
             vars.num_sensors_in_contact_per_finger[finger_id - 1] += 1; // TODO actually this variable now represents num_sim_contacts_per_finger
         }
     }
+    mtx.unlock();
     updateHandStateSim();
     // TODO shift this to wrist_controller
     // broadcast Gazebo wrist pose to ROS tf tree
@@ -101,6 +106,12 @@ void HandState::sim_state_callback(const sensor_listener::ContactFrames &msg)
 
     updateQualityMetrics();
     hand_state_pub.publish(getHandStateMsg());
+}
+
+HandStateVariables HandState::getVars()
+{
+    boost::lock_guard<boost::mutex> guard(mtx);
+    return vars;
 }
 
 void HandState::reflex_state_callback(const reflex_msgs::Hand &msg)
@@ -156,6 +167,7 @@ void HandState::updateQualityMetrics()
         obj_measured = getModelPoseSim(nh, object_name, "world", false);
         // TODO maybe add back in (once ROS fixes this bug https://github.com/ros/geometry2/issues/467 and I dont get bombarded with warning messages anymore)
         // broadcastModelState(obj_measured, "world", "reflex_interface/obj_measured", &br_obj_measured);
+        boost::lock_guard<boost::mutex> guard(mtx);
         grasp_quality.fillEpsilonFTSeparate(vars.contact_positions, vars.contact_normals, obj_measured.getOrigin(), vars.epsilon_force, vars.epsilon_torque);
         vars.delta_cur = grasp_quality.getSlipMargin(vars.contact_normals, vars.contact_forces, vars.contact_force_magnitudes, vars.num_contacts);
         vars.delta_task = grasp_quality.getSlipMarginWithTaskWrenches(vars.contact_forces, vars.contact_normals, vars.contact_frames, obj_measured.getOrigin(), vars.num_contacts);
@@ -191,6 +203,7 @@ void HandState::updateHandStateSim()
 void HandState::updateHandStateReal()
 {
     // reset variables
+    boost::lock_guard<boost::mutex> guard(mtx);
     vars.clear_all();
 
     for (int i = 0; i < num_fingers; i++)
@@ -218,6 +231,7 @@ reflex_interface::HandStateStamped HandState::getHandStateMsg()
     hss.header.stamp = ros::Time::now();
     hss.header.frame_id = "shell";
     hss.preshape_angle = finger_states[0]->getPreshapeAngle();
+    mtx.lock();
     hss.num_contacts = vars.num_contacts;
     hss.epsilon = vars.epsilon;
     hss.epsilon_force = vars.epsilon_force;
@@ -225,6 +239,7 @@ reflex_interface::HandStateStamped HandState::getHandStateMsg()
     hss.delta_task = vars.delta_task;
     hss.epsilon_torque = vars.epsilon_torque;
     hss.sum_contact_forces = vars.sum_contact_forces;
+    mtx.unlock();
 
     for (int i = 0; i < num_fingers; i++)
     {

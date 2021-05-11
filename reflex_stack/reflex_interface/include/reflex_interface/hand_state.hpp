@@ -2,6 +2,7 @@
 #define HAND_STATE_H
 
 #include <vector>
+#include <boost/thread/thread.hpp>
 
 #include <ros/ros.h>
 #include <reflex_msgs/Hand.h>
@@ -35,7 +36,7 @@ public:
     int getNumFingersInContact();
     int getFingerIdSingleContact();
     bool allFingersInContact();
-    HandStateVariables getVars() { return vars; };
+    HandStateVariables getVars();
 
 private:
     ros::NodeHandle *nh;
@@ -48,6 +49,7 @@ private:
     tf2::Transform obj_measured;
     bool use_sim_data_hand;
     bool use_sim_data_obj;
+    boost::mutex mtx;
 
     GraspQuality grasp_quality = GraspQuality();
     HandStateVariables vars = HandStateVariables();

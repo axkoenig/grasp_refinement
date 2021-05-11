@@ -1,6 +1,5 @@
 #include <algorithm>
 #include <bits/stdc++.h>
-#include <mutex>
 
 #include <std_srvs/Empty.h>
 
@@ -177,8 +176,6 @@ bool HandCommand::callbackPosIncr(reflex_interface::PosIncrement::Request &req, 
 
 bool HandCommand::callbackCloseUntilContact(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
 {
-    std::mutex mtx;
-
     // this service is blocking by default
     ros::Duration allowed_duration(close_until_contact_time_out);
     ros::Time start_time = ros::Time::now();
@@ -191,9 +188,9 @@ bool HandCommand::callbackCloseUntilContact(std_srvs::Trigger::Request &req, std
     while (allowed_duration > (ros::Time::now() - start_time))
     {
         // stop if all fingers have been in contact at least once throughout this service call or if all are currently in contact
-        bool allFingersHaveMadeContact = std::all_of(contact_memory.begin(), contact_memory.end(), [](bool v) { return v; });
-        bool stop_good = allFingersHaveMadeContact || state->allFingersInContact();
+        bool allFingersMadeContact = std::all_of(contact_memory.begin(), contact_memory.end(), [](bool v) { return v; });
         bool stop_bad = std::all_of(contact_or_up_lim.begin(), contact_or_up_lim.end(), [](bool v) { return v; });
+        bool stop_good = allFingersMadeContact || state->allFingersInContact();
 
         if (stop_good)
         {
@@ -209,11 +206,7 @@ bool HandCommand::callbackCloseUntilContact(std_srvs::Trigger::Request &req, std
         }
 
         float increment[4] = {0, 0, 0, 0};
-
-        // HandState is updating vars, so locking here to avoid data race
-        mtx.lock();
         fingers_in_contact = state->getVars().fingers_in_contact;
-        mtx.unlock();
 
         for (int i = 0; i < state->num_fingers; i++)
         {
