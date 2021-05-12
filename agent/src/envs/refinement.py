@@ -71,18 +71,20 @@ class GazeboEnv(gym.Env):
         self.act(action_dict)
 
         reward = self.get_reward_quality_metrics()
-        logs = {}
+        info = {}
         self.done = True if self.stage == Stage.END else False
-        if self.done: 
+        if self.done:
             reward += self.get_reward_binary()
             rospy.loginfo("Sustained holding: \t" + str(self.sustained_holding))
-            rospy.loginfo("Sustained lifting: \t" + str(self.sustained_lifting))    
+            rospy.loginfo("Sustained lifting: \t" + str(self.sustained_lifting))
+            info = {"sustained_holding": self.sustained_holding, "sustained_lifting": self.sustained_lifting}
 
         rospy.loginfo(f"--> REWARD: \t {reward}")
 
-        return self.obs.get_cur_vals(), reward, self.done, logs
+        return self.obs.get_cur_vals(), reward, self.done, info
 
     def reset(self):
+        self.gi.sim_unpause()
         rospy.loginfo(f"==={self.name}-RESETTING===")
         self.gi.reset_world(self.hparams)
         self.last_time_stamp = rospy.Time.now()
@@ -231,11 +233,11 @@ class GazeboEnv(gym.Env):
             self.lift_thread.join()  # wait for lifting to be done
             rospy.loginfo("Done with %i lift steps.", self.hparams["lift_steps"])
             self.cur_time_step = 0
-            if not self.sustained_lifting: 
+            if not self.sustained_lifting:
                 self.sustained_holding = False  # we can't hold if we dropped it
                 rospy.loginfo("Object dropped while lifting! New stage is END. :-(")
                 self.stage = Stage.END
-            else: 
+            else:
                 rospy.loginfo("Object lifted! New stage is HOLD. :-)")
                 self.stage = Stage.HOLD
                 self.hold_thread = threading.Thread(target=self.hold_object)
@@ -265,7 +267,7 @@ class GazeboEnv(gym.Env):
         rate = 50
         r = rospy.Rate(rate)
         z_incr = self.hparams["lift_dist"] / (self.hparams["secs_to_lift"] * rate)
-        
+
         rospy.loginfo("Starting to lift object.")
         while counter * z_incr <= self.hparams["lift_dist"]:
             lift_mat = tf.transformations.translation_matrix([0, 0, z_incr])

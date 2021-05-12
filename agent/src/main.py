@@ -12,25 +12,25 @@ from stable_baselines3.td3.policies import MlpPolicy
 from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.env_checker import check_env
-from stable_baselines3.common.callbacks import EvalCallback
 
 from envs.refinement import GazeboEnv
-from envs.callbacks import TensorboardCallback
+from envs.tensorboard import TensorboardCallback
 from envs.helpers import deg2rad
+from envs.eval import EvalCallbackWithInfo
 
 
 def main(args):
-    rospy.init_node("agent")
-
     rospy.init_node("agent", anonymous=True)
 
     log_path = os.path.join(args.output_dir, "logs", args.environment)
     ckpt_path = os.path.join(args.output_dir, "models", args.environment, args.log_name)
     model_path = os.path.join(ckpt_path, "final_model")
+    best_model_path = os.path.join(ckpt_path, "best_model")
 
     rospy.loginfo("Log path \t%s", log_path)
     rospy.loginfo("Ckpt path \t%s", ckpt_path)
     rospy.loginfo("Model path \t%s", model_path)
+    rospy.loginfo("Best model path \t%s", best_model_path)
 
     rospy.loginfo("Training with arguments")
     hparams = vars(args)
@@ -56,17 +56,23 @@ def main(args):
     if args.train:
 
         eval_env = GazeboEnv(hparams, "EVAL")
-        eval_callback = EvalCallback(eval_env, best_model_save_path=log_path, log_path=log_path, eval_freq=args.eval_freq, deterministic=True)
 
         callbacks = [
             CheckpointCallback(save_freq=args.chkpt_freq, save_path=ckpt_path, name_prefix="chkpt"),
             TensorboardCallback(hparams),
-            eval_callback,
+            EvalCallbackWithInfo(
+                eval_env,
+                best_model_save_path=best_model_path,
+                eval_freq=args.eval_freq,
+                n_eval_episodes=args.n_eval_episodes,
+                eval_at_init=args.eval_at_init,
+                deterministic=True,
+            ),
         ]
         rospy.loginfo("Training model...")
         model.learn(total_timesteps=args.time_steps, tb_log_name=args.log_name, callback=callbacks, log_interval=args.log_interval)
         model.save(model_path)
-        rospy.loginfo("Saved model under: " + model_path)
+        rospy.loginfo("Saved final model under: " + model_path)
 
     else:
         rospy.loginfo("Loading model from: " + model_path)
@@ -122,6 +128,8 @@ if __name__ == "__main__":
     parser.add_argument("--framework", type=int, default=1, help="Which reward framework to train with (1 or 2).")
     parser.add_argument("--log_interval", type=int, default=1, help="After how many episodes to log.")
     parser.add_argument("--eval_freq", type=int, default=100, help="After how many time steps to evaluate.")
+    parser.add_argument("--n_eval_episodes", type=int, default=5, help="How many episodes to run when evaluating.")
+    parser.add_argument("--eval_at_init", type=bool, default=False, help="Whether to evaluate environment at step = 0.")
     parser.add_argument("--check_env", type=bool, default=False, help="Whether to check environment or not.")
 
     args, unknown = parser.parse_known_args()
