@@ -59,7 +59,13 @@ scancel -u akoenig             # cancel all jobs
 screen -r       # reattach to screen
 ``` 
 
-
+Download data from cluster
+```bash
+cd ~/cluster_logs 
+sudo sftp akoenig@login.rc.fas.harvard.edu
+cd /n/holyscratch01/howe_lab_seas/Users/akoenig/output/agents/logs/refinement/
+get -r 11*
+``` 
 
 
 ## Install Software 
