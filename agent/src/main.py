@@ -127,8 +127,8 @@ if __name__ == "__main__":
     parser.add_argument("--yaw_error_max", type=float, default=0, help="Orientational error along z direction [deg]")
     parser.add_argument("--framework", type=int, default=1, help="Which reward framework to train with (1 or 2).")
     parser.add_argument("--log_interval", type=int, default=1, help="After how many episodes to log.")
-    parser.add_argument("--eval_freq", type=int, default=100, help="After how many time steps to evaluate.")
-    parser.add_argument("--n_eval_episodes", type=int, default=5, help="How many episodes to run when evaluating.")
+    parser.add_argument("--eval_freq", type=int, default=200, help="After how many time steps to evaluate.")
+    parser.add_argument("--n_eval_episodes", type=int, default=10, help="How many episodes to run when evaluating.")
     parser.add_argument("--eval_at_init", type=bool, default=False, help="Whether to evaluate environment at step = 0.")
     parser.add_argument("--check_env", type=bool, default=False, help="Whether to check environment or not.")
 
