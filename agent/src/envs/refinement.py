@@ -87,8 +87,10 @@ class GazeboEnv(gym.Env):
         self.gi.sim_unpause()
         rospy.loginfo(f"==={self.name}-RESETTING===")
         self.gi.reset_world(self.hparams)
-        self.last_time_stamp = rospy.Time.now()
         self.stage = Stage.REFINE
+        self.start_reward = self.collect_reward(self.get_exec_secs())
+        rospy.loginfo(f"Start reward is: \t{self.start_reward}")
+        self.last_time_stamp = rospy.Time.now()
         self.cur_time_step = 0
         self.gi.sim_pause()  # when NN is updating after resetting, we pause simulation
         return self.obs.get_cur_vals()
@@ -194,12 +196,15 @@ class GazeboEnv(gym.Env):
             f = action_dict["fingers_incr"]
             self.gi.pos_incr(f[0], f[1], f[2], 0, False, False, 0, 0)
 
+    def get_exec_secs(self):
+        # this is to wait 80% of one time step to collect reward
+        # we leave 20% for other code to run (later on we make sure we get the exact update rate via the wait_if_necessary method)
+        return 0.8 * (1 / self.get_rate_of_cur_stage())
+
     def get_reward_quality_metrics(self):
-        # we are waiting 80% of one time step to collect reward here and we leave 20% for other code to run
-        # later on we make sure we get the exact update rate via the wait_if_necessary method
-        exec_secs = 0.8 * (1 / self.get_rate_of_cur_stage())
+        exec_secs = self.get_exec_secs()
         if self.hparams["framework"] == 1 or self.hparams["framework"] == 3:
-            return self.collect_reward(exec_secs)
+            return self.collect_reward(exec_secs) - self.start_reward
         else:
             rospy.sleep(exec_secs)
             return 0
