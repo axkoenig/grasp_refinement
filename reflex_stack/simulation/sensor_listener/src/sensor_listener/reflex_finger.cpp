@@ -171,9 +171,9 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
             scr.normal = create_vec_from_msg(msg.states[j].contact_normals[i]);
             scr.torque = create_vec_from_msg(msg.states[j].wrenches[i].torque);
 
-            // ROS_INFO_STREAM("state[" << j << "] normal [" << i << "]" << scr.normal[0] << ", " << scr.normal[1] << ", " << scr.normal[2]);
-            // ROS_INFO_STREAM("state[" << j << "] force [" << i << "]" << scr.force[0] << ", " << scr.force[1] << ", " << scr.force[2]);
-            // ROS_INFO_STREAM("state[" << j << "] angle [" << i << "]" << acos(scr.force.dot(scr.normal) / (scr.normal.length() * scr.force.length())) * 180 / M_PI);
+            ROS_INFO_STREAM("state[" << j << "] normal [" << i << "]" << scr.normal[0] << ", " << scr.normal[1] << ", " << scr.normal[2]);
+            ROS_INFO_STREAM("state[" << j << "] force [" << i << "]" << scr.force[0] << ", " << scr.force[1] << ", " << scr.force[2]);
+            ROS_INFO_STREAM("state[" << j << "] angle [" << i << "]" << acos(scr.force.dot(scr.normal) / (scr.normal.length() * scr.force.length())) * 180 / M_PI);
 
             // this is our fix for the Gazebo bug (see description above)
             float angle = acos(link_z.dot(scr.normal) / (scr.normal.length() * link_z.length()));
@@ -266,7 +266,7 @@ void ReflexFinger::eval_contacts_callback(const gazebo_msgs::ContactsState &msg,
         // all is well, add contact frame to vector
         contact_frames.push_back(cf_msg);
     }
-    // ROS_WARN("===");
+    ROS_WARN("===");
 };
 
 int ReflexFinger::which_sensor(const float &contact_x, const float sensor_boundaries[], const int &num_boundaries)

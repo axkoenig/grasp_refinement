@@ -453,14 +453,54 @@
     </joint>
   </xacro:macro>
 
-  <xacro:macro name="flex_to_distal" params="finger_id">
+  <!-- dummy links for revolute joints to latch on to -->
+  <xacro:property name="dummy_link_mass" value="0.01"/>
+  <xacro:property name="dummy_link_size" value="0.01"/>
+  <xacro:property name="dummy_joint_lim_max" value="3"/>
+  <xacro:property name="dummy_joint_lim_min" value="-3"/>
+  <xacro:property name="dummy_damping" value="0.01"/>
+  <xacro:property name="dummy_stiffness" value="0.01"/>
+  <xacro:property name="dummy_friction" value="0.01"/>
+  <xacro:macro name="dummy_link" params="finger_id dummy_link_id">
+    <link name="dummy_link_f${finger_id}_id${dummy_link_id}">
+      <inertial>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <mass value="${dummy_link_mass}"/>
+        <xacro:cuboid_inertia m="${dummy_link_mass}" x="${dummy_link_size}" y="${dummy_link_size}" z="${dummy_link_size}"/>
+      </inertial>
+    </link>
+  </xacro:macro>
+
+  <xacro:macro name="flex_to_distal" params="finger_id dummy_link_id">
     <joint name="flex_to_distal_${finger_id}" type="revolute">
       <origin xyz="${flex_link_box_x} 0 0" rpy="0 0 0"/>
       <parent link="finger_${finger_id}_flex_link"/>
-      <child link="distal_${finger_id}"/>
+      <child link="dummy_link_f${finger_id}_id${dummy_link_id}"/>
       <axis xyz="0 -1 0"/>
       <dynamics damping="${flex_joints_damping}" friction="${flex_joints_friction}"/>
       <limit effort="${flex_joints_effort}" lower="0.0" upper="${pi/6}" velocity="${flex_joints_velocity}"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:macro name="dummy_to_dummy" params="finger_id parent_dummy_id child_dummy_id">
+    <joint name="dummy_to_dummy_${finger_id}" type="revolute">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <parent link="dummy_link_f${finger_id}_id${parent_dummy_id}"/>
+      <child link="dummy_link_f${finger_id}_id${child_dummy_id}"/>
+      <axis xyz="1 0 0"/>
+      <dynamics damping="${dummy_damping}" friction="${dummy_friction}" spring_stiffness="${dummy_stiffness}"/>
+      <limit effort="1" velocity="0.2" lower="${dummy_joint_lim_min}" upper="${dummy_joint_lim_max}"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:macro name="dummy_to_distal" params="finger_id parent_dummy_id">
+    <joint name="dummy_to_distal_${finger_id}" type="revolute">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <parent link="dummy_link_f${finger_id}_id${parent_dummy_id}"/>
+      <child link="distal_${finger_id}"/>
+      <axis xyz="0 0 1"/>
+      <dynamics damping="${dummy_damping}" friction="${dummy_friction}" spring_stiffness="${dummy_stiffness}"/>
+      <limit effort="1" velocity="0.2" lower="${dummy_joint_lim_min}" upper="${dummy_joint_lim_max}"/>
     </joint>
   </xacro:macro>
 
@@ -488,7 +528,11 @@
     <xacro:proximal_pad finger_id="${id}"/>
     <xacro:proximal_to_flex finger_id="${id}"/>
     <xacro:flex_link finger_id="${id}"/>
-    <xacro:flex_to_distal finger_id="${id}"/>
+    <xacro:flex_to_distal finger_id="${id}" dummy_link_id="1"/>
+    <xacro:dummy_link finger_id="${id}" dummy_link_id="1"/>
+    <xacro:dummy_to_dummy finger_id="${id}" parent_dummy_id="1" child_dummy_id="2"/>
+    <xacro:dummy_link finger_id="${id}" dummy_link_id="2"/>
+    <xacro:dummy_to_distal finger_id="${id}" parent_dummy_id="2"/>
     <xacro:distal_link finger_id="${id}"/>
     <xacro:distal_to_pad finger_id="${id}"/>
     <xacro:distal_pad finger_id="${id}"/>
