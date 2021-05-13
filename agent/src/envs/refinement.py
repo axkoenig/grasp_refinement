@@ -264,7 +264,7 @@ class GazeboEnv(gym.Env):
 
     def lift_object(self):
         counter = 0
-        rate = 50
+        rate = 1000  # pretty high update rate because we want incremental steps to be small for smooth lift off
         r = rospy.Rate(rate)
         z_incr = self.hparams["lift_dist"] / (self.hparams["secs_to_lift"] * rate)
 
