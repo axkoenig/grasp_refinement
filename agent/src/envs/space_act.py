@@ -1,4 +1,5 @@
 import numpy as np
+import rospy
 
 from .space import Space
 from .helpers import deg2rad
@@ -41,6 +42,7 @@ class ActionSpace(Space):
             "fingers_incr": self.map_vals_to_range(self.min_finger_incr, self.max_finger_incr, action[8:11]),
         }
         if verbose:
+            rospy.loginfo("--- Actions ---")
             for key, value in action_dict.items():
-                print(f'- {key:20}{value}')
+                rospy.loginfo(f'- {key:20}{value}')
         return action_dict

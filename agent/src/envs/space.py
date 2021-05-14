@@ -1,4 +1,5 @@
 import numpy as np
+import rospy
 
 
 class Variable:
@@ -23,34 +24,34 @@ class Space:
         self.dim = len(self.vars)
 
     def print_num_dimensions(self):
-        print("Your " + self.__class__.__name__ + " has " + str(self.dim) + " dimensions.")
+        rospy.loginfo("Your " + self.__class__.__name__ + " has " + str(self.dim) + " dimensions.")
 
     def get_min_vals(self):
         min_vals = np.empty((0,))
         for i in range(self.dim):
             min_vals = np.append(min_vals, self.vars[i].min_val)
-        print("Min values of " + self.__class__.__name__ + f" are {min_vals}.")
+        rospy.loginfo("Min values of " + self.__class__.__name__ + f" are {min_vals}.")
         return np.float32(min_vals)
 
     def get_max_vals(self):
         max_vals = np.empty((0,))
         for i in range(self.dim):
             max_vals = np.append(max_vals, self.vars[i].max_val)
-        print("Max values of " + self.__class__.__name__ + f" are {max_vals}.")
+        rospy.loginfo("Max values of " + self.__class__.__name__ + f" are {max_vals}.")
         return np.float32(max_vals)
 
     def get_cur_vals(self, verbose=False):
         cur_vals = np.empty((0,))
         for i in range(self.dim):
             if verbose:
-                print("Cur value of " + self.vars[i].name + f" is {self.vars[i].cur_val}.")
+                rospy.loginfo("Cur value of " + self.vars[i].name + f" is {self.vars[i].cur_val}.")
             val = self.vars[i].cur_val
 
             # clip value to bounds if necessary
             if np.any(np.less(val, self.vars[i].min_val)) or np.any(np.greater(val, self.vars[i].max_val)) :
-                print(f"Oops value {val} with name {self.vars[i].name} is out of bounds [{self.vars[i].min_val},{self.vars[i].max_val}]!")
+                rospy.warn(f"Oops value {val} with name {self.vars[i].name} is out of bounds [{self.vars[i].min_val},{self.vars[i].max_val}]!")
                 val = np.clip(val, self.vars[i].min_val, self.vars[i].max_val)
-                print(f"Clipped {self.vars[i].name} value is {val}")
+                rospy.warn(f"Clipped {self.vars[i].name} value is {val}")
 
             cur_vals = np.append(cur_vals, val)
         return np.float32(cur_vals)
@@ -63,7 +64,7 @@ class Space:
             if self.vars[i].name == name:
                 cur_vals = np.append(cur_vals, self.vars[i].cur_val)
         if verbose:
-            print("Cur values of " + self.__class__.__name__ + f" that match the name {name} are {cur_vals}.")
+            rospy.loginfo("Cur values of " + self.__class__.__name__ + f" that match the name {name} are {cur_vals}.")
         return np.float32(cur_vals)
 
     def set_cur_val_by_name(self, name, cur_val):
@@ -74,6 +75,6 @@ class Space:
         raise ValueError("Variable with name {name} not found.")
 
     def print_all_cur_vals(self):
-        print("\n=== Cur values of " + self.__class__.__name__ + f" ===")
+        rospy.loginfo("\n=== Cur values of " + self.__class__.__name__ + f" ===")
         for i in range(self.dim):
-            print(self.vars[i].name + ": " + str(self.vars[i].cur_val))
+            rospy.loginfo(self.vars[i].name + ": " + str(self.vars[i].cur_val))
