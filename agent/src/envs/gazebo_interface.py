@@ -172,7 +172,7 @@ class GazeboInterface:
             if obj in models:
                 models.remove(obj)
         if len(models) != 1:
-            rospy.warn("You have more or less than one model in your world! Returning '' for object name.")
+            rospy.logwarn("You have more or less than one model in your world! Returning '' for object name.")
             return ""
         return models[0]
 
