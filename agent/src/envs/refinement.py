@@ -184,9 +184,10 @@ class GazeboEnv(gym.Env):
             r.sleep()
         return reward / counter
 
-    def calc_reward(self, w_eps_torque=10, w_delta=0.1):
-        reward = self.epsilon_force + w_eps_torque * self.epsilon_torque
-        reward += w_delta * self.delta_task if self.stage == Stage.REFINE else w_delta * self.delta_cur
+    def calc_reward(self, ):
+        reward = self.epsilon_force + self.hparams["w_eps_torque"] * self.epsilon_torque
+        delta = self.delta_task if self.stage == Stage.REFINE else self.delta_cur
+        reward += self.hparams["w_delta"] * delta
         return reward
 
     def adjust_fingers(self, action_dict):
@@ -209,11 +210,11 @@ class GazeboEnv(gym.Env):
             rospy.sleep(exec_secs)
             return 0
 
-    def get_reward_binary(self, w_binary_rew=2):
+    def get_reward_binary(self):
         if self.hparams["framework"] == 2:
             return int(self.sustained_holding)
         elif self.hparams["framework"] == 3:
-            return w_binary_rew * int(self.sustained_holding)
+            return self.hparams["w_binary_rew"] * int(self.sustained_holding)
         else:
             return 0
 
