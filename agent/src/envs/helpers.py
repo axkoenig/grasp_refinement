@@ -3,6 +3,37 @@ import rospy
 import tf
 
 
+def merge_dicts(dict_1, dict_2):
+    "Merges two dicts. If key exists value be saved in a numpy array, else we create a new key."
+    if not dict_1 and not dict_2:
+        return {}
+    if not dict_2:
+        return dict_1
+    elif not dict_1:
+        return dict_2
+
+    for key, value in dict_2.items():
+        try:  # add value as array
+            dict_1[key] = np.append(dict_1[key], value)
+        except KeyError:  # we have a new entry
+            dict_1[key] = value
+    return dict_1
+
+
+def log_dict(dict, logger, prefix="", type=None, exclude_keys_from_logging=[]):
+    for key, value in dict.items():
+        if not key in exclude_keys_from_logging:
+            try:
+                if type == "mean":
+                    logger.record(prefix + key, np.mean(value))
+                elif type == "sum":
+                    logger.record(prefix + key, np.sum(value))
+                elif not type:
+                    logger.record(prefix + key, value)
+            except TypeError:
+                print(f"Can't compute {type} of {key} of type {type(value)}. Skipping this entry!")
+
+
 def get_homo_matrix_from_transform_msg(transform, name, frame, verbose=False):
     t = [transform.translation.x, transform.translation.y, transform.translation.z]
     q = [transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w]

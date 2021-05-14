@@ -64,24 +64,71 @@ class GazeboEnv(gym.Env):
 
     def step(self, action):
         self.gi.sim_unpause()
-        self.update_stage()
         rospy.loginfo(f"==={self.name}-{self.stage.name}-STEP:[{self.cur_time_step}]===")
 
         action_dict = self.acts.get_action_dict(action, verbose=True)
         self.act(action_dict)
 
         reward = self.get_reward_quality_metrics()
-        info = {}
+
+        self.update_stage()
         self.done = True if self.stage == Stage.END else False
+
         if self.done:
             reward += self.get_reward_binary()
             rospy.loginfo("Sustained holding: \t" + str(self.sustained_holding))
             rospy.loginfo("Sustained lifting: \t" + str(self.sustained_lifting))
-            info = {"sustained_holding": self.sustained_holding, "sustained_lifting": self.sustained_lifting}
 
         rospy.loginfo(f"--> REWARD: \t {reward}")
 
-        return self.obs.get_cur_vals(), reward, self.done, info
+        return self.obs.get_cur_vals(), reward, self.done, self.get_infos()
+
+    def get_joint_difference(self):
+        return (
+            abs(self.prox_angles[0] - self.prox_angles[1])
+            + abs(self.prox_angles[1] - self.prox_angles[2])
+            + abs(self.prox_angles[0] - self.prox_angles[2])
+        )
+
+    def get_quality_metrics_dict(self, prefix=""):
+        return {
+            f"{prefix}epsilon_force": self.epsilon_force,
+            f"{prefix}epsilon_torque": self.epsilon_torque,
+            f"{prefix}delta_task": self.delta_task,
+            f"{prefix}delta_cur": self.delta_cur,
+        }
+
+    def get_infos(self, verbose=True):
+        infos = {
+            "num_contacts": self.num_contacts,
+            "sum_contact_forces": self.sum_contact_forces,
+            "joint_diff": self.get_joint_difference(),
+        }
+        if self.stage == Stage.REFINE:
+            infos.update(
+                {
+                    "r_dist_tcp_obj": self.dist_tcp_obj,
+                    "r_obj_shift": self.obj_shift,
+                }
+            )
+            infos.update(self.get_quality_metrics_dict("r_"))
+        elif self.stage == Stage.LIFT:
+            infos.update(self.get_quality_metrics_dict("l_"))
+        elif self.stage == Stage.HOLD:
+            infos.update(self.get_quality_metrics_dict("h_"))
+        elif self.stage == Stage.END:
+            infos.update(
+                {
+                    "num_regrasps": self.num_regrasps,
+                    "sustained_holding": self.sustained_holding,
+                    "sustained_lifting": self.sustained_lifting,
+                }
+            )
+        if verbose:
+            rospy.loginfo("--- Infos ---")
+            for key, value in infos.items():
+                rospy.loginfo(f"- {key:20}{value}")
+        return infos
 
     def reset(self):
         self.gi.sim_unpause()
@@ -92,6 +139,7 @@ class GazeboEnv(gym.Env):
         rospy.loginfo(f"Start reward is: \t{self.start_reward}")
         self.last_time_stamp = rospy.Time.now()
         self.cur_time_step = 0
+        self.num_regrasps = 0
         self.gi.sim_pause()  # when NN is updating after resetting, we pause simulation
         return self.obs.get_cur_vals()
 
@@ -104,7 +152,7 @@ class GazeboEnv(gym.Env):
                 rot = action_dict["wrist_rot"]
                 wrist_q = tf.transformations.quaternion_from_euler(rot[0], rot[1], rot[2])
                 self.gi.regrasp(action_dict["wrist_trans"], wrist_q, self.prox_angles)
-                self.num_regrasps += 1  # we reset this var in the tensorboard callback once recorded
+                self.num_regrasps += 1
             else:
                 rospy.loginfo(">>WRIST STAYING<<")
                 self.adjust_fingers(action_dict)
@@ -184,7 +232,7 @@ class GazeboEnv(gym.Env):
             r.sleep()
         return reward / counter
 
-    def calc_reward(self, ):
+    def calc_reward(self):
         reward = self.epsilon_force + self.hparams["w_eps_torque"] * self.epsilon_torque
         delta = self.delta_task if self.stage == Stage.REFINE else self.delta_cur
         reward += self.hparams["w_delta"] * delta

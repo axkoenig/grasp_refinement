@@ -9,6 +9,8 @@ from stable_baselines3.common import base_class
 from stable_baselines3.common.callbacks import EvalCallback, BaseCallback
 from stable_baselines3.common.vec_env import VecEnv, sync_envs_normalization
 
+from .helpers import merge_dicts, log_dict
+
 # we're adapting stable_baseline's eval function to also return averaged info dict
 
 
@@ -99,15 +101,7 @@ def evaluate_policy_with_info(
                 env.render()
 
             info = info[0]  # access dict within list
-            if info:  # info dict may be empty
-                if all_infos == {}:  # first time we are logging to all_infos
-                    all_infos = info
-                else:
-                    for key, value in info.items():
-                        try:
-                            all_infos[key] = np.append(all_infos[key], value)
-                        except KeyError:  # we have a new entry
-                            all_infos[key] = info[key]
+            all_infos = merge_dicts(info, all_infos)
 
         if is_monitor_wrapped:
             # Do not trust "done" with episode endings.
@@ -215,12 +209,7 @@ class EvalCallbackWithInfo(EvalCallback):
             print(f"Episode length: {mean_ep_length:.2f} +/- {std_ep_length:.2f}")
 
         # log mean infos from evaluation runs
-        for key, value in all_infos.items():
-            if not key in self.exclude_infos_from_logging:
-                try:
-                    self.logger.record("eval/mean_" + key, np.mean(value))
-                except TypeError:
-                    print(f"Can't compute mean of {key} of type {type(value)}. Skipping this entry!")
+        log_dict(all_infos, self.logger, "eval/mean_", "mean", self.exclude_infos_from_logging)
 
         # Add to current Logger
         self.logger.record("eval/mean_reward", float(mean_reward))
