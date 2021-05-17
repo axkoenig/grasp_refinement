@@ -16,15 +16,23 @@ pitch_error_min=-$pitch_error_max
 yaw_error_max=5
 yaw_error_min=-$yaw_error_max
 
+# reward weights
+w_binary_rew=2
+w_eps_torque=10
+w_delta=0
+
 time_steps=1000
-prefix="14May_NoDelta_eve"
+prefix="16May_NoDelta_4Real"
 
 # occasionally run this
 # rosclean purge -y
 
 read -r -d '' HPARAMS <<EOM
 --time_steps=$time_steps \ 
---max_ep_len=15 \
+--max_ep_len=15 \ 
+--w_binary_rew ${w_binary_rew} \ 
+--w_eps_torque ${w_eps_torque} \ 
+--w_delta ${w_delta} \
 --x_error_min ${x_error_min} --x_error_max ${x_error_max} \
 --y_error_min ${y_error_min} --y_error_max ${y_error_max} \
 --z_error_min ${z_error_min} --z_error_max ${z_error_max} \

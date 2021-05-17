@@ -133,7 +133,7 @@ if __name__ == "__main__":
     parser.add_argument("--check_env", type=bool, default=False, help="Whether to check environment or not.")
     parser.add_argument("--w_binary_rew", type=float, default=2, help="Weight for binary reward in framework 3")
     parser.add_argument("--w_eps_torque", type=float, default=10, help="Weight for epsilon torque in framework 1 and 3")
-    parser.add_argument("--w_delta", type=float, default=0, help="Weight for delta in framework 1 and 3")
+    parser.add_argument("--w_delta", type=float, default=0.1, help="Weight for delta in framework 1 and 3")
     
     args, unknown = parser.parse_known_args()
 
