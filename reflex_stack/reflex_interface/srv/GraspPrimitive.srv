@@ -1,6 +1,0 @@
-bool blocking       # wait for execution
-float64 tolerance   # tolerance at each finger if "blocking" is true
-float64 time_out    # max time to block
----
-bool success    # indicate successful run of triggered service
-string message  # informational, e.g. for error messages
