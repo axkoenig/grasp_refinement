@@ -7,7 +7,7 @@ import os
 import numpy as np
 import rospy
 
-from stable_baselines3 import TD3
+from stable_baselines3 import TD3, SAC
 from stable_baselines3.td3.policies import MlpPolicy
 from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.callbacks import CheckpointCallback
@@ -66,7 +66,7 @@ def main(args):
                 eval_freq=args.eval_freq,
                 n_eval_episodes=args.n_eval_episodes,
                 eval_at_init=args.eval_at_init,
-                deterministic=True,
+                deterministic=True,    
             ),
         ]
         rospy.loginfo("Training model...")
@@ -75,8 +75,8 @@ def main(args):
         rospy.loginfo("Saved final model under: " + model_path)
 
     else:
-        rospy.loginfo("Loading model from: " + model_path)
-        model.load(model_path)
+        rospy.loginfo("Loading model from: " + args.eval_model_path)
+        model.load(args.eval_model_path)
         rospy.loginfo("Evaluating model...")
 
         for episode in range(20):
@@ -129,11 +129,12 @@ if __name__ == "__main__":
     parser.add_argument("--log_interval", type=int, default=1, help="After how many episodes to log.")
     parser.add_argument("--eval_freq", type=int, default=200, help="After how many time steps to evaluate.")
     parser.add_argument("--n_eval_episodes", type=int, default=10, help="How many episodes to run when evaluating.")
-    parser.add_argument("--eval_at_init", type=bool, default=False, help="Whether to evaluate environment at step = 0.")
+    parser.add_argument("--eval_at_init", type=bool, default=True, help="Whether to evaluate environment at step = 0.")
     parser.add_argument("--check_env", type=bool, default=False, help="Whether to check environment or not.")
     parser.add_argument("--w_binary_rew", type=float, default=2, help="Weight for binary reward in framework 3")
     parser.add_argument("--w_eps_torque", type=float, default=10, help="Weight for epsilon torque in framework 1 and 3")
     parser.add_argument("--w_delta", type=float, default=0.1, help="Weight for delta in framework 1 and 3")
+    parser.add_argument("--eval_model_path", type=str, help="The path to the model you would like to evaluate.")
     
     args, unknown = parser.parse_known_args()
 
