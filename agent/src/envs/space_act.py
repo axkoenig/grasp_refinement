@@ -11,17 +11,17 @@ class ActionSpace(Space):
     def __init__(self):
         super().__init__()
 
-        self.max_wrist_trans = 0.01
+        self.max_wrist_trans = 0.02
         self.min_wrist_trans = -self.max_wrist_trans
-        self.max_wrist_rot = deg2rad(4)
+        self.max_wrist_rot = deg2rad(3)
         self.min_wrist_rot = -self.max_wrist_rot
-        self.max_finger_incr = deg2rad(4)
+        self.max_finger_incr = deg2rad(3)
         self.min_finger_incr = deg2rad(-1)
 
         self.max_action = 1
         self.min_action = -self.max_action
 
-        self.add_variable(11, "actions", 0, self.min_action, self.max_action)
+        self.add_variable(10, "actions", 0, self.min_action, self.max_action)
         self.print_num_dimensions()
 
     def map_vals_to_range(self, min, max, vals):
@@ -38,8 +38,7 @@ class ActionSpace(Space):
             "trigger_regrasp": True if action[0] > 0 else False,
             "wrist_trans": self.map_vals_to_range(self.min_wrist_trans, self.max_wrist_trans, action[1:4]),
             "wrist_rot": self.map_vals_to_range(self.min_wrist_rot, self.max_wrist_rot, action[4:7]),
-            "trigger_fingers": True if action[7] > 0 else False,
-            "fingers_incr": self.map_vals_to_range(self.min_finger_incr, self.max_finger_incr, action[8:11]),
+            "fingers_incr": self.map_vals_to_range(self.min_finger_incr, self.max_finger_incr, action[7:10]),
         }
         if verbose:
             rospy.loginfo("--- Actions ---")

@@ -83,6 +83,21 @@ class GazeboEnv(gym.Env):
 
         return self.obs.get_cur_vals(), reward, self.done, self.get_infos()
 
+    def reset(self):
+        self.gi.sim_unpause()
+        rospy.loginfo(f"==={self.name}-RESETTING===")
+        self.gi.reset_world(self.hparams)
+        self.stage = Stage.REFINE
+        self.start_reward = self.collect_reward(self.get_exec_secs())
+        rospy.loginfo(f"Start reward is: \t{self.start_reward}")
+        self.last_time_stamp = rospy.Time.now()
+        self.cur_time_step = 0
+        self.num_regrasps = 0
+        self.gi.sim_pause()  # when NN is updating after resetting, we pause simulation
+        return self.obs.get_cur_vals()
+
+    ### OTHER METHODS
+
     def get_joint_difference(self):
         return (
             abs(self.prox_angles[0] - self.prox_angles[1])
@@ -130,34 +145,22 @@ class GazeboEnv(gym.Env):
                 rospy.loginfo(f"- {key:20}{value}")
         return infos
 
-    def reset(self):
-        self.gi.sim_unpause()
-        rospy.loginfo(f"==={self.name}-RESETTING===")
-        self.gi.reset_world(self.hparams)
-        self.stage = Stage.REFINE
-        self.start_reward = self.collect_reward(self.get_exec_secs())
-        rospy.loginfo(f"Start reward is: \t{self.start_reward}")
-        self.last_time_stamp = rospy.Time.now()
-        self.cur_time_step = 0
-        self.num_regrasps = 0
-        self.gi.sim_pause()  # when NN is updating after resetting, we pause simulation
-        return self.obs.get_cur_vals()
-
-    ### OTHER METHODS
-
     def act(self, action_dict):
-        if self.stage == Stage.REFINE:
-            if action_dict["trigger_regrasp"]:
+        if action_dict["trigger_regrasp"]:
+            # we only allow wrist control during refinement
+            if self.stage == Stage.REFINE:
                 rospy.loginfo(">>REGRASPING<<")
                 rot = action_dict["wrist_rot"]
                 wrist_q = tf.transformations.quaternion_from_euler(rot[0], rot[1], rot[2])
                 self.gi.regrasp(action_dict["wrist_trans"], wrist_q, self.prox_angles)
                 self.num_regrasps += 1
-            else:
-                rospy.loginfo(">>WRIST STAYING<<")
-                self.adjust_fingers(action_dict)
+            else: 
+                rospy.loginfo(">>STAYING<<")
         else:
-            self.adjust_fingers(action_dict)
+            rospy.loginfo(">>ADJUSTING FINGERS<<")
+            self.wait_if_necessary()
+            f = action_dict["fingers_incr"]
+            self.gi.pos_incr(f[0], f[1], f[2], 0, False, False, 0, 0)
 
     def get_rate_of_cur_stage(self):
         if self.stage == Stage.REFINE:
@@ -185,8 +188,8 @@ class GazeboEnv(gym.Env):
         self.num_contacts = msg.num_contacts
         self.epsilon_force = msg.epsilon_force
         self.epsilon_torque = msg.epsilon_torque
-        self.delta_task = msg.delta_task
-        self.delta_cur = msg.delta_cur
+        self.delta_task = np.clip(msg.delta_task, -5, 5)
+        self.delta_cur = np.clip(msg.delta_cur, -2, 8)
         self.sum_contact_forces = msg.sum_contact_forces
         self.prox_angles = [0, 0, 0]
 
@@ -237,13 +240,6 @@ class GazeboEnv(gym.Env):
         delta = self.delta_task if self.stage == Stage.REFINE else self.delta_cur
         reward += self.hparams["w_delta"] * delta
         return reward
-
-    def adjust_fingers(self, action_dict):
-        self.wait_if_necessary()
-        if action_dict["trigger_fingers"]:
-            rospy.loginfo(">>ADJUSTING FINGERS<<")
-            f = action_dict["fingers_incr"]
-            self.gi.pos_incr(f[0], f[1], f[2], 0, False, False, 0, 0)
 
     def get_exec_secs(self):
         # this is to wait 80% of one time step to collect reward
