@@ -7,9 +7,9 @@ import os
 import numpy as np
 import rospy
 
-from stable_baselines3 import TD3, SAC
-from stable_baselines3.td3.policies import MlpPolicy
+from stable_baselines3 import TD3, SAC, PPO, A2C
 from stable_baselines3.common.noise import NormalActionNoise
+from stable_baselines3.td3.policies import MlpPolicy
 from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.env_checker import check_env
 
@@ -49,9 +49,20 @@ def main(args):
         check_env(env)
 
     rospy.loginfo("Preparing model...")
-    n_actions = env.action_space.shape[-1]
-    action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
-    model = TD3(MlpPolicy, env, action_noise=action_noise, verbose=1, tensorboard_log=log_path)
+
+    if args.algorithm == "td3":
+        n_actions = env.action_space.shape[-1]
+        action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
+        model = TD3(MlpPolicy, env, action_noise=action_noise, verbose=1, tensorboard_log=log_path)
+    elif args.algorithm == "sac":
+        model = SAC("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
+    elif args.algorithm == "ppo":
+        model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
+    elif args.algorithm == "a2c":
+        model = A2C("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
+    else:
+        rospy.logerr("Unrecognized algorithm: " + args.algorithm)
+        return
 
     if args.train:
 
@@ -66,7 +77,7 @@ def main(args):
                 eval_freq=args.eval_freq,
                 n_eval_episodes=args.n_eval_episodes,
                 eval_at_init=args.eval_at_init,
-                deterministic=True,    
+                deterministic=True,
             ),
         ]
         rospy.loginfo("Training model...")
@@ -129,13 +140,14 @@ if __name__ == "__main__":
     parser.add_argument("--log_interval", type=int, default=1, help="After how many episodes to log.")
     parser.add_argument("--eval_freq", type=int, default=200, help="After how many time steps to evaluate.")
     parser.add_argument("--n_eval_episodes", type=int, default=10, help="How many episodes to run when evaluating.")
-    parser.add_argument("--eval_at_init", type=bool, default=True, help="Whether to evaluate environment at step = 0.")
+    parser.add_argument("--eval_at_init", type=bool, default=True, help="Whether to evaluate the random policy before training.")
     parser.add_argument("--check_env", type=bool, default=False, help="Whether to check environment or not.")
     parser.add_argument("--w_binary_rew", type=float, default=2, help="Weight for binary reward in framework 3")
     parser.add_argument("--w_eps_torque", type=float, default=10, help="Weight for epsilon torque in framework 1 and 3")
     parser.add_argument("--w_delta", type=float, default=0.1, help="Weight for delta in framework 1 and 3")
     parser.add_argument("--eval_model_path", type=str, help="The path to the model you would like to evaluate.")
-    
+    parser.add_argument("--algorithm", type=str, default="td3", help="Which algorithm to train with.")
+
     args, unknown = parser.parse_known_args()
 
     main(args)

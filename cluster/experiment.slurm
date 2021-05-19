@@ -7,12 +7,13 @@
 #SBATCH -n 1                          
 #SBATCH -c 4
 #SBATCH --mem=16000       
-#SBATCH -t 0-15:00              
+#SBATCH -t 0-02:00              
 # ====
 # you must set the following variables using the --export flag when running this slurm script. view experiments.sh for an example.
 # ====
 # FRAMEWORK
 # TIME_STEPS
+# ALGORITHM
 # LOG_NAME
 # CLUSTER_PATH
 # HOME_DIR
@@ -60,7 +61,7 @@ read -r -d '' AGENT_EXEC << EOM
 . $HOME_DIR/overlay/work/catkin_ws/devel/setup.sh
 export ROS_MASTER_URI=http://localhost:$ROS_PORT
 export GAZEBO_MASTER_URI=http://localhost:$GAZEBO_PORT
-script -c "python3 $HOME_DIR/overlay/work/catkin_ws/src/grasp_refinement/agent/src/main.py --framework=${FRAMEWORK} --seed=${SEED} --output_dir=$HOME_DIR/output/agents --log_name=${LOG_NAME} --time_steps=${TIME_STEPS} --w_binary_rew ${W_BINARY_REW} --w_eps_torque ${W_EPS_TORQUE} --w_delta ${W_DELTA} --x_error_min ${X_ERROR_MIN} --x_error_max ${X_ERROR_MAX} --y_error_min ${Y_ERROR_MIN} --y_error_max ${Y_ERROR_MAX} --z_error_min ${Z_ERROR_MIN} --z_error_max ${Z_ERROR_MAX} --roll_error_min ${ROLL_ERROR_MIN} --roll_error_max ${ROLL_ERROR_MAX} --pitch_error_min ${PITCH_ERROR_MIN} --pitch_error_max ${PITCH_ERROR_MAX} --yaw_error_min ${YAW_ERROR_MIN} --yaw_error_max ${YAW_ERROR_MAX}" $LOG_FILE_AGENT
+script -c "python3 $HOME_DIR/overlay/work/catkin_ws/src/grasp_refinement/agent/src/main.py --framework=${FRAMEWORK} --seed=${SEED} --algorithm=${ALGORITHM} --output_dir=$HOME_DIR/output/agents --log_name=${LOG_NAME} --time_steps=${TIME_STEPS} --w_binary_rew ${W_BINARY_REW} --w_eps_torque ${W_EPS_TORQUE} --w_delta ${W_DELTA} --x_error_min ${X_ERROR_MIN} --x_error_max ${X_ERROR_MAX} --y_error_min ${Y_ERROR_MIN} --y_error_max ${Y_ERROR_MAX} --z_error_min ${Z_ERROR_MIN} --z_error_max ${Z_ERROR_MAX} --roll_error_min ${ROLL_ERROR_MIN} --roll_error_max ${ROLL_ERROR_MAX} --pitch_error_min ${PITCH_ERROR_MIN} --pitch_error_max ${PITCH_ERROR_MAX} --yaw_error_min ${YAW_ERROR_MIN} --yaw_error_max ${YAW_ERROR_MAX}" $LOG_FILE_AGENT
 EOM
 echo -e "Executing the following script ...\n$AGENT_EXEC"
 singularity exec -e --bind $HOME_DIR/output/:/output $HOME_DIR/gazebo_ros.img /bin/sh -c "$AGENT_EXEC"
