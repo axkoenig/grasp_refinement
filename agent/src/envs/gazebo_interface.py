@@ -26,10 +26,11 @@ class GazeboInterface:
     def __init__(self, verbose=True):
         self.verbose = verbose
 
-        self.object_name = rospy.get_param("/object_name")
-        self.object_names = rospy.get_param("/object_names")
+        self.object_name = self.get_ros_param_with_retries("/object_name")
+        self.object_names = self.get_ros_param_with_retries("/object_names")
 
         # gazebo services
+        rospy.wait_for_service("/gazebo/unpause_physics")
         self.unpause_physics = rospy.ServiceProxy("/gazebo/unpause_physics", Empty)
         self.pause_physics = rospy.ServiceProxy("/gazebo/pause_physics", Empty)
         self.set_model_state = rospy.ServiceProxy("/gazebo/set_model_state", SetModelState)
@@ -39,6 +40,7 @@ class GazeboInterface:
         self.get_link_state = rospy.ServiceProxy("/gazebo/get_link_state", GetLinkState)
 
         # reflex services
+        rospy.wait_for_service("/reflex_interface/open")
         self.open_hand = rospy.ServiceProxy("/reflex_interface/open", GraspPrimitive)
         self.close_until_contact = rospy.ServiceProxy("/reflex_interface/close_until_contact", Trigger)
         self.pos_incr = rospy.ServiceProxy("/reflex_interface/position_increment", PosIncrement)
@@ -53,6 +55,19 @@ class GazeboInterface:
         self.br = tf2_ros.TransformBroadcaster()
         self.sim_unpause()  # make sure simulation is not paused
         rospy.sleep(1)  # broadcaster needs some time to start
+
+    def get_ros_param_with_retries(self, param_name, time_out=10):
+        r = rospy.Rate(5)
+        begin = rospy.get_rostime()
+        d = rospy.Duration.from_sec(time_out)
+        while rospy.get_rostime() - begin < d:
+            try: 
+                return rospy.get_param(param_name)
+            except KeyError:
+                rospy.logwarn(f"ROS parameter {param_name} not yet available. Waiting ...")
+            r.sleep()
+        rospy.logerr(f"Did not find ROS parameter {param_name} within time out of {time_out} secs.")
+        raise KeyError
 
     def sim_unpause(self):
         service_call_with_retries(self.unpause_physics, None)

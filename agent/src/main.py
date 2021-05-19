@@ -43,7 +43,7 @@ def main(args):
     for key, value in hparams.items():
         rospy.loginfo(f"- {key:20}{value}")
 
-    rospy.loginfo("Loading environment...")
+    rospy.loginfo("Loading training environment...")
     env = GazeboEnv(hparams, "TRAIN")
     if args.check_env:
         check_env(env)
@@ -66,6 +66,7 @@ def main(args):
 
     if args.train:
 
+        rospy.loginfo("Loading evaluation environment ...")
         eval_env = GazeboEnv(hparams, "EVAL")
 
         callbacks = [
