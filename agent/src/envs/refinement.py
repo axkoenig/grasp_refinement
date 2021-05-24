@@ -1,4 +1,5 @@
 from enum import Enum
+from multiprocessing import Lock
 import threading
 
 import gym
@@ -26,6 +27,7 @@ class GazeboEnv(gym.Env):
 
         self.hparams = hparams
         self.name = name
+        self.mutex = Lock()
 
         # quality metrics
         self.epsilon_force = 0
@@ -69,13 +71,13 @@ class GazeboEnv(gym.Env):
         action_dict = self.acts.get_action_dict(action, verbose=True)
         self.act(action_dict)
 
-        reward = self.get_reward_quality_metrics()
+        reward = self.get_reward_rlh()
 
         self.update_stage()
         self.done = True if self.stage == Stage.END else False
 
         if self.done:
-            reward += self.get_reward_binary()
+            reward += self.get_reward_end()
             rospy.loginfo("Sustained holding: \t" + str(self.sustained_holding))
             rospy.loginfo("Sustained lifting: \t" + str(self.sustained_lifting))
 
@@ -114,35 +116,36 @@ class GazeboEnv(gym.Env):
         }
 
     def get_infos(self, verbose=True):
-        infos = {
-            "num_contacts": self.num_contacts,
-            "sum_contact_forces": self.sum_contact_forces,
-            "joint_diff": self.get_joint_difference(),
-        }
-        if self.stage == Stage.REFINE:
-            infos.update(
-                {
-                    "r_dist_tcp_obj": self.dist_tcp_obj,
-                    "r_obj_shift": self.obj_shift,
-                }
-            )
-            infos.update(self.get_quality_metrics_dict("r_"))
-        elif self.stage == Stage.LIFT:
-            infos.update(self.get_quality_metrics_dict("l_"))
-        elif self.stage == Stage.HOLD:
-            infos.update(self.get_quality_metrics_dict("h_"))
-        elif self.stage == Stage.END:
-            infos.update(
-                {
-                    "num_regrasps": self.num_regrasps,
-                    "sustained_holding": self.sustained_holding,
-                    "sustained_lifting": self.sustained_lifting,
-                }
-            )
-        if verbose:
-            rospy.loginfo("--- Infos ---")
-            for key, value in infos.items():
-                rospy.loginfo(f"- {key:20}{value}")
+        with self.mutex:
+            infos = {
+                "num_contacts": self.num_contacts,
+                "sum_contact_forces": self.sum_contact_forces,
+                "joint_diff": self.get_joint_difference(),
+            }
+            if self.stage == Stage.REFINE:
+                infos.update(
+                    {
+                        "r_dist_tcp_obj": self.dist_tcp_obj,
+                        "r_obj_shift": self.obj_shift,
+                    }
+                )
+                infos.update(self.get_quality_metrics_dict("r_"))
+            elif self.stage == Stage.LIFT:
+                infos.update(self.get_quality_metrics_dict("l_"))
+            elif self.stage == Stage.HOLD:
+                infos.update(self.get_quality_metrics_dict("h_"))
+            elif self.stage == Stage.END:
+                infos.update(
+                    {
+                        "num_regrasps": self.num_regrasps,
+                        "sustained_holding": self.sustained_holding,
+                        "sustained_lifting": self.sustained_lifting,
+                    }
+                )
+            if verbose:
+                rospy.loginfo("--- Infos ---")
+                for key, value in infos.items():
+                    rospy.loginfo(f"- {key:20}{value}")
         return infos
 
     def act(self, action_dict):
@@ -154,7 +157,7 @@ class GazeboEnv(gym.Env):
                 wrist_q = tf.transformations.quaternion_from_euler(rot[0], rot[1], rot[2])
                 self.gi.regrasp(action_dict["wrist_trans"], wrist_q, self.prox_angles)
                 self.num_regrasps += 1
-            else: 
+            else:
                 rospy.loginfo(">>STAYING<<")
         else:
             rospy.loginfo(">>ADJUSTING FINGERS<<")
@@ -236,9 +239,10 @@ class GazeboEnv(gym.Env):
         return reward / counter
 
     def calc_reward(self):
-        reward = self.epsilon_force + self.hparams["w_eps_torque"] * self.epsilon_torque
-        delta = self.delta_task if self.stage == Stage.REFINE else self.delta_cur
-        reward += self.hparams["w_delta"] * delta
+        with self.mutex:
+            reward = self.epsilon_force + self.hparams["w_eps_torque"] * self.epsilon_torque
+            delta = self.delta_task if self.stage == Stage.REFINE else self.delta_cur
+            reward += self.hparams["w_delta"] * delta
         return reward
 
     def get_exec_secs(self):
@@ -246,15 +250,18 @@ class GazeboEnv(gym.Env):
         # we leave 20% for other code to run (later on we make sure we get the exact update rate via the wait_if_necessary method)
         return 0.8 * (1 / self.get_rate_of_cur_stage())
 
-    def get_reward_quality_metrics(self):
+    def get_reward_rlh(self):
+        # calcs reward during refining, lifting and holding for each framework
         exec_secs = self.get_exec_secs()
         if self.hparams["framework"] == 1 or self.hparams["framework"] == 3:
             return self.collect_reward(exec_secs) - self.start_reward
-        else:
+        elif self.hparams["framework"] == 2:
             rospy.sleep(exec_secs)
             return 0
+        else:
+            raise ValueError("Invalid framework number.")
 
-    def get_reward_binary(self):
+    def get_reward_end(self):
         if self.hparams["framework"] == 2:
             return int(self.sustained_holding)
         elif self.hparams["framework"] == 3:
