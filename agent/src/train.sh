@@ -19,10 +19,10 @@ yaw_error_min=-$yaw_error_max
 # reward weights
 w_binary_rew=2
 w_eps_torque=10
-w_delta=0
+w_delta=0.05
 
 time_steps=1000
-prefix="16May_NoDelta_4Real"
+prefix="18May_Delta0.04Local"
 
 # occasionally run this
 # rosclean purge -y
@@ -41,6 +41,9 @@ read -r -d '' HPARAMS <<EOM
 --yaw_error_min ${yaw_error_min} --yaw_error_max ${yaw_error_max}
 EOM
 
+# evaluate model
+# python main.py --framework=1 --train=0 $HPARAMS --eval_model_path=/home/parallels/cluster_logs/final_model.zip
+
 trap "exit" INT
 for i in 1 2 3 4 5 6 7 8 9 10; do
     python main.py --framework=1 --seed=${i} --log_name=${prefix}_f1_id${i} $HPARAMS
@@ -49,3 +52,5 @@ for i in 1 2 3 4 5 6 7 8 9 10; do
 done
 
 echo "Done! Have a nice day."
+
+
