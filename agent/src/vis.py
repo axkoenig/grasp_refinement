@@ -8,11 +8,16 @@ import numpy as np
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 from tensorboard.backend.event_processing.directory_watcher import DirectoryDeletedError
 
-def get_experiment_data(log_path, prefix, framework, try_id, scalar_name, window_size=1, cap_len=10000, verbose=False):
+
+def get_experiment_data(log_path, prefix, framework, try_id, scalar_name, new_name=False, window_size=1, cap_len=10000, verbose=False):
 
     # load tensorboard logs
-    experiment_path = os.path.join(log_path, f"{prefix}_f{framework}_id{try_id}_1")
-    try: 
+    if not new_name:
+        experiment_path = os.path.join(log_path, f"{prefix}_f{framework}_id{try_id}_1")
+    else:
+        experiment_path = os.path.join(log_path, f"{prefix}_f{framework}_id{try_id}_algotd3_1")
+
+    try:
         event_acc = EventAccumulator(experiment_path)
         event_acc.Reload()
         try:
@@ -21,7 +26,7 @@ def get_experiment_data(log_path, prefix, framework, try_id, scalar_name, window
             print("Could not find scalar " + scalar_name)
             return None
     except DirectoryDeletedError:
-        print(experiment_path+ " does not exist. Returning None.")
+        print(experiment_path + " does not exist. Returning None.")
         return None
 
     # smooth data with moving average filter
@@ -50,35 +55,67 @@ def get_experiment_data(log_path, prefix, framework, try_id, scalar_name, window
     return df
 
 
-def add_to_df(df, log_path, prefix, framework, end_try_id, scalar_name):
+def add_to_df(df, log_path, prefix, framework, end_try_id, scalar_name, new_name=False):
     try_ids = list(range(1, end_try_id + 1))
     for try_id in try_ids:
-        df = df.append(get_experiment_data(log_path, prefix, framework, try_id, scalar_name))
+        df = df.append(get_experiment_data(log_path, prefix, framework, try_id, scalar_name, new_name))
     return df
 
 
-def get_all_data(args, verbose=True):
+def get_all_data(args, new_name=False, verbose=True):
     # loads data from tensorboard logfiles
     df = pd.DataFrame()
     for framework in range(1, 4):
-        df = add_to_df(df, args.log_path, args.prefix, framework, args.max_num_trials, args.scalar_name)
-    if verbose: 
+        df = add_to_df(df, args.log_path, args.prefix, framework, args.max_num_trials, args.scalar_name, new_name)
+    if verbose:
         print(df)
     return df
 
 
-def plot(args, df, num_frameworks=3):
-    palette = sns.color_palette("tab10", num_frameworks)
+def plot(args, df, num_items=3, hue="framework"):
+    palette = sns.color_palette("tab10", num_items)
     sns.set(style="darkgrid", font_scale=1.5)
-    
-    ax = sns.lineplot(data=df, x="dense_time_steps", y=args.scalar_name, palette=palette, hue="framework")
-    ax.set_title(f"{args.max_num_trials} Trainings Runs")
+
+    ax = sns.lineplot(data=df, x="dense_time_steps", y=args.scalar_name, palette=palette, hue=hue)
+    ax.set_title(f'{df["try_id"].max()} Trainings Runs')
     ax.set_xlabel("Number of Time Steps")
     ax.set_ylabel(args.scalar_name)
-    
+
     plt.tight_layout(pad=0.5)
     plt.ylim(0, 1.2)
+    plt.xlim(0, 1950)
     plt.show()
+
+
+def plot_percentiles(args, df, framework=1, num_groups=4):
+    # filter out desired framework
+    df = df[df["framework"] == framework]
+    scores = np.empty(0)
+
+    min_try_id = df["try_id"].min()
+    max_try_id = df["try_id"].max()
+
+    for i in range(min_try_id, max_try_id + 1):
+        df_try = df[df["try_id"] == i]
+        # score is average performance over time steps
+        score = df_try[args.scalar_name].sum() / df_try.shape[0]
+        scores = np.append(scores, score)
+
+    # get decision boundaries
+    boundaries = np.linspace(scores.min(), scores.max(), num_groups)
+
+    # assemble new data frame with a new column that represents in which bin try_id is
+    new_df = pd.DataFrame()
+    for i in range(min_try_id, max_try_id + 1):
+        df_try = df[df["try_id"] == i]
+        bin = np.digitize(scores[i - 1], boundaries)
+        df_try["bin"] = bin
+        new_df = pd.concat([new_df, df_try])
+
+    print("new dataframe is")
+    print(new_df)
+    plot(args, new_df, num_groups, "bin")
+    return new_df
 
 
 if __name__ == "__main__":
@@ -86,13 +123,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--log_path",
         type=str,
-        default="/home/parallels/cluster_logs_rot10",
+        default="/home/parallels/cluster_logs",
         help="Path to tensorboard log.",
     )
     parser.add_argument(
         "--prefix",
         type=str,
-        default="12May_EvalTestWRot10",
+        default="17May_NewActionSpaceDelta0.05",
         help="Prefix comment of your experiment.",
     )
     parser.add_argument(
@@ -109,5 +146,13 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+
     df = get_all_data(args)
-    plot(args, df)
+
+    # args.prefix="19May_NewActionSpaceDelta0.05"
+    # df = pd.concat([df, get_all_data(args, new_name=True)])
+    # plot(args, df)
+
+    plot_percentiles(args, df)
+
+    
