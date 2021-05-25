@@ -219,6 +219,7 @@ class GazeboEnv(gym.Env):
             for j in range(self.obs.num_sensors):
                 id_str = "_f" + str(i + 1) + "_s" + str(j + 1)
                 self.obs.set_cur_val_by_name("sensor_pressure" + id_str, msg.finger_state[i].sensor_pressure[j])
+                self.obs.set_cur_val_by_name("tactile_contact" + id_str, msg.finger_state[i].sensor_contact[j])
 
                 # save contact location and pressure if we have a contact
                 if msg.finger_state[i].sensor_pressure[j] > 0:
