@@ -78,8 +78,6 @@ class GazeboEnv(gym.Env):
 
         if self.done:
             reward += self.get_reward_end()
-            rospy.loginfo("Sustained holding: \t" + str(self.sustained_holding))
-            rospy.loginfo("Sustained lifting: \t" + str(self.sustained_lifting))
 
         rospy.loginfo(f"--> REWARD: \t {reward}")
 
@@ -95,6 +93,8 @@ class GazeboEnv(gym.Env):
         self.last_time_stamp = rospy.Time.now()
         self.cur_time_step = 0
         self.num_regrasps = 0
+        self.sustained_holding = False
+        self.sustained_holding = False
         self.gi.sim_pause()  # when NN is updating after resetting, we pause simulation
         
         return self.obs.get_cur_vals()
@@ -298,8 +298,7 @@ class GazeboEnv(gym.Env):
             rospy.loginfo("Ending episode early while refining.")
         elif self.stage == Stage.HOLD and not self.gi.object_lifted():
             self.stage = Stage.END
-            self.sustained_holding = False
-            rospy.loginfo("Ending episode early while holding. Dropped object! :-(")
+            rospy.loginfo("Object dropped while holding! New stage is END. :-(")
 
         # check which stage we're in based on cur_time_step
         elif self.cur_time_step == self.hparams["refine_steps"] and self.stage == Stage.REFINE:
@@ -310,10 +309,10 @@ class GazeboEnv(gym.Env):
             self.lift_thread.start()
         elif self.cur_time_step == self.hparams["lift_steps"] and self.stage == Stage.LIFT:
             self.lift_thread.join()  # wait for lifting to be done
+            self.sustained_lifting = self.gi.object_lifted()
             rospy.loginfo("Done with %i lift steps.", self.hparams["lift_steps"])
             self.cur_time_step = 0
             if not self.sustained_lifting:
-                self.sustained_holding = False  # we can't hold if we dropped it
                 rospy.loginfo("Object dropped while lifting! New stage is END. :-(")
                 self.stage = Stage.END
             else:
@@ -322,8 +321,9 @@ class GazeboEnv(gym.Env):
                 self.hold_thread = threading.Thread(target=self.hold_object)
                 self.hold_thread.start()
         elif self.cur_time_step == self.hparams["hold_steps"] and self.stage == Stage.HOLD:
-            rospy.loginfo("Done with %i hold steps. New stage is END.", self.hparams["hold_steps"])
             self.hold_thread.join()  # wait for holding to be done (to get holding outcome)
+            self.sustained_holding = self.gi.object_lifted()
+            rospy.loginfo("Done with %i hold steps. New stage is END.", self.hparams["hold_steps"])
             self.stage = Stage.END
 
         self.cur_time_step += 1
@@ -355,9 +355,6 @@ class GazeboEnv(gym.Env):
             r.sleep()
             counter += 1
 
-        self.sustained_lifting = self.gi.object_lifted()
-
     def hold_object(self):
         rospy.loginfo("Starting to hold object.")
         rospy.sleep(self.hparams["secs_to_hold"])
-        self.sustained_holding = self.gi.object_lifted()
