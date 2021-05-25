@@ -96,6 +96,7 @@ class GazeboEnv(gym.Env):
         self.cur_time_step = 0
         self.num_regrasps = 0
         self.gi.sim_pause()  # when NN is updating after resetting, we pause simulation
+        
         return self.obs.get_cur_vals()
 
     ### OTHER METHODS
@@ -211,19 +212,40 @@ class GazeboEnv(gym.Env):
             normal = self.gi.ros_vector_to_list(msg.finger_state[i].dist_normal)
             self.obs.set_cur_val_by_name("dist_normal" + id_str, normal)
 
+            tactile_positions = np.empty([0, 3])
+            pressures = np.empty([0, 1])
+
             # tactile feedback
             for j in range(self.obs.num_sensors):
                 id_str = "_f" + str(i + 1) + "_s" + str(j + 1)
                 self.obs.set_cur_val_by_name("sensor_pressure" + id_str, msg.finger_state[i].sensor_pressure[j])
 
-                if msg.finger_state[i].sensor_contact[j]:
-                    tactile_position = self.gi.ros_vector_to_list(msg.finger_state[i].tactile_position[j])
-                    self.obs.set_cur_val_by_name("tactile_position" + id_str, tactile_position)
-                    self.obs.set_cur_val_by_name("tactile_contact" + id_str, 1)
+                # save contact location and pressure if we have a contact
+                if msg.finger_state[i].sensor_pressure[j] > 0:
+                    tactile_positions = np.append(tactile_positions, [self.gi.ros_vector_to_list(msg.finger_state[i].tactile_position[j])], axis=0)
+                    pressures = np.append(pressures, msg.finger_state[i].sensor_pressure[j])
+                    
+                if j == 4:
+                    # record weighted proximal contact position and reset variables
+                    self.record_contact_pos(tactile_positions, pressures, "tactile_position_f" + str(i + 1) + "_prox")
+                    tactile_positions = np.empty([0, 3])
+                    pressures = np.empty([0, 1])
+                elif j == 8:
+                    # record weighted distal contact position
+                    self.record_contact_pos(tactile_positions, pressures, "tactile_position_f" + str(i + 1) + "_dist")
 
-                else:
-                    self.obs.set_cur_val_by_name("tactile_position" + id_str, self.obs.tactile_pos_default)
-                    self.obs.set_cur_val_by_name("tactile_contact" + id_str, 0)
+    def record_contact_pos(self, tactile_positions, pressures, param_name):
+        if pressures.size == 0: # use default value if no contact on link 
+            pos = self.obs.tactile_pos_default
+        elif pressures.size == 1: # we only have one contact on link
+            pos = tactile_positions 
+        else: # multiple contacts on one link, compute weighted average
+            pos = np.array([0,0,0], dtype=np.float64)
+            for i in range(pressures.size):
+                pos += pressures[i] * tactile_positions[i]
+            pos /= pressures.sum()
+            # rospy.logwarn(f"You have {pressures.size} contacts on one link. Computed contact location as weighted average of positions {tactile_positions} and pressures {pressures} as: {pos}")
+        self.obs.set_cur_val_by_name(param_name, pos)
 
     def collect_reward(self, duration, rate=60):
         # records average reward over duration
