@@ -37,8 +37,16 @@ class ActionSpace(Space):
 
     def get_action_dict(self, action, verbose=True):
         "Converts action array from gym environment to a more expressive dict with correct ranges"
+        
+        # TODO remove try catch (this should not be necessary)
+        try: 
+            trigger_regrasp = np.random.binomial(1, self.map_vals_to_range(0, 1, action[0]))
+        except ValueError as e:
+            rospy.logwarn(f"You action is {action[0]} and raised a ValueError: '{e}'. Retrying with more strict bounds.")
+            trigger_regrasp = np.random.binomial(1, self.map_vals_to_range(0.00001, 0.999999, action[0]))
+
         action_dict = {
-            "trigger_regrasp": np.random.binomial(1, self.map_vals_to_range(0, 1, action[0])),
+            "trigger_regrasp": trigger_regrasp,
             "wrist_trans": self.map_vals_to_range(self.min_wrist_trans, self.max_wrist_trans, action[1:4]),
             "wrist_rot": self.map_vals_to_range(self.min_wrist_rot, self.max_wrist_rot, action[4:7]),
             "fingers_incr": self.map_vals_to_range(self.min_finger_incr, self.max_finger_incr, action[7:10]),
