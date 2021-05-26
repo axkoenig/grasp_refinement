@@ -292,6 +292,12 @@ class GazeboEnv(gym.Env):
                 return self.num_sensors_in_contact / 6
             else:
                 return int(self.gi.object_lifted()) + self.num_sensors_in_contact / 6
+        elif self.hparams["framework"] == 6:
+            quality_reward = self.collect_reward(exec_secs) - self.start_reward
+            if self.stage == Stage.REFINE:
+                return quality_reward + self.num_sensors_in_contact / 6
+            else:
+                return quality_reward + int(self.gi.object_lifted()) + self.num_sensors_in_contact / 6
         else:
             raise ValueError("Invalid framework number.")
 
