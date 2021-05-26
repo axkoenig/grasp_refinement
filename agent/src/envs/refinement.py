@@ -95,8 +95,7 @@ class GazeboEnv(gym.Env):
         self.num_regrasps = 0
         self.sustained_holding = False
         self.sustained_holding = False
-        self.gi.sim_pause()  # when NN is updating after resetting, we pause simulation
-        
+        self.gi.sim_pause()  # when NN is updating after resetting, we pause simulationz
         return self.obs.get_cur_vals()
 
     ### OTHER METHODS
@@ -122,6 +121,7 @@ class GazeboEnv(gym.Env):
                 "num_contacts": self.num_contacts,
                 "sum_contact_forces": self.sum_contact_forces,
                 "joint_diff": self.get_joint_difference(),
+                "num_sensors_in_contact": self.num_sensors_in_contact,
             }
             if self.stage == Stage.REFINE:
                 infos.update(
@@ -189,6 +189,7 @@ class GazeboEnv(gym.Env):
         self.last_time_stamp = rospy.Time.now()
 
     def hand_state_callback(self, msg):
+        self.num_sensors_in_contact = 0
         self.num_contacts = msg.num_contacts
         self.epsilon_force = msg.epsilon_force
         self.epsilon_torque = msg.epsilon_torque
@@ -225,7 +226,8 @@ class GazeboEnv(gym.Env):
                 if msg.finger_state[i].sensor_pressure[j] > 0:
                     tactile_positions = np.append(tactile_positions, [self.gi.ros_vector_to_list(msg.finger_state[i].tactile_position[j])], axis=0)
                     pressures = np.append(pressures, msg.finger_state[i].sensor_pressure[j])
-                    
+                    self.num_sensors_in_contact += 1
+
                 if j == 4:
                     # record weighted proximal contact position and reset variables
                     self.record_contact_pos(tactile_positions, pressures, "tactile_position_f" + str(i + 1) + "_prox")
@@ -236,12 +238,12 @@ class GazeboEnv(gym.Env):
                     self.record_contact_pos(tactile_positions, pressures, "tactile_position_f" + str(i + 1) + "_dist")
 
     def record_contact_pos(self, tactile_positions, pressures, param_name):
-        if pressures.size == 0: # use default value if no contact on link 
+        if pressures.size == 0:  # use default value if no contact on link
             pos = self.obs.tactile_pos_default
-        elif pressures.size == 1: # we only have one contact on link
-            pos = tactile_positions 
-        else: # multiple contacts on one link, compute weighted average
-            pos = np.array([0,0,0], dtype=np.float64)
+        elif pressures.size == 1:  # we only have one contact on link
+            pos = tactile_positions
+        else:  # multiple contacts on one link, compute weighted average
+            pos = np.array([0, 0, 0], dtype=np.float64)
             for i in range(pressures.size):
                 pos += pressures[i] * tactile_positions[i]
             pos /= pressures.sum()
@@ -281,6 +283,15 @@ class GazeboEnv(gym.Env):
         elif self.hparams["framework"] == 2:
             rospy.sleep(exec_secs)
             return 0
+        elif self.hparams["framework"] == 4:
+            rospy.sleep(exec_secs)
+            return int(self.gi.object_lifted())
+        elif self.hparams["framework"] == 5:
+            rospy.sleep(exec_secs)
+            if self.stage == Stage.REFINE:
+                return self.num_sensors_in_contact / 6
+            else:
+                return int(self.gi.object_lifted()) + self.num_sensors_in_contact / 6
         else:
             raise ValueError("Invalid framework number.")
 
