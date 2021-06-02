@@ -9,13 +9,13 @@ from tensorboard.backend.event_processing.event_accumulator import EventAccumula
 from tensorboard.backend.event_processing.directory_watcher import DirectoryDeletedError
 
 
-def get_experiment_data(log_path, prefix, framework, try_id, scalar_name, new_name=False, window_size=1, cap_len=10000, verbose=False):
+def get_experiment_data(log_path, prefix, framework, try_id, scalar_name, new_name=False, log_id=1, window_size=10, cap_len=10000, verbose=False):
 
     # load tensorboard logs
     if not new_name:
-        experiment_path = os.path.join(log_path, f"{prefix}_f{framework}_id{try_id}_1")
+        experiment_path = os.path.join(log_path, f"{prefix}_f{framework}_id{try_id}_{log_id}")
     else:
-        experiment_path = os.path.join(log_path, f"{prefix}_f{framework}_id{try_id}_algotd3_1")
+        experiment_path = os.path.join(log_path, f"{prefix}_f{framework}_id{try_id}_algotd3_{log_id}")
 
     try:
         event_acc = EventAccumulator(experiment_path)
@@ -55,24 +55,26 @@ def get_experiment_data(log_path, prefix, framework, try_id, scalar_name, new_na
     return df
 
 
-def add_to_df(df, log_path, prefix, framework, end_try_id, scalar_name, new_name=False):
+def add_to_df(df, log_path, prefix, framework, end_try_id, scalar_name, new_name=False, end_log_id=5):
     try_ids = list(range(1, end_try_id + 1))
+    log_ids = list(range(1, end_log_id + 1))
     for try_id in try_ids:
-        df = df.append(get_experiment_data(log_path, prefix, framework, try_id, scalar_name, new_name))
+        for log_id in log_ids:
+            df = df.append(get_experiment_data(log_path, prefix, framework, try_id, scalar_name, new_name, log_id))
     return df
 
 
-def get_all_data(args, new_name=False, verbose=True):
+def get_all_data(args, new_name=False, verbose=True, framework_list=[1,2,4,5,6]):
     # loads data from tensorboard logfiles
     df = pd.DataFrame()
-    for framework in range(1, 4):
+    for framework in framework_list:
         df = add_to_df(df, args.log_path, args.prefix, framework, args.max_num_trials, args.scalar_name, new_name)
     if verbose:
         print(df)
     return df
 
 
-def plot(args, df, num_items=3, hue="framework"):
+def plot(args, df, num_items=5, hue="framework"):
     palette = sns.color_palette("tab10", num_items)
     sns.set(style="darkgrid", font_scale=1.5)
 
@@ -87,7 +89,7 @@ def plot(args, df, num_items=3, hue="framework"):
     plt.show()
 
 
-def plot_percentiles(args, df, framework=1, num_groups=4):
+def plot_percentiles(args, df, framework=1, num_groups=2):
     # filter out desired framework
     df = df[df["framework"] == framework]
     scores = np.empty(0)
@@ -129,13 +131,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--prefix",
         type=str,
-        default="17May_NewActionSpaceDelta0.05",
+        default="26May_NoBernoulliAndDenserTactileObsFixed",
         help="Prefix comment of your experiment.",
     )
     parser.add_argument(
         "--scalar_name",
         type=str,
-        default="eval/mean_sustained_holding",
+        default="step/sustained_holding",
         help="Which metric to plot.",
     )
     parser.add_argument(
@@ -146,13 +148,12 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-
-    df = get_all_data(args)
+    df = get_all_data(args, new_name=True)
 
     # args.prefix="19May_NewActionSpaceDelta0.05"
     # df = pd.concat([df, get_all_data(args, new_name=True)])
-    # plot(args, df)
+    plot(args, df)
 
-    plot_percentiles(args, df)
+    # plot_percentiles(args, df)
 
     
