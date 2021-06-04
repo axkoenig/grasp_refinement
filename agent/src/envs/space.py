@@ -72,7 +72,7 @@ class Space:
             if self.vars[i].name == name:
                 self.vars[i].cur_val = cur_val
                 return
-        raise ValueError("Variable with name {name} not found.")
+        raise ValueError(f"Variable with name {name} not found.")
 
     def print_all_cur_vals(self):
         rospy.loginfo("\n=== Cur values of " + self.__class__.__name__ + f" ===")
