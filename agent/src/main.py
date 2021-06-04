@@ -13,9 +13,9 @@ from stable_baselines3.td3.policies import MlpPolicy
 from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.env_checker import check_env
 
-from envs.refinement import GazeboEnv
+from envs.gazebo_env import GazeboEnv
 from envs.tensorboard import TensorboardCallback
-from envs.helpers import deg2rad
+from envs.helpers.transforms import deg2rad
 from envs.eval import EvalCallbackWithInfo
 
 
@@ -148,6 +148,7 @@ if __name__ == "__main__":
     parser.add_argument("--w_delta", type=float, default=0.1, help="Weight for delta in framework 1 and 3")
     parser.add_argument("--eval_model_path", type=str, help="The path to the model you would like to evaluate.")
     parser.add_argument("--algorithm", type=str, default="td3", help="Which algorithm to train with.")
+    parser.add_argument("--contribution", type=int, default=1, help="Which contribution of our paper to train/test.")
 
     args, unknown = parser.parse_known_args()
 
