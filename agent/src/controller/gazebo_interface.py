@@ -64,7 +64,7 @@ class GazeboInterface:
         begin = rospy.get_rostime()
         d = rospy.Duration.from_sec(time_out)
         while rospy.get_rostime() - begin < d:
-            try: 
+            try:
                 return rospy.get_param(param_name)
             except KeyError:
                 rospy.logwarn(f"ROS parameter {param_name} not yet available. Waiting ...")
@@ -295,9 +295,7 @@ class GazeboInterface:
         urdf_location = roslib.packages.get_pkg_dir("description") + f"/urdf/objects/{self.new_obj_name}.urdf"
         req.model_xml = open(urdf_location, "r").read()
         req.reference_frame = "world"
-        req.initial_pose = Pose(
-            Point(self.obj_t[0], self.obj_t[1], self.obj_t[2]), Quaternion(self.obj_q[0], self.obj_q[1], self.obj_q[2], self.obj_q[3])
-        )
+        req.initial_pose = Pose(Point(self.obj_t[0], self.obj_t[1], self.obj_t[2]), Quaternion(self.obj_q[0], self.obj_q[1], self.obj_q[2], self.obj_q[3]))
         res = service_call_with_retries(self.spawn_sdf_model, req)
 
         if res.success:

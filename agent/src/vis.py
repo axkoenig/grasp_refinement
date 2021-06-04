@@ -64,7 +64,7 @@ def add_to_df(df, log_path, prefix, framework, end_try_id, scalar_name, new_name
     return df
 
 
-def get_all_data(args, new_name=False, verbose=True, framework_list=[1,2,4,5,6]):
+def get_all_data(args, new_name=False, verbose=True, framework_list=[1, 2, 4, 5, 6]):
     # loads data from tensorboard logfiles
     df = pd.DataFrame()
     for framework in framework_list:
@@ -155,5 +155,3 @@ if __name__ == "__main__":
     plot(args, df)
 
     # plot_percentiles(args, df)
-
-    

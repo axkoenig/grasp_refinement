@@ -15,7 +15,6 @@ from .subscribers import Subscribers
 from .stage import Stage
 
 
-
 class State:
     def __init__(self):
         # this info comes from reflex interface
@@ -41,6 +40,7 @@ class State:
         self.num_regrasps = 0
         self.sustained_holding = False
         self.sustained_lifting = False
+
 
 class GazeboEnv(gym.Env):
     def __init__(self, hparams, name="TRAIN"):
@@ -97,11 +97,11 @@ class GazeboEnv(gym.Env):
         self.gi.sim_unpause()
         rospy.loginfo(f"==={self.name}-RESETTING===")
         self.gi.reset_world(self.hparams)
-        
+
         # TODO delete this
         self.start_reward = self.collect_reward(self.get_exec_secs())
         rospy.loginfo(f"Start reward is: \t{self.start_reward}")
-        
+
         self.last_time_stamp = rospy.Time.now()
         self.cur_time_step = 0
         self.state.reset()
@@ -109,8 +109,6 @@ class GazeboEnv(gym.Env):
         return self.obs.get_cur_vals()
 
     ### OTHER METHODS
-
-
 
     def act(self, action_dict):
         if action_dict["trigger_regrasp"]:
@@ -145,9 +143,7 @@ class GazeboEnv(gym.Env):
         step_size = 1 / self.get_rate_of_cur_stage()
         d = rospy.Time.now() - self.last_time_stamp
         while rospy.Time.now() - self.last_time_stamp < rospy.Duration(step_size):
-            rospy.loginfo_throttle(
-                step_size, "Your last %s step only took %f seconds. Waiting to keep min step size of %f", self.state.stage.name, d.to_sec(), step_size
-            )
+            rospy.loginfo_throttle(step_size, "Your last %s step only took %f seconds. Waiting to keep min step size of %f", self.state.stage.name, d.to_sec(), step_size)
             rospy.sleep(0.01)
         self.last_time_stamp = rospy.Time.now()
 

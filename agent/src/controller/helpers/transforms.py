@@ -36,4 +36,3 @@ def rad2deg(rad):
 
 def deg2rad(deg):
     return deg * np.pi / 180
-

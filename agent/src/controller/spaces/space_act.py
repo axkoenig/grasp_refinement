@@ -28,18 +28,18 @@ class ActionSpace(Space):
         "Maps each value in a list of values in range [self.min_action, self.max_action] to [min, max]"
         if not min < max:
             raise ValueError("Your 'min' must be less than your 'max'.")
-        try: 
+        try:
             for i in range(len(vals)):
                 vals[i] = np.interp(vals[i], (self.min_action, self.max_action), (min, max))
             return vals
-        except TypeError: # we only have one value
+        except TypeError:  # we only have one value
             return np.interp(vals, (self.min_action, self.max_action), (min, max))
 
     def get_action_dict(self, action, verbose=True):
         "Converts action array from gym environment to a more expressive dict with correct ranges"
-        
+
         # TODO remove try catch (this should not be necessary)
-        # try: 
+        # try:
         #     trigger_regrasp = np.random.binomial(1, self.map_vals_to_range(0, 1, action[0]))
         # except ValueError as e:
         #     rospy.logwarn(f"You action is {action[0]} and raised a ValueError: '{e}'. Retrying with more strict bounds.")
@@ -55,7 +55,7 @@ class ActionSpace(Space):
             rospy.loginfo("--- Actions ---")
             for key, value in action_dict.items():
                 if key == "trigger_regrasp":
-                    rospy.loginfo(f'- {key:20}{value} sampled from: {self.map_vals_to_range(0, 1, action[0])}')
+                    rospy.loginfo(f"- {key:20}{value} sampled from: {self.map_vals_to_range(0, 1, action[0])}")
                 else:
-                    rospy.loginfo(f'- {key:20}{value}')
+                    rospy.loginfo(f"- {key:20}{value}")
         return action_dict

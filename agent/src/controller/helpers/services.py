@@ -6,7 +6,7 @@ class StringServiceRequest:
         self.part_name = part_name
         self.reference_frame = reference_frame
 
-        
+
 def service_call(service, request, service_name):
     rospy.wait_for_service(service_name)
     try:
@@ -35,4 +35,3 @@ def service_call_with_retries(service, request, max_retries=10):
 
 def ros_vector_to_list(ros_vector):
     return [ros_vector.x, ros_vector.y, ros_vector.z]
-

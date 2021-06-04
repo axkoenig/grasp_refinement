@@ -48,14 +48,13 @@ class Space:
             val = self.vars[i].cur_val
 
             # clip value to bounds if necessary
-            if np.any(np.less(val, self.vars[i].min_val)) or np.any(np.greater(val, self.vars[i].max_val)) :
+            if np.any(np.less(val, self.vars[i].min_val)) or np.any(np.greater(val, self.vars[i].max_val)):
                 rospy.logwarn(f"Oops value {val} with name {self.vars[i].name} is out of bounds [{self.vars[i].min_val},{self.vars[i].max_val}]!")
                 val = np.clip(val, self.vars[i].min_val, self.vars[i].max_val)
                 rospy.logwarn(f"Clipped {self.vars[i].name} value is {val}")
 
             cur_vals = np.append(cur_vals, val)
         return np.float32(cur_vals)
-        
 
     def get_cur_vals_by_name(self, name, verbose=False):
         "Returns a concatenation of all current values that match the given name."

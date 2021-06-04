@@ -14,13 +14,13 @@ class TensorboardCallback(BaseCallback):
         # access local variable of training environment
         return self.locals[name][0]
 
-    def get_done_or_dones(self): 
+    def get_done_or_dones(self):
         # depending on which algorithm we're using we want to access "done" (e.g. td3) or "dones" (e.g. ppo)
         try_list = ["done", "dones"]
         for try_item in try_list:
-            try: 
+            try:
                 return self.locals[try_item][0]
-            except KeyError: 
+            except KeyError:
                 pass
 
     def _on_training_begin(self):

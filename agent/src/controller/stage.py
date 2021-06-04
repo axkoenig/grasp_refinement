@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class Stage(Enum):
     REFINE = 0
     LIFT = 1

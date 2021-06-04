@@ -142,9 +142,7 @@ class EvalCallbackWithInfo(EvalCallback):
         exclude_infos_from_logging=["terminal_observation"],
         eval_at_init=False,
     ):
-        super(EvalCallbackWithInfo, self).__init__(
-            eval_env, callback_on_new_best, n_eval_episodes, eval_freq, log_path, best_model_save_path, deterministic, render, verbose, warn
-        )
+        super(EvalCallbackWithInfo, self).__init__(eval_env, callback_on_new_best, n_eval_episodes, eval_freq, log_path, best_model_save_path, deterministic, render, verbose, warn)
         self.exclude_infos_from_logging = exclude_infos_from_logging
         self.eval_at_init = eval_at_init
 
