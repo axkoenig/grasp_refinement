@@ -13,10 +13,13 @@ from gazebo_msgs.srv import GetModelState, GetLinkState, SetModelState, DeleteMo
 from gazebo_msgs.msg import ModelState, ModelStates, ContactsState
 from reflex_interface.srv import PosIncrement
 
-from .helpers import (
+from .helpers.transforms import (
     get_tq_from_homo_matrix,
     get_homo_matrix_from_tq,
     get_homo_matrix_from_pose_msg,
+)
+
+from .helpers.services import (
     StringServiceRequest,
     service_call_with_retries,
 )
@@ -74,9 +77,6 @@ class GazeboInterface:
 
     def sim_pause(self):
         service_call_with_retries(self.pause_physics, None)
-
-    def ros_vector_to_list(self, ros_vector):
-        return [ros_vector.x, ros_vector.y, ros_vector.z]
 
     def get_object_pose(self):
         req = StringServiceRequest(self.object_name, "world")
