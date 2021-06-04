@@ -8,8 +8,8 @@ import tf
 
 from .helpers.transforms import get_tq_from_homo_matrix
 from .helpers.logging import get_infos
-from .space_act import ActionSpace
-from .space_obs import ObservationSpace
+from .spaces.space_act import ActionSpace
+from .spaces.space_obs import ObservationSpace
 from .gazebo_interface import GazeboInterface
 from .subscribers import Subscribers
 from .stage import Stage
