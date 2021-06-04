@@ -2,7 +2,7 @@ import numpy as np
 import rospy
 
 from .space import Space
-from .helpers import deg2rad
+from .helpers.transforms import deg2rad
 
 
 class ActionSpace(Space):

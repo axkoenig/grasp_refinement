@@ -1,6 +1,6 @@
 from stable_baselines3.common.callbacks import BaseCallback
 
-from .helpers import merge_dicts, log_dict
+from .helpers.logging import merge_dicts, log_dict
 
 
 class TensorboardCallback(BaseCallback):
