@@ -11,15 +11,20 @@ class Rewards:
         self.hparams = hparams
         self.state = state
 
-    def get_reward_rlh(self, exec_secs=0.3):
+    def get_reward_rlh(self, rate_of_cur_stage):
         # computes reward during refining, lifting and holding
-        return self.collect_reward(exec_secs)
+        return self.collect_reward(self.get_exec_secs(rate_of_cur_stage))
 
     def get_reward_end(self):
         if self.hparams["framework"] == 1 or self.hparams["framework"] == 3:
             return self.hparams["w_binary_rew"] * int(self.state.sustained_holding)
         else:
             return 0
+
+    def get_exec_secs(self, rate_of_cur_stage):
+        # this is to wait 80% of one time step to collect reward
+        # we leave 20% for other code to run (later on we make sure we get the exact update rate via the wait_if_necessary method)
+        return 0.8 * (1 / rate_of_cur_stage)
 
     def collect_reward(self, duration, rate=60):
         # records average reward over duration

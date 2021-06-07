@@ -1,3 +1,5 @@
+import rospy
+
 from .stage import Stage
 
 class State:
@@ -19,6 +21,7 @@ class State:
         self.cur_time_step = 0
         self.sustained_holding = False
         self.sustained_lifting = False
+        self.last_time_stamp = rospy.Time.now()
 
     def reset(self):
         # only reset some variables as the other ones will be continously updated anyway
@@ -27,3 +30,4 @@ class State:
         self.cur_time_step = 0
         self.sustained_holding = False
         self.sustained_lifting = False
+        self.last_time_stamp = rospy.Time.now()
