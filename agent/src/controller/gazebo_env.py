@@ -13,33 +13,7 @@ from .spaces.space_obs import ObservationSpace
 from .gazebo_interface import GazeboInterface
 from .subscribers import Subscribers
 from .stage import Stage
-
-
-class State:
-    def __init__(self):
-        # this info comes from reflex interface
-        self.epsilon_force = 0
-        self.epsilon_torque = 0
-        self.delta_task = 0
-        self.delta_cur = 0
-        self.num_contacts = 0
-        self.sum_contact_forces = 0
-        self.prox_angles = [0, 0, 0]
-
-        # this info is modified by GazeboEnv
-        self.stage = Stage(0)
-        self.obj_shift = 0
-        self.dist_tcp_obj = 0
-        self.num_regrasps = 0
-        self.sustained_holding = False
-        self.sustained_lifting = False
-
-    def reset(self):
-        # only reset some variables as the other ones will be continously updated anyway
-        self.stage = Stage.REFINE
-        self.num_regrasps = 0
-        self.sustained_holding = False
-        self.sustained_lifting = False
+from .state import State
 
 
 class GazeboEnv(gym.Env):
@@ -143,7 +117,9 @@ class GazeboEnv(gym.Env):
         step_size = 1 / self.get_rate_of_cur_stage()
         d = rospy.Time.now() - self.last_time_stamp
         while rospy.Time.now() - self.last_time_stamp < rospy.Duration(step_size):
-            rospy.loginfo_throttle(step_size, "Your last %s step only took %f seconds. Waiting to keep min step size of %f", self.state.stage.name, d.to_sec(), step_size)
+            rospy.loginfo_throttle(
+                step_size, "Your last %s step only took %f seconds. Waiting to keep min step size of %f", self.state.stage.name, d.to_sec(), step_size
+            )
             rospy.sleep(0.01)
         self.last_time_stamp = rospy.Time.now()
 
