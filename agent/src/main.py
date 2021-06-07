@@ -13,10 +13,10 @@ from stable_baselines3.td3.policies import MlpPolicy
 from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.env_checker import check_env
 
-from .callbacks.tensorboard import TensorboardCallback
-from .callbacks.eval import EvalCallbackWithInfo
-from .controller.gazebo_env import GazeboEnv
-from .controller.helpers.transforms import deg2rad
+from callbacks.tensorboard import TensorboardCallback
+from callbacks.eval import EvalCallbackWithInfo
+from controller.gazebo_env import GazeboEnv
+from controller.helpers.transforms import deg2rad
 
 
 def main(args):

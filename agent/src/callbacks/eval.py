@@ -9,7 +9,7 @@ from stable_baselines3.common import base_class
 from stable_baselines3.common.callbacks import EvalCallback, BaseCallback
 from stable_baselines3.common.vec_env import VecEnv, sync_envs_normalization
 
-from .helpers.logging import merge_dicts, log_dict
+from controller.helpers.logging import merge_dicts, log_dict
 
 # we're adapting stable_baseline's eval function to also return averaged info dict
 

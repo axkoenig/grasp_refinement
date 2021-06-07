@@ -1,9 +1,6 @@
-from multiprocessing import Lock
-
 import gym
 import numpy as np
 import rospy
-import tf
 
 from .helpers.logging import get_infos
 from .spaces.space_act import ActionSpace
@@ -56,7 +53,7 @@ class GazeboEnv(gym.Env):
 
         rospy.loginfo(f"--> REWARD: \t {reward}")
 
-        return self.obs.get_cur_vals(), reward, self.done, get_infos(self.state)
+        return self.obs.get_cur_vals(True), reward, self.done, get_infos(self.state)
 
     def reset(self):
         self.gi.sim_unpause()
