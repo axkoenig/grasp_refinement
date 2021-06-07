@@ -56,7 +56,7 @@ class GazeboEnv(gym.Env):
         self.gi = GazeboInterface(verbose=False)
         self.acts = ActionSpace()
         self.obs = ObservationSpace()
-        self.sub = Subscribers(self.state, self.obs)
+        self.sub = Subscribers(self.state, self.obs, self.gi)
 
         self.action_space = gym.spaces.Box(low=self.acts.get_min_vals(), high=self.acts.get_max_vals())
         self.observation_space = gym.spaces.Box(low=self.obs.get_min_vals(), high=self.obs.get_max_vals())
@@ -105,7 +105,7 @@ class GazeboEnv(gym.Env):
         self.last_time_stamp = rospy.Time.now()
         self.cur_time_step = 0
         self.state.reset()
-        self.gi.sim_pause()  # when NN is updating after resetting, we pause simulationz
+        self.gi.sim_pause()  # when NN is updating after resetting, we pause simulation
         return self.obs.get_cur_vals()
 
     ### OTHER METHODS
