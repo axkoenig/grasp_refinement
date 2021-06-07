@@ -52,7 +52,7 @@ class GazeboEnv(gym.Env):
         self.done = True if self.state.stage == Stage.END else False
 
         if self.done:
-            reward += self.get_reward_end()
+            reward += self.rewards.get_reward_end()
 
         rospy.loginfo(f"--> REWARD: \t {reward}")
 
