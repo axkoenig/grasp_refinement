@@ -7,7 +7,8 @@ from reflex_interface.msg import HandStateStamped
 from reflex_msgs.msg import Hand
 from sensor_listener.msg import ContactFrames
 
-from .helpers.services import ros_vector_to_list
+from .helpers.services import ros_vector_to_list as to_list
+
 
 class Subscribers:
     def __init__(self, state, obs, gi):
@@ -22,7 +23,7 @@ class Subscribers:
 
         rospy.Subscriber("reflex_interface/hand_state", HandStateStamped, self.ri_callback, queue_size=1)
         rospy.Subscriber("reflex_takktile/hand_state", Hand, self.reflex_callback, queue_size=1)
-        rospy.Subscriber("reflex_takktile/sim_contact_frames_shell", ContactFrames, self.contacts_callback, queue_size=1)
+        rospy.Subscriber("reflex_takktile/sim_contact_frames", ContactFrames, self.contacts_callback, queue_size=1)
 
     def ri_callback(self, msg):
         self.state.num_contacts = msg.num_contacts
@@ -46,18 +47,18 @@ class Subscribers:
             self.obs.set_cur_val_by_name("preshape_motor_torque", msg.motor[3].load)
 
     def contacts_callback(self, msg):
-        with self.mutex: 
+        with self.mutex:
             self.obs.reset_contact_obs()
             for i in range(msg.num_contact_frames):
                 id_str = "_p" + str(msg.contact_frames_shell[i].hand_part_id)
                 # palm
                 if msg.contact_frames_shell[i].palm_contact:
-                    self.obs.set_cur_val_by_name("contact_normal" + id_str, msg.contact_frames_shell[i].contact_normal)
-                    self.obs.set_cur_val_by_name("contact_pos" + id_str, msg.contact_frames_shell[i].contact_position)
-                    self.obs.set_cur_val_by_name("contact_force" + id_str, msg.contact_frames_shell[i].contact_wrench.force)
+                    self.obs.set_cur_val_by_name("contact_normal" + id_str, to_list(msg.contact_frames_shell[i].contact_normal))
+                    self.obs.set_cur_val_by_name("contact_pos" + id_str, to_list(msg.contact_frames_shell[i].contact_position))
+                    self.obs.set_cur_val_by_name("contact_force" + id_str, to_list(msg.contact_frames_shell[i].contact_wrench.force))
                     continue
                 # fingers
                 link = "_prox" if msg.contact_frames_shell[i].prox_contact else "_dist"
-                self.obs.set_cur_val_by_name("contact_normal" + id_str + link, msg.contact_frames_shell[i].contact_normal)
-                self.obs.set_cur_val_by_name("contact_pos" + id_str + link, msg.contact_frames_shell[i].contact_position)
-                self.obs.set_cur_val_by_name("contact_force" + id_str + link, msg.contact_frames_shell[i].contact_wrench.force)
+                self.obs.set_cur_val_by_name("contact_normal" + id_str + link, to_list(msg.contact_frames_shell[i].contact_normal))
+                self.obs.set_cur_val_by_name("contact_pos" + id_str + link, to_list(msg.contact_frames_shell[i].contact_position))
+                self.obs.set_cur_val_by_name("contact_force" + id_str + link, to_list(msg.contact_frames_shell[i].contact_wrench.force))

@@ -19,11 +19,11 @@ class ObservationSpace(Space):
         self.preshape_angle_max = np.pi / 2
 
         self.tactile_pos_min = [-0.2, -0.2, 0.05]
-        self.tactile_pos_max = [0.2, 0.2, 0.22]
+        self.tactile_pos_max = [0.2, 0.2, 0.26]
         self.tactile_pos_default = [0, 0, 0.06]
 
-        self.contact_force_min = [-10, -10, -10]
-        self.contact_force_max = [10, 10, 10]
+        self.contact_force_min = [-15, -15, -15]
+        self.contact_force_max = [15, 15, 15]
         self.contact_force_default = [0, 0, 0]
 
         self.contact_normal_min = [-1, -1, -1]
