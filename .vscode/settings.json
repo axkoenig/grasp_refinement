@@ -90,7 +90,7 @@
     "cmake.configureOnOpen": false,
     "python.formatting.provider": "black",
     "python.formatting.blackArgs": [
-        "--line-length=150"
+        "--line-length=160"
     ],
     "files.watcherExclude": {
         "**/singularity.img/**": true,
