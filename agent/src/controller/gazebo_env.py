@@ -14,6 +14,7 @@ from .gazebo_interface import GazeboInterface
 from .subscribers import Subscribers
 from .stage import Stage
 from .state import State
+from .rewards import Rewards
 
 
 class GazeboEnv(gym.Env):
@@ -31,6 +32,7 @@ class GazeboEnv(gym.Env):
         self.acts = ActionSpace()
         self.obs = ObservationSpace()
         self.sub = Subscribers(self.state, self.obs, self.gi)
+        self.rewards = Rewards(self.hparams, self.state)
 
         self.action_space = gym.spaces.Box(low=self.acts.get_min_vals(), high=self.acts.get_max_vals())
         self.observation_space = gym.spaces.Box(low=self.obs.get_min_vals(), high=self.obs.get_max_vals())
@@ -55,7 +57,7 @@ class GazeboEnv(gym.Env):
         action_dict = self.acts.get_action_dict(action, verbose=True)
         self.act(action_dict)
 
-        reward = self.get_reward_rlh()
+        reward = self.rewards.get_reward_rlh(self.get_exec_secs())
 
         self.update_stage()
         self.done = True if self.state.stage == Stage.END else False
@@ -71,11 +73,6 @@ class GazeboEnv(gym.Env):
         self.gi.sim_unpause()
         rospy.loginfo(f"==={self.name}-RESETTING===")
         self.gi.reset_world(self.hparams)
-
-        # TODO delete this
-        self.start_reward = self.collect_reward(self.get_exec_secs())
-        rospy.loginfo(f"Start reward is: \t{self.start_reward}")
-
         self.last_time_stamp = rospy.Time.now()
         self.cur_time_step = 0
         self.state.reset()
@@ -83,6 +80,11 @@ class GazeboEnv(gym.Env):
         return self.obs.get_cur_vals()
 
     ### OTHER METHODS
+
+    def get_exec_secs(self):
+        # this is to wait 80% of one time step to collect reward
+        # we leave 20% for other code to run (later on we make sure we get the exact update rate via the wait_if_necessary method)
+        return 0.8 * (1 / self.get_rate_of_cur_stage())
 
     def act(self, action_dict):
         if action_dict["trigger_regrasp"]:
@@ -123,49 +125,6 @@ class GazeboEnv(gym.Env):
             rospy.sleep(0.01)
         self.last_time_stamp = rospy.Time.now()
 
-    def collect_reward(self, duration, rate=60):
-        # records average reward over duration
-        reward = 0
-        counter = 0
-        r = rospy.Rate(rate)
-        start_time = rospy.Time.now()
-
-        while rospy.Time.now() - start_time < rospy.Duration.from_sec(duration):
-            counter += 1
-            reward += self.calc_reward()
-            r.sleep()
-        return reward / counter
-
-    def calc_reward(self):
-        with self.mutex:
-            reward = self.state.epsilon_force + self.hparams["w_eps_torque"] * self.state.epsilon_torque
-            delta = self.state.delta_task if self.state.stage == Stage.REFINE else self.state.delta_cur
-            reward += self.hparams["w_delta"] * delta
-        return reward
-
-    def get_exec_secs(self):
-        # this is to wait 80% of one time step to collect reward
-        # we leave 20% for other code to run (later on we make sure we get the exact update rate via the wait_if_necessary method)
-        return 0.8 * (1 / self.get_rate_of_cur_stage())
-
-    def get_reward_rlh(self):
-        # calcs reward during refining, lifting and holding for each framework
-        exec_secs = self.get_exec_secs()
-        if self.hparams["framework"] == 1 or self.hparams["framework"] == 3:
-            return self.collect_reward(exec_secs) - self.start_reward
-        elif self.hparams["framework"] == 2:
-            rospy.sleep(exec_secs)
-            return 0
-        else:
-            raise ValueError("Invalid framework number.")
-
-    def get_reward_end(self):
-        if self.hparams["framework"] == 2:
-            return int(self.state.sustained_holding)
-        elif self.hparams["framework"] == 3:
-            return self.hparams["w_binary_rew"] * int(self.state.sustained_holding)
-        else:
-            return 0
 
     def update_stage(self):
         # check if we're done early
