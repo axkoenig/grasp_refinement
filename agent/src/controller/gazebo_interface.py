@@ -1,24 +1,26 @@
 import random
+import os
+import subprocess
+from subprocess import DEVNULL
 
 import numpy as np
 import rospy
+import roslaunch
 import roslib
 import tf2_ros
 import tf
-import geometry_msgs.msg
-from geometry_msgs.msg import Pose, Point, Quaternion
+
+from geometry_msgs.msg import Pose, Point, Quaternion, TransformStamped
 from std_srvs.srv import Empty, Trigger, TriggerRequest
-from reflex_interface.srv import GraspPrimitive
 from gazebo_msgs.srv import GetModelState, GetLinkState, SetModelState, DeleteModel, SpawnModel, DeleteModelRequest, SpawnModelRequest
 from gazebo_msgs.msg import ModelState, ModelStates, ContactsState
-from reflex_interface.srv import PosIncrement
 
+from reflex_interface.srv import PosIncrement, GraspPrimitive
 from .helpers.transforms import (
     get_tq_from_homo_matrix,
     get_homo_matrix_from_tq,
     get_homo_matrix_from_pose_msg,
 )
-
 from .helpers.services import (
     StringServiceRequest,
     service_call_with_retries,
@@ -39,8 +41,10 @@ class GazeboInterface:
         self.set_model_state = rospy.ServiceProxy("/gazebo/set_model_state", SetModelState)
         self.delete_model = rospy.ServiceProxy("/gazebo/delete_model", DeleteModel)
         self.spawn_sdf_model = rospy.ServiceProxy("/gazebo/spawn_sdf_model", SpawnModel)
+        self.spawn_urdf_model = rospy.ServiceProxy("/gazebo/spawn_urdf_model", SpawnModel)
         self.get_model_state = rospy.ServiceProxy("/gazebo/get_model_state", GetModelState)
         self.get_link_state = rospy.ServiceProxy("/gazebo/get_link_state", GetLinkState)
+        self.reset_sim = rospy.ServiceProxy("/gazebo/reset_simulation", Empty)
 
         # reflex services
         rospy.wait_for_service("/reflex_interface/open")
@@ -53,8 +57,13 @@ class GazeboInterface:
         self.srv_time_out = 5
         self.srv_tolerance = 0.01
 
+        # get some info on reflex setup
+        self.simplify_collisions = rospy.get_param("simplify_collisions")
+        self.simplify_collisions = "true" if self.simplify_collisions else "false"
+        self.reflex_pub_rate = rospy.get_param("reflex_pub_rate")
+
         # setup broadcaster for desired wrist pose
-        self.ts_wrist = geometry_msgs.msg.TransformStamped()
+        self.ts_wrist = TransformStamped()
         self.br = tf2_ros.TransformBroadcaster()
         self.sim_unpause()  # make sure simulation is not paused
         rospy.sleep(1)  # broadcaster needs some time to start
@@ -73,10 +82,10 @@ class GazeboInterface:
         raise KeyError
 
     def sim_unpause(self):
-        service_call_with_retries(self.unpause_physics, None)
+        service_call_with_retries(self.unpause_physics)
 
     def sim_pause(self):
-        service_call_with_retries(self.pause_physics, None)
+        service_call_with_retries(self.pause_physics)
 
     def get_object_pose(self):
         req = StringServiceRequest(self.object_name, "world")
@@ -166,7 +175,7 @@ class GazeboInterface:
     def wait_until_grasp_stabilizes(self):
         rospy.sleep(0.2)
 
-    def delete_object(self, name="object"):
+    def delete_model(self, name="object"):
         req = DeleteModelRequest()
         req.model_name = name
         service_call_with_retries(self.delete_model, req)
@@ -191,26 +200,38 @@ class GazeboInterface:
             return ""
         return models[0]
 
+    def kill_reflex(self):
+        nodes = [
+            "gazebo/finger_controller_spawner",
+            "gazebo/wrist_controller_spawner",
+        ]
+        if self.verbose:
+            rospy.loginfo("Killing controller nodes")
+        for node in nodes:
+            os.system("rosnode kill " + node)
+        if self.verbose:
+            rospy.loginfo("Deleting reflex")
+        self.delete_model("reflex")
+
     def reset_world(self, hparams):
-        # move old object out of way
-        self.object_name = self.get_cur_obj_name()
-        self.set_model_pose_tq([1, 0, 1], [0, 0, 0, 1], self.object_name)
 
-        # open fingers and move wrist to start position
-        self.open_hand(True, self.srv_tolerance, self.srv_time_out)
+        self.kill_reflex()
         self.select_random_object_wrist_pair()
-        wrist_waypoint_pose = self.get_wrist_waypoint_pose(self.wrist_p, self.wrist_q, self.obj_t)
-        self.cmd_wrist_abs(wrist_waypoint_pose, True)
 
-        # only spawn if object does not exist yet
+        # only spawn object if it does not exist yet
+        self.object_name = self.get_cur_obj_name()
         if self.new_obj_name != self.object_name:
             self.spawn_object()
-            self.delete_object(self.object_name)  # delete old object
+            self.delete_model(self.object_name)  # delete old object
             self.object_name = self.new_obj_name
-
         self.set_model_pose_tq(self.obj_t, self.obj_q, self.object_name)
 
-        # move to init pose
+        # spawn new reflex and move to init pose
+        self.spawn_reflex()
+        self.spawn_controllers()
+        wrist_waypoint_pose = get_homo_matrix_from_tq([0, 0, 0.05], tf.transformations.quaternion_from_euler(-np.pi / 2, 0, 0))
+        self.cmd_wrist_abs(wrist_waypoint_pose, True)
+        self.open_hand(True, self.srv_tolerance, self.srv_time_out)
         wrist_init_pose = self.get_wrist_init_pose(self.wrist_p, self.wrist_q, hparams)
         self.cmd_wrist_abs(wrist_init_pose, True)
 
@@ -218,6 +239,16 @@ class GazeboInterface:
         self.close_until_contact_and_tighten()
         self.wait_until_grasp_stabilizes()
         self.start_obj_t, _ = get_tq_from_homo_matrix(self.get_object_pose())
+
+    def spawn_controllers(self):
+        rospy.loginfo("Spawning reflex controllers ...")
+        cmd = ["roslaunch finger_controller controllers.launch"]
+        subprocess.Popen(cmd, shell=True, stdout=DEVNULL)
+        rospy.sleep(2)
+        rospy.loginfo("Spawning wrist controllers ...")
+        cmd = ["roslaunch wrist_controller controllers.launch"]
+        subprocess.Popen(cmd, shell=True, stdout=DEVNULL)
+        rospy.sleep(2)
 
     def close_until_contact_and_tighten(self, tighten_incr=0.05):
         res = self.close_until_contact(TriggerRequest())
@@ -300,3 +331,21 @@ class GazeboInterface:
 
         if res.success:
             rospy.set_param("object_name", self.new_obj_name)
+
+    def spawn_reflex(self):
+        # read xacro file
+        urdf_location = roslib.packages.get_pkg_dir("description") + f"/robots/reflex.robot.xacro"
+        p = os.popen(
+            "xacro " + urdf_location + f" base_link_name:=shell reflex_pub_rate:={self.reflex_pub_rate} simplify_collisions:={self.simplify_collisions}"
+        )
+        xml_string = p.read()
+        p.close()
+
+        req = SpawnModelRequest()
+        req.model_name = "reflex"
+        req.model_xml = xml_string
+        req.reference_frame = "world"
+        res = service_call_with_retries(self.spawn_sdf_model, req)
+
+        if not res.success:
+            rospy.logfatal("Failed to spawn reflex.")
