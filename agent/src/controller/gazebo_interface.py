@@ -242,11 +242,11 @@ class GazeboInterface:
 
     def spawn_controllers(self):
         rospy.loginfo("Spawning reflex controllers ...")
-        cmd = ["roslaunch finger_controller controllers.launch"]
+        cmd = ["roslaunch finger_controller finger_controller.launch only_spawn:=true"]
         subprocess.Popen(cmd, shell=True, stdout=DEVNULL)
         rospy.sleep(2)
         rospy.loginfo("Spawning wrist controllers ...")
-        cmd = ["roslaunch wrist_controller controllers.launch"]
+        cmd = ["roslaunch wrist_controller wrist_controller.launch only_spawn:=true"]
         subprocess.Popen(cmd, shell=True, stdout=DEVNULL)
         rospy.sleep(2)
 
