@@ -21,7 +21,7 @@ def service_call(service, request, service_name):
         return False, None
 
 
-def service_call_with_retries(service, request, max_retries=10):
+def service_call_with_retries(service, request=None, max_retries=10):
     tries = 0
     service_name = service.protocol.resolved_name
     while tries < max_retries:
@@ -30,7 +30,7 @@ def service_call_with_retries(service, request, max_retries=10):
             return res
         rospy.loginfo(f"Service call to {service_name} failed. Trying again ...")
         tries += 1
-    rospy.loginfo(f"Service call to {service_name} failed even after {max_retries}.")
+    rospy.loginfo(f"Service call to {service_name} failed even after {max_retries} retries.")
 
 
 def ros_vector_to_list(ros_vector):
