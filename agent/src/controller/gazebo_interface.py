@@ -140,7 +140,13 @@ class GazeboInterface:
         self.ts_wrist.transform.rotation.w = q[3]
         self.br.sendTransform(self.ts_wrist)
 
+    def tcp_to_wrist(self):
+        return tf.transformations.translation_matrix([-0.02, 0, -0.09228])
+
     def cmd_wrist_abs(self, mat_shell, wait_until_reached_pose=False):
+        # multiplying by this makes sure we control around palm center
+        #TODO
+        #mat_shell = mat_shell* self.tcp_to_wrist()
         self.last_wrist_pose = mat_shell
         self.send_transform(mat_shell)
         if wait_until_reached_pose:
@@ -210,32 +216,61 @@ class GazeboInterface:
         for node in nodes:
             os.system("rosnode kill " + node)
 
+    def launch_object(self):
+        object = random.choice(["cylinder", "box"])
+        self.launch_cylinder() if object == "cylinder" else self.launch_box()
+        rospy.sleep(1)
+
+    def launch_cylinder(self, radius_range=[0.03, 0.05], length_range=[0.1, 0.2], inertia_scaling_factor=0.9):
+        radius = np.random.uniform(radius_range[0], radius_range[1])
+        length = np.random.uniform(length_range[0], length_range[1])
+        name = "cylinder_" + str(radius) + "_" + str(length)
+        rospy.loginfo(f"Spawning cylinder {name} ...")
+        os.system(
+            f"roslaunch description object.launch object_name:=cylinder object_spawn_name:={name} cylinder_radius:={radius} cylinder_length:={length} inertia_scaling_factor:={inertia_scaling_factor}"
+        )
+        rospy.set_param("object_name", name)
+
+    def launch_box(self, x_range=[0.04, 0.10], y_range=[0.04, 0.10], z_range=[0.1, 0.2]):
+        x = np.random.uniform(x_range[0], x_range[1])
+        y = np.random.uniform(y_range[0], y_range[1])
+        z = np.random.uniform(z_range[0], z_range[1])
+        name = "box_" + str(x) + "_" + str(y) + "_" + str(z)
+        rospy.loginfo(f"Spawning box {name}...")
+        os.system(f"roslaunch description object.launch object_name:=box object_spawn_name:={name} box_x:={x} box_y:={y} box_z:={z}")
+        rospy.set_param("object_name", name)
+
+    def run_cmd_in_subprocess(self, cmd):
+        subprocess.Popen([cmd], shell=True, stdout=DEVNULL)
+
     def reset_world(self, hparams):
         self.kill_controllers()
         self.delete_model("reflex")
-        self.select_random_object_wrist_pair()
+        rospy.sleep(0.5)
 
-        # only spawn object if it does not exist yet
+        # delete old object and relaunch a new object
         self.object_name = self.get_cur_obj_name()
-        if self.new_obj_name != self.object_name:
-            rospy.loginfo(f"Deleting {self.object_name}")
-            self.delete_model(self.object_name)  # delete old object
-            rospy.loginfo(f"Spawning {self.new_obj_name}")
-            self.spawn_object()
-            # TODO check if really 1 sec needed
-            rospy.sleep(1)  # give object some time to spawn 
-            self.object_name = self.new_obj_name
-        self.set_model_pose_tq(self.obj_t, self.obj_q, self.object_name)
+        self.delete_model(self.object_name)
+        rospy.sleep(0.5)
+        self.launch_object()
 
-        # spawn new reflex 
+        # spawn new reflex
         self.spawn_reflex()
         self.spawn_controllers()
 
-        # move to init pose
-        wrist_waypoint_pose = get_homo_matrix_from_tq([0, 0, 0.05], tf.transformations.quaternion_from_euler(-np.pi / 2, 0, 0))
+        # get ground truth pose of reflex (which is offset from object)
+        obj_t, _ = get_tq_from_homo_matrix(self.get_object_pose())
+        truth_wrist_t = obj_t - [0.02, 0.13, 0]
+        truth_wrist_q = tf.transformations.quaternion_from_euler(-np.pi / 2, 0, 0)
+
+        # move to waypoint pose
+        wrist_waypoint_pose = get_homo_matrix_from_tq([0, -0.09, 0.12], truth_wrist_q)
         self.cmd_wrist_abs(wrist_waypoint_pose, True)
         self.open_hand(True, self.srv_tolerance, self.srv_time_out)
-        wrist_init_pose = self.get_wrist_init_pose(self.wrist_p, self.wrist_q, hparams)
+
+        # TODO do wrist rotation around palm center
+        # move to erroneous wrist pose
+        wrist_init_pose = self.get_wrist_init_pose(truth_wrist_t, truth_wrist_q, hparams)
         self.cmd_wrist_abs(wrist_init_pose, True)
 
         # close fingers
