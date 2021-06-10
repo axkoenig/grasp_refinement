@@ -21,8 +21,8 @@ w_binary_rew=2
 w_eps_torque=10
 w_delta=0.05
 
-time_steps=1000
-prefix="18May_Delta0.04Local"
+time_steps=2000
+prefix="Jun8_Local"
 
 # occasionally run this
 # rosclean purge -y
@@ -47,7 +47,7 @@ EOM
 trap "exit" INT
 for i in 1 2 3 4 5 6 7 8 9 10; do
     python main.py --framework=1 --seed=${i} --log_name=${prefix}_f1_id${i} $HPARAMS
-    # python main.py --framework=2 --seed=${i} --log_name=${prefix}_f2_id${i} $HPARAMS
+    python main.py --framework=2 --seed=${i} --log_name=${prefix}_f2_id${i} $HPARAMS
     python main.py --framework=3 --seed=${i} --log_name=${prefix}_f3_id${i} $HPARAMS
 done
 
