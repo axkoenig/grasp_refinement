@@ -5,7 +5,6 @@ from subprocess import DEVNULL
 
 import numpy as np
 import rospy
-import roslaunch
 import roslib
 import tf2_ros
 import tf
@@ -88,6 +87,7 @@ class GazeboInterface:
         service_call_with_retries(self.pause_physics)
 
     def get_object_pose(self):
+        self.object_name = self.get_cur_obj_name()
         req = StringServiceRequest(self.object_name, "world")
         res = service_call_with_retries(self.get_model_state, req)
         return get_homo_matrix_from_pose_msg(res.pose)
@@ -200,7 +200,7 @@ class GazeboInterface:
             return ""
         return models[0]
 
-    def kill_reflex(self):
+    def kill_controllers(self):
         nodes = [
             "gazebo/finger_controller_spawner",
             "gazebo/wrist_controller_spawner",
@@ -209,26 +209,29 @@ class GazeboInterface:
             rospy.loginfo("Killing controller nodes")
         for node in nodes:
             os.system("rosnode kill " + node)
-        if self.verbose:
-            rospy.loginfo("Deleting reflex")
-        self.delete_model("reflex")
 
     def reset_world(self, hparams):
-
-        self.kill_reflex()
+        self.kill_controllers()
+        self.delete_model("reflex")
         self.select_random_object_wrist_pair()
 
         # only spawn object if it does not exist yet
         self.object_name = self.get_cur_obj_name()
         if self.new_obj_name != self.object_name:
-            self.spawn_object()
+            rospy.loginfo(f"Deleting {self.object_name}")
             self.delete_model(self.object_name)  # delete old object
+            rospy.loginfo(f"Spawning {self.new_obj_name}")
+            self.spawn_object()
+            # TODO check if really 1 sec needed
+            rospy.sleep(1)  # give object some time to spawn 
             self.object_name = self.new_obj_name
         self.set_model_pose_tq(self.obj_t, self.obj_q, self.object_name)
 
-        # spawn new reflex and move to init pose
+        # spawn new reflex 
         self.spawn_reflex()
         self.spawn_controllers()
+
+        # move to init pose
         wrist_waypoint_pose = get_homo_matrix_from_tq([0, 0, 0.05], tf.transformations.quaternion_from_euler(-np.pi / 2, 0, 0))
         self.cmd_wrist_abs(wrist_waypoint_pose, True)
         self.open_hand(True, self.srv_tolerance, self.srv_time_out)
@@ -250,13 +253,14 @@ class GazeboInterface:
         subprocess.Popen(cmd, shell=True, stdout=DEVNULL)
         rospy.sleep(2)
 
-    def close_until_contact_and_tighten(self, tighten_incr=0.05):
+    def close_until_contact_and_tighten(self, tighten_incr=0):
         res = self.close_until_contact(TriggerRequest())
         if self.verbose:
             rospy.loginfo("Closed reflex fingers until contact: \n" + str(res))
-        res = self.pos_incr(tighten_incr, tighten_incr, tighten_incr, 0, False, False, 0, 0)
-        if self.verbose:
-            rospy.loginfo("Tightened fingers by " + str(tighten_incr) + ": \n" + str(res))
+        if tighten_incr:
+            res = self.pos_incr(tighten_incr, tighten_incr, tighten_incr, 0, False, False, 0, 0)
+            if self.verbose:
+                rospy.loginfo("Tightened fingers by " + str(tighten_incr) + ": \n" + str(res))
 
     def intelligent_reopen(self, prox_angles, back_off=-0.3, min_angle=1):
         # calc back off to guarantee a minimum reopening angle (otherwise a finger may get stuck in a closed position)
