@@ -34,6 +34,15 @@ def log_dict(dict, logger, prefix="", type=None, exclude_keys_from_logging=[]):
                 print(f"Can't compute {type} of {key} of type {type(value)}. Skipping this entry!")
 
 
+def get_done_or_dones(callback_obj):
+    # depending on which algorithm we're using we want to access "done" (e.g. td3) or "dones" (e.g. ppo)
+    try_list = ["done", "dones"]
+    for try_item in try_list:
+        try:
+            return callback_obj.locals[try_item][0]
+        except KeyError:
+            pass
+
 def get_joint_difference(prox_angles):
     return abs(prox_angles[0] - prox_angles[1]) + abs(prox_angles[1] - prox_angles[2]) + abs(prox_angles[0] - prox_angles[2])
 
