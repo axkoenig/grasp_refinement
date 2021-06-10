@@ -9,7 +9,7 @@ from stable_baselines3.common import base_class
 from stable_baselines3.common.callbacks import EvalCallback, BaseCallback
 from stable_baselines3.common.vec_env import VecEnv, sync_envs_normalization
 
-from controller.helpers.logging import merge_dicts, log_dict
+from controller.helpers.logging import merge_dicts, log_dict, get_done_or_dones
 
 # we're adapting stable_baseline's eval function to also return averaged info dict
 
@@ -141,10 +141,12 @@ class EvalCallbackWithInfo(EvalCallback):
         warn: bool = True,
         exclude_infos_from_logging=["terminal_observation"],
         eval_at_init=False,
+        eval_after_episode=True,
     ):
         super(EvalCallbackWithInfo, self).__init__(eval_env, callback_on_new_best, n_eval_episodes, eval_freq, log_path, best_model_save_path, deterministic, render, verbose, warn)
         self.exclude_infos_from_logging = exclude_infos_from_logging
         self.eval_at_init = eval_at_init
+        self.eval_after_episode = eval_after_episode
 
     def _init_callback(self) -> None:
         # Does not work in some corner cases, where the wrapper is not the same
@@ -230,6 +232,11 @@ class EvalCallbackWithInfo(EvalCallback):
                 return self._on_event()
 
     def _on_step(self) -> bool:
-        if self.eval_freq > 0 and self.n_calls % self.eval_freq == 0:
+        eval_after_step = self.n_calls % self.eval_freq == 0 and not self.eval_after_episode
+        eval_after_episode = get_done_or_dones(self) and self.eval_after_episode
+        is_final_step = self.num_timesteps == self.model._total_timesteps
+
+        if self.eval_freq > 0 and (eval_after_step or eval_after_episode or is_final_step):
             self.eval_with_info()
+            
         return True
