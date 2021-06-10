@@ -61,6 +61,10 @@ class StageController:
     def end_refinement_early(self):
         # get object shift and distance to object
         obj_t, _ = get_tq_from_homo_matrix(self.gi.get_object_pose())
+        # TODO this check should not be necessary
+        if obj_t[0] == 0:
+            return False 
+
         self.state.obj_shift = np.linalg.norm(obj_t - self.gi.start_obj_t)
         self.state.dist_tcp_obj = self.gi.get_dist_tcp_obj()
         if self.state.obj_shift > self.hparams["obj_shift_tol"]:
