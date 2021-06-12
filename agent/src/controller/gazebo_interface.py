@@ -145,8 +145,8 @@ class GazeboInterface:
 
     def cmd_wrist_abs(self, mat_shell, wait_until_reached_pose=False):
         # multiplying by this makes sure we control around palm center
-        #TODO
-        #mat_shell = mat_shell* self.tcp_to_wrist()
+        # TODO
+        # mat_shell = mat_shell* self.tcp_to_wrist()
         self.last_wrist_pose = mat_shell
         self.send_transform(mat_shell)
         if wait_until_reached_pose:
@@ -185,14 +185,6 @@ class GazeboInterface:
         req = DeleteModelRequest()
         req.model_name = name
         service_call_with_retries(self.delete_model, req)
-
-    def get_wrist_waypoint_pose(self, wrist_p, wrist_q, obj_p, offset_dist=0.05):
-        # returns a wrist pose that is 5cm offset from wrist_p in the normal direction from the object
-        offset = np.array(wrist_p) - np.array(obj_p)
-        offset = offset_dist * (offset / np.linalg.norm(offset))
-        wrist_p += offset
-
-        return get_homo_matrix_from_tq(wrist_p, wrist_q)
 
     def get_cur_obj_name(self):
         msg = rospy.wait_for_message("/gazebo/model_states", ModelStates)
@@ -254,16 +246,17 @@ class GazeboInterface:
         rospy.sleep(0.5)
         self.launch_object()
 
-        # spawn new reflex
+        # reset reflex pose and spawn new reflex
+        self.cmd_wrist_abs(tf.transformations.identity_matrix(), False)
         self.spawn_reflex()
         self.spawn_controllers()
 
         # get ground truth pose of reflex (which is offset from object)
         obj_t, _ = get_tq_from_homo_matrix(self.get_object_pose())
-        truth_wrist_t = obj_t - [0.02, 0.13, 0]
+        truth_wrist_t = obj_t - [0.02, 0.14, 0]
         truth_wrist_q = tf.transformations.quaternion_from_euler(-np.pi / 2, 0, 0)
 
-        # move to waypoint pose
+        # move to waypoint poses
         wrist_waypoint_pose = get_homo_matrix_from_tq([0, -0.09, 0.12], truth_wrist_q)
         self.cmd_wrist_abs(wrist_waypoint_pose, True)
         self.open_hand(True, self.srv_tolerance, self.srv_time_out)
