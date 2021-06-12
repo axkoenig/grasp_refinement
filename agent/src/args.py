@@ -51,6 +51,8 @@ def parse_args():
     parser.add_argument("--yaw_error_max", type=float, default=0, help="Orientational error along z direction [deg]")
 
     # evaluation
+    parser.add_argument("--eval_during_training", type=int, default=0, help="Whether to evaluate using callback during training.")
+    parser.add_argument("--eval_after_training", type=int, default=0, help="Whether to evaluate test cases after training.")
     parser.add_argument("--eval_freq", type=int, default=10, help="After how many time steps / or episodes to evaluate.")
     parser.add_argument("--eval_after_episode", type=int, default=1, help="Whether to evaluate after time steps or after episodes.")
     parser.add_argument("--n_eval_episodes", type=int, default=10, help="How many episodes to run when evaluating.")

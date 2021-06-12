@@ -66,21 +66,24 @@ def main(args):
 
     if args.train:
 
-        rospy.loginfo("Loading evaluation environment ...")
-        eval_env = GazeboEnv(hparams, "EVAL")
-
         callbacks = [
             CheckpointCallback(save_freq=args.chkpt_freq, save_path=ckpt_path, name_prefix="chkpt"),
             TensorboardCallback(hparams),
-            EvalCallbackWithInfo(
-                eval_env,
-                best_model_save_path=best_model_path,
-                eval_freq=args.eval_freq,
-                n_eval_episodes=args.n_eval_episodes,
-                eval_at_init=args.eval_at_init,
-                deterministic=True,
-            ),
         ]
+        if args.eval_during_training:
+            rospy.loginfo("Loading evaluation environment ...")
+            eval_env = GazeboEnv(hparams, "EVAL")
+            callbacks.append(
+                EvalCallbackWithInfo(
+                    eval_env,
+                    best_model_save_path=best_model_path,
+                    eval_freq=args.eval_freq,
+                    n_eval_episodes=args.n_eval_episodes,
+                    eval_at_init=args.eval_at_init,
+                    deterministic=True,
+                ),
+            )
+
         rospy.loginfo("Training model...")
         model.learn(total_timesteps=args.time_steps, tb_log_name=args.log_name, callback=callbacks, log_interval=args.log_interval)
         model.save(model_path)
