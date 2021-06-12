@@ -17,10 +17,10 @@ def parse_args():
     parser.add_argument("--log_interval", type=int, default=1, help="After how many episodes to log.")
 
     # reward framework and reward weights
-    parser.add_argument("--framework", type=int, default=1, help="Which reward framework to train with (1 or 2).")
-    parser.add_argument("--w_binary_rew", type=float, default=5, help="Weight for binary reward in framework 3")
-    parser.add_argument("--w_eps_torque", type=float, default=10, help="Weight for epsilon torque in framework 1 and 3")
-    parser.add_argument("--w_delta", type=float, default=0.05, help="Weight for delta in framework 1 and 3")
+    parser.add_argument("--framework", type=int, default=1, help="Which reward framework to train with.")
+    parser.add_argument("--w_binary_rew", type=float, default=15, help="Weight for binary reward")
+    parser.add_argument("--w_eps_torque", type=float, default=10, help="Weight for epsilon torque")
+    parser.add_argument("--w_delta", type=float, default=0.2, help="Weight for delta")
 
     # length and update rates of stages
     parser.add_argument("--refine_steps", type=float, default=15, help="Time steps to refine grasp.")
