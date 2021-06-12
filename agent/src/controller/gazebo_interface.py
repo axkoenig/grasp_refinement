@@ -24,6 +24,7 @@ from .helpers.services import (
     StringServiceRequest,
     service_call_with_retries,
 )
+from .test import RandomCylinder, RandomBox
 
 
 class GazeboInterface:
@@ -212,24 +213,19 @@ class GazeboInterface:
         self.launch_cylinder() if object == "cylinder" else self.launch_box()
         rospy.sleep(1)
 
-    def launch_cylinder(self, radius_range=[0.03, 0.05], length_range=[0.1, 0.2], inertia_scaling_factor=0.9):
-        radius = np.random.uniform(radius_range[0], radius_range[1])
-        length = np.random.uniform(length_range[0], length_range[1])
-        name = "cylinder_" + str(radius) + "_" + str(length)
-        rospy.loginfo(f"Spawning cylinder {name} ...")
+    def launch_cylinder(self):
+        cylinder = RandomCylinder()
+        rospy.loginfo(f"Spawning cylinder {cylinder.name} ...")
         os.system(
-            f"roslaunch description object.launch object_name:=cylinder object_spawn_name:={name} cylinder_radius:={radius} cylinder_length:={length} inertia_scaling_factor:={inertia_scaling_factor}"
+            f"roslaunch description object.launch object_name:=cylinder object_spawn_name:={cylinder.name} cylinder_radius:={cylinder.radius} cylinder_length:={cylinder.length} inertia_scaling_factor:={cylinder.inertia_scaling_factor}"
         )
-        rospy.set_param("object_name", name)
+        rospy.set_param("object_name", cylinder.name)
 
-    def launch_box(self, x_range=[0.04, 0.10], y_range=[0.04, 0.10], z_range=[0.1, 0.2]):
-        x = np.random.uniform(x_range[0], x_range[1])
-        y = np.random.uniform(y_range[0], y_range[1])
-        z = np.random.uniform(z_range[0], z_range[1])
-        name = "box_" + str(x) + "_" + str(y) + "_" + str(z)
-        rospy.loginfo(f"Spawning box {name}...")
-        os.system(f"roslaunch description object.launch object_name:=box object_spawn_name:={name} box_x:={x} box_y:={y} box_z:={z}")
-        rospy.set_param("object_name", name)
+    def launch_box(self):
+        box = RandomBox()
+        rospy.loginfo(f"Spawning box {box.name}...")
+        os.system(f"roslaunch description object.launch object_name:=box object_spawn_name:={box.name} box_x:={box.x} box_y:={box.y} box_z:={box.z} inertia_scaling_factor:={box.inertia_scaling_factor}")
+        rospy.set_param("object_name", box.name)
 
     def run_cmd_in_subprocess(self, cmd):
         subprocess.Popen([cmd], shell=True, stdout=DEVNULL)
