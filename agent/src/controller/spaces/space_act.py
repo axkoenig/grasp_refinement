@@ -35,18 +35,21 @@ class ActionSpace(Space):
         except TypeError:  # we only have one value
             return np.interp(vals, (self.min_action, self.max_action), (min, max))
 
+    def get_trigger_regrasp(self, action_value):
+        # TODO remove try catch and nan check (this should not be necessary)
+        if np.isnan(action_value):
+            return 0
+        try:
+            trigger_regrasp = np.random.binomial(1, self.map_vals_to_range(0, 1, action_value))
+        except ValueError as e:
+            rospy.logwarn(f"Your action is {action_value} and raised a ValueError: '{e}'. Retrying with more strict bounds.")
+            trigger_regrasp = np.random.binomial(1, self.map_vals_to_range(0.00001, 0.999999, action_value))
+
     def get_action_dict(self, action, verbose=True):
         "Converts action array from gym environment to a more expressive dict with correct ranges"
 
-        # TODO remove try catch (this should not be necessary)
-        # try:
-        #     trigger_regrasp = np.random.binomial(1, self.map_vals_to_range(0, 1, action[0]))
-        # except ValueError as e:
-        #     rospy.logwarn(f"You action is {action[0]} and raised a ValueError: '{e}'. Retrying with more strict bounds.")
-        #     trigger_regrasp = np.random.binomial(1, self.map_vals_to_range(0.00001, 0.999999, action[0]))
-
         action_dict = {
-            "trigger_regrasp": True if action[0] > 0 else False,
+            "trigger_regrasp": self.get_trigger_regrasp(action[0]),
             "wrist_trans": self.map_vals_to_range(self.min_wrist_trans, self.max_wrist_trans, action[1:4]),
             "wrist_rot": self.map_vals_to_range(self.min_wrist_rot, self.max_wrist_rot, action[4:7]),
             "fingers_incr": self.map_vals_to_range(self.min_finger_incr, self.max_finger_incr, action[7:10]),
