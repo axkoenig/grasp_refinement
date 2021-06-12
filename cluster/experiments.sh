@@ -27,7 +27,7 @@ LOG_PATH=$HOME_DIR/output/slurm_logs
 echo "Submitting ${NUM_EXPERIMENTS} experiments for each framework..."
 
 # hyper-params for training
-TIME_STEPS=3000
+TIME_STEPS=4000
 
 # translational error
 X_ERROR_MAX=0.05
@@ -68,11 +68,10 @@ submit_job () {
 
 for i in $(seq 1 $NUM_EXPERIMENTS); 
 do 
-submit_job "1" ${i} "sac" # framework 1
-submit_job "1" ${i} "ppo" # framework 1
-submit_job "1" ${i} "a2c" # framework 1
-# submit_job "2" ${i} # framework 2
-# submit_job "3" ${i} # framework 3
+submit_job "1" ${i} "td3" # framework 1
+submit_job "2" ${i} "td3" # framework 2
+submit_job "3" ${i} "td3" # framework 3
+submit_job "4" ${i} "td3" # framework 4
 done
 
 echo "Done."
