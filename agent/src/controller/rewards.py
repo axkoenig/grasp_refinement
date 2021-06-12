@@ -16,8 +16,10 @@ class Rewards:
         return self.collect_reward(self.get_exec_secs(rate_of_cur_stage))
 
     def get_reward_end(self):
-        if self.hparams["framework"] == 1 or self.hparams["framework"] == 3:
+        if self.hparams["framework"] == 1:
             return self.hparams["w_binary_rew"] * int(self.state.sustained_holding)
+        elif self.hparams["framework"] == 4:
+            return int(self.state.sustained_holding)
         else:
             return 0
 
@@ -49,5 +51,7 @@ class Rewards:
             return delta
         elif self.hparams["framework"] == 3:
             return epsilons
+        elif self.hparams["framework"] == 4:
+            return 0  # will only get binary reward at end
         else:
             raise KeyError(f"Invalid framework number: {self.hparams['framework']}.")
