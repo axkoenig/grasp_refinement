@@ -145,8 +145,7 @@ class GazeboInterface:
 
     def cmd_wrist_abs(self, mat_shell, wait_until_reached_pose=False):
         # multiplying by this makes sure we control around palm center
-        # TODO
-        # mat_shell = mat_shell* self.tcp_to_wrist()
+        mat_shell = np.dot(mat_shell, self.tcp_to_wrist())
         self.last_wrist_pose = mat_shell
         self.send_transform(mat_shell)
         if wait_until_reached_pose:
@@ -247,21 +246,20 @@ class GazeboInterface:
         self.launch_object()
 
         # reset reflex pose and spawn new reflex
-        self.cmd_wrist_abs(tf.transformations.identity_matrix(), False)
+        self.cmd_wrist_abs(tf.transformations.inverse_matrix(self.tcp_to_wrist()), False)
         self.spawn_reflex()
         self.spawn_controllers()
 
         # get ground truth pose of reflex (which is offset from object)
         obj_t, _ = get_tq_from_homo_matrix(self.get_object_pose())
-        truth_wrist_t = obj_t - [0.02, 0.14, 0]
+        truth_wrist_t = obj_t - [0, 0.05, 0]    # 5cm offset
         truth_wrist_q = tf.transformations.quaternion_from_euler(-np.pi / 2, 0, 0)
 
         # move to waypoint poses
-        wrist_waypoint_pose = get_homo_matrix_from_tq([0, -0.09, 0.12], truth_wrist_q)
+        wrist_waypoint_pose = get_homo_matrix_from_tq([0, 0, 0.12], truth_wrist_q)
         self.cmd_wrist_abs(wrist_waypoint_pose, True)
         self.open_hand(True, self.srv_tolerance, self.srv_time_out)
 
-        # TODO do wrist rotation around palm center
         # move to erroneous wrist pose
         wrist_init_pose = self.get_wrist_init_pose(truth_wrist_t, truth_wrist_q, hparams)
         self.cmd_wrist_abs(wrist_init_pose, True)
