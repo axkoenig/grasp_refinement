@@ -40,10 +40,10 @@ class ActionSpace(Space):
         if np.isnan(action_value):
             return 0
         try:
-            trigger_regrasp = np.random.binomial(1, self.map_vals_to_range(0, 1, action_value))
+            return np.random.binomial(1, self.map_vals_to_range(0, 1, action_value))
         except ValueError as e:
             rospy.logwarn(f"Your action is {action_value} and raised a ValueError: '{e}'. Retrying with more strict bounds.")
-            trigger_regrasp = np.random.binomial(1, self.map_vals_to_range(0.00001, 0.999999, action_value))
+            return np.random.binomial(1, self.map_vals_to_range(0.00001, 0.999999, action_value))
 
     def get_action_dict(self, action, verbose=True):
         "Converts action array from gym environment to a more expressive dict with correct ranges"
