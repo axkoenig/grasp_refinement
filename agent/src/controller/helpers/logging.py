@@ -43,6 +43,7 @@ def get_done_or_dones(callback_obj):
         except KeyError:
             pass
 
+
 def get_joint_difference(prox_angles):
     return abs(prox_angles[0] - prox_angles[1]) + abs(prox_angles[1] - prox_angles[2]) + abs(prox_angles[0] - prox_angles[2])
 
