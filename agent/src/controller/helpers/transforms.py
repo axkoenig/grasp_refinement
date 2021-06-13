@@ -2,6 +2,16 @@ import numpy as np
 import tf
 
 
+def is_valid_vertical_offset(wrist_y_offset, object_height, ground_clearance=0.02):
+    # prevents random wrist poses that would touch ground (wrist_y_offset in shell frame and object z in world coosy!)
+    # TODO: this is a bit hacky, better work with transforms in world coosy, but we don't always know them a priori
+    # warning: this function assumes that reflex y axis pointing into negative world z
+    # warning2: we don't take the rotation into account here (since it is usually small)
+    shell_box_height = 0.084  # this comes from urdf
+    wrist_z_in_world = -wrist_y_offset  # since we defined that above
+    return (object_height / 2 + wrist_z_in_world - shell_box_height / 2) >= ground_clearance
+
+
 def get_homo_matrix_from_transform_msg(transform, name, frame, verbose=False):
     t = [transform.translation.x, transform.translation.y, transform.translation.z]
     q = [transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w]

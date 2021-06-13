@@ -6,6 +6,8 @@ import os
 
 import numpy as np
 
+from .helpers.transforms import is_valid_vertical_offset
+
 controller_dir = os.path.dirname(os.path.realpath(__file__))
 TEST_CASES_PKL = os.path.join(controller_dir, "test_cases/test_cases.pkl")
 TEST_CASES_CSV = os.path.join(controller_dir, "test_cases/test_cases.csv")
@@ -29,7 +31,7 @@ def get_vector_with_length(length):
         x = sample_sign() * sample_from_range([0, length])
         z = sample_sign() * sample_from_range([0, length])
         try:
-            y = complete_vec_to_length(x, z, length)
+            y = sample_sign() * complete_vec_to_length(x, z, length)
             return [x, y, z]
         except ValueError:  # this combination doesn't work
             continue
@@ -92,8 +94,16 @@ class TestCase:
     def __init__(self, object_name, wrist_l2_error):
         self.object_name = object_name
         self.wrist_l2_error = wrist_l2_error
-        self.object = RandomCylinder() if object_name == "cylinder" else RandomBox()
+        self.object = self.gen_object()
         self.wrist_error = RandomWristError(wrist_l2_error)
+
+        # if this wrist_error, object combination would crash hand into ground, we re-generate a new one
+        while not is_valid_vertical_offset(self.wrist_error.y, self.object.get_csv_data()["height"]):
+            self.wrist_error = RandomWristError(wrist_l2_error)
+            self.object = self.gen_object()
+
+    def gen_object(self):
+        return RandomCylinder() if self.object_name == "cylinder" else RandomBox()
 
     def get_csv_data(self):
         data = dict(
