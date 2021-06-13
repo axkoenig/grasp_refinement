@@ -124,6 +124,7 @@ class TestCases:
                 for i in range(num_exp_per_obj):
                     self.test_cases.append(TestCase(obj, error))
 
+
 if __name__ == "__main__":
     # generate test cases and save to disk
     t = TestCases()
@@ -138,16 +139,29 @@ if __name__ == "__main__":
             writer.writerows([case.get_csv_data()])
 
 
-# def test(model, env, log_name):
-#     # load test cases from disk
-#     with open(TEST_CASES_PKL, "rb") as file:
-#         t = pickle.load(file)
+def test(model, env, log_name="test_session"):
+    # load test cases from disk
+    with open(TEST_CASES_PKL, "rb") as file:
+        t = pickle.load(file)
 
+    # create output csv file
+    log_name += ".csv"
+    with open(log_name, "w") as file:
+        fieldnames = t.test_cases[0].get_csv_header()
+        for metric in metric:
+            fieldnames.append(metric)
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writeheader()
 
-# def test_episode(model, env, logger):
-#     obs = env.reset()
-#     while True:
-#         action, _state = model.predict(obs, deterministic=True)
-#         obs, reward, done, info = env.step(action)
-#         if done:
-#             break
+    for case in t.test_cases:
+        obs = env.reset()
+        while True:
+            action, state = model.predict(obs, deterministic=True)
+            obs, reward, done, info = env.step(action)
+            if done:
+                # save experiment outcome
+                data = case.get_csv_data()
+                outcome = {metric: info[metric] for metric in metrics}
+                data.update(outcome)
+                writer.writerows([data])
+                break
