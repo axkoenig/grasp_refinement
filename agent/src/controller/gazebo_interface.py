@@ -232,7 +232,6 @@ class GazeboInterface:
     def launch_test_obj(self, test_case):
         rospy.loginfo("Launching object from test case.")
         self.launch_cylinder(test_case.object) if test_case.object_name == "cylinder" else self.launch_box(test_case.object)
-        rospy.sleep(1)
 
     def reset_world(self, test_case=None):
         # delete reflex
@@ -248,6 +247,7 @@ class GazeboInterface:
         # reset reflex pose and spawn new reflex
         self.cmd_wrist_abs(tf.transformations.identity_matrix())
         self.spawn_reflex()
+        rospy.sleep(1)
         self.spawn_controllers()
 
         if not test_case:  # we're training
@@ -257,6 +257,8 @@ class GazeboInterface:
         else:  # we're testing
             wrist_error = test_case.wrist_error
             self.launch_test_obj(test_case)
+
+        rospy.sleep(1) # required s.t. object can register with gazebo 
 
         # get ground truth pose of reflex (which is offset from object)
         obj_t, _ = get_tq_from_homo_matrix(self.get_object_pose())
