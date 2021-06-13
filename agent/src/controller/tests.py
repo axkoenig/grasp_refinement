@@ -2,11 +2,13 @@ import random
 import math
 import csv
 import pickle
+import os
 
 import numpy as np
 
-TEST_CASES_PKL = "test_cases/test_cases.pkl"
-TEST_CASES_CSV = "test_cases/test_cases.csv"
+controller_dir = os.path.dirname(os.path.realpath(__file__))
+TEST_CASES_PKL = os.path.join(controller_dir, "test_cases/test_cases.pkl")
+TEST_CASES_CSV = os.path.join(controller_dir, "test_cases/test_cases.csv")
 
 
 def sample_from_range(range):
@@ -76,7 +78,7 @@ class RandomWristError:
             self.pitch = 0
             self.yaw = 0
             return
-        result = get_vector_with_length(l2_error)
+        result = get_vector_with_length(l2_error / 100)  # convert to meters
         self.x = result[0]
         self.y = result[1]
         self.z = result[2]
@@ -125,7 +127,7 @@ class TestCases:
                     self.test_cases.append(TestCase(obj, error))
 
 
-if __name__ == "__main__":
+def generate_test_cases():
     # generate test cases and save to disk
     t = TestCases()
     with open(TEST_CASES_PKL, "wb") as file:
@@ -139,29 +141,33 @@ if __name__ == "__main__":
             writer.writerows([case.get_csv_data()])
 
 
-def test(model, env, log_name="test_session"):
+def test(model, env, log_path, log_name):
     # load test cases from disk
     with open(TEST_CASES_PKL, "rb") as file:
         t = pickle.load(file)
 
+    metrics = ["sustained_lifting", "sustained_holding"]
+
     # create output csv file
-    log_name += ".csv"
-    with open(log_name, "w") as file:
+    path = os.path.join(log_path, log_name + ".csv")
+    with open(path, "w") as file:
         fieldnames = t.test_cases[0].get_csv_header()
-        for metric in metric:
+        for metric in metrics:
             fieldnames.append(metric)
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
 
-    for case in t.test_cases:
-        obs = env.reset()
-        while True:
-            action, state = model.predict(obs, deterministic=True)
-            obs, reward, done, info = env.step(action)
-            if done:
-                # save experiment outcome
-                data = case.get_csv_data()
-                outcome = {metric: info[metric] for metric in metrics}
-                data.update(outcome)
-                writer.writerows([data])
-                break
+        for case in t.test_cases:
+            # run episode until end
+            obs = env.reset()
+            while True:
+                action, state = model.predict(obs, deterministic=True)
+                obs, reward, done, info = env.step(action)
+                if done:
+                    # save experiment outcome
+                    data = case.get_csv_data()
+                    outcome = {metric: info[metric] for metric in metrics}
+                    data.update(outcome)
+                    writer.writerows([data])
+                    file.flush()
+                    break
