@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=experiment
-#SBATCH --partition=share
+#SBATCH --partition=shared
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=awckoenig@gmail.com
 #SBATCH -N 1                          
