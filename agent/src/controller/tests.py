@@ -115,6 +115,9 @@ class TestCase:
         d = self.get_csv_data()
         return [*d]
 
+    def get_wrist_error(self):
+        return self.wrist_error.x, self.wrist_error.y, self.wrist_error.z, self.wrist_error.roll, self.wrist_error.pitch, self.wrist_error.yaw
+
 
 class TestCases:
     def __init__(self, num_exp_per_obj=10):
@@ -157,15 +160,15 @@ def test(model, env, log_path, log_name):
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
 
-        for case in t.test_cases:
+        for test_case in t.test_cases:
             # run episode until end
-            obs = env.reset()
+            obs = env.reset(test_case)
             while True:
                 action, state = model.predict(obs, deterministic=True)
                 obs, reward, done, info = env.step(action)
                 if done:
                     # save experiment outcome
-                    data = case.get_csv_data()
+                    data = test_case.get_csv_data()
                     outcome = {metric: info[metric] for metric in metrics}
                     data.update(outcome)
                     writer.writerows([data])

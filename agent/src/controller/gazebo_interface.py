@@ -208,29 +208,34 @@ class GazeboInterface:
         for node in nodes:
             os.system("rosnode kill " + node)
 
-    def launch_object(self):
+    def launch_random_object(self):
         object = random.choice(["cylinder", "box"])
-        self.launch_cylinder() if object == "cylinder" else self.launch_box()
+        self.launch_cylinder(RandomCylinder()) if object == "cylinder" else self.launch_box(RandomBox())
         rospy.sleep(1)
 
-    def launch_cylinder(self):
-        cylinder = RandomCylinder()
+    def launch_cylinder(self, cylinder):
         rospy.loginfo(f"Spawning cylinder {cylinder.name} ...")
         os.system(
             f"roslaunch description object.launch object_name:=cylinder object_spawn_name:={cylinder.name} cylinder_radius:={cylinder.radius} cylinder_length:={cylinder.length} inertia_scaling_factor:={cylinder.inertia_scaling_factor}"
         )
         rospy.set_param("object_name", cylinder.name)
 
-    def launch_box(self):
-        box = RandomBox()
+    def launch_box(self, box):
         rospy.loginfo(f"Spawning box {box.name}...")
-        os.system(f"roslaunch description object.launch object_name:=box object_spawn_name:={box.name} box_x:={box.x} box_y:={box.y} box_z:={box.z} inertia_scaling_factor:={box.inertia_scaling_factor}")
+        os.system(
+            f"roslaunch description object.launch object_name:=box object_spawn_name:={box.name} box_x:={box.x} box_y:={box.y} box_z:={box.z} inertia_scaling_factor:={box.inertia_scaling_factor}"
+        )
         rospy.set_param("object_name", box.name)
 
     def run_cmd_in_subprocess(self, cmd):
         subprocess.Popen([cmd], shell=True, stdout=DEVNULL)
 
-    def reset_world(self, hparams):
+    def launch_test_obj(self, test_case):
+        rospy.loginfo("Launching object from test case.")
+        self.launch_cylinder(test_case.object) if test_case.object_name == "cylinder" else self.launch_box(test_case.object)
+        rospy.sleep(1)
+
+    def reset_world(self, hparams, test_case=None):
         self.kill_controllers()
         self.delete_model("reflex")
         rospy.sleep(0.5)
@@ -239,7 +244,7 @@ class GazeboInterface:
         self.object_name = self.get_cur_obj_name()
         self.delete_model(self.object_name)
         rospy.sleep(0.5)
-        self.launch_object()
+        self.launch_random_object() if not test_case else self.launch_test_obj(test_case)
 
         # reset reflex pose and spawn new reflex
         self.cmd_wrist_abs(tf.transformations.identity_matrix(), False)
@@ -248,7 +253,7 @@ class GazeboInterface:
 
         # get ground truth pose of reflex (which is offset from object)
         obj_t, _ = get_tq_from_homo_matrix(self.get_object_pose())
-        truth_wrist_t = obj_t - [0, 0.05, 0]    # 5cm offset
+        truth_wrist_t = obj_t - [0, 0.05, 0]  # 5cm offset
         truth_wrist_q = tf.transformations.quaternion_from_euler(-np.pi / 2, 0, 0)
 
         # move to waypoint poses
@@ -257,7 +262,7 @@ class GazeboInterface:
         self.open_hand(True, self.srv_tolerance, self.srv_time_out)
 
         # move to erroneous wrist pose
-        wrist_init_pose = self.get_wrist_init_pose(truth_wrist_t, truth_wrist_q, hparams)
+        wrist_init_pose = self.get_wrist_init_pose(truth_wrist_t, truth_wrist_q, hparams, test_case)
         self.cmd_wrist_abs(wrist_init_pose, True, True)
 
         # close fingers
@@ -314,14 +319,19 @@ class GazeboInterface:
                 return False
         return True
 
-    def get_wrist_init_pose(self, wrist_p, wrist_q, hparams):
-        # generate random offset from initial wrist pose
-        x = np.random.uniform(hparams["x_error_min"], hparams["x_error_max"])
-        y = np.random.uniform(hparams["y_error_min"], hparams["y_error_max"])
-        z = np.random.uniform(hparams["z_error_min"], hparams["z_error_max"])
-        roll = np.random.uniform(hparams["roll_error_min"], hparams["roll_error_max"])
-        pitch = np.random.uniform(hparams["pitch_error_min"], hparams["pitch_error_max"])
-        yaw = np.random.uniform(hparams["yaw_error_min"], hparams["yaw_error_max"])
+    def get_wrist_init_pose(self, wrist_p, wrist_q, hparams, test_case=None):
+
+        if test_case is None:
+            # generate random offset from initial wrist pose
+            x = np.random.uniform(hparams["x_error_min"], hparams["x_error_max"])
+            y = np.random.uniform(hparams["y_error_min"], hparams["y_error_max"])
+            z = np.random.uniform(hparams["z_error_min"], hparams["z_error_max"])
+            roll = np.random.uniform(hparams["roll_error_min"], hparams["roll_error_max"])
+            pitch = np.random.uniform(hparams["pitch_error_min"], hparams["pitch_error_max"])
+            yaw = np.random.uniform(hparams["yaw_error_min"], hparams["yaw_error_max"])
+        else:
+            rospy.loginfo("Loading wrist error from test case")
+            x, y, z, roll, pitch, yaw = test_case.get_wrist_error()
 
         rospy.loginfo(f"Random offset for init wrist pose is \n [x: {x}, y: {y}, z: {z}], [roll: {roll}, pitch: {pitch}, yaw: {yaw}].")
 

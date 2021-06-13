@@ -55,10 +55,10 @@ class GazeboEnv(gym.Env):
 
         return self.obs.get_cur_vals(), reward, self.done, get_infos(self.state)
 
-    def reset(self):
+    def reset(self, test_case=None):
         self.gi.sim_unpause()
         rospy.loginfo(f"==={self.name}-RESETTING===")
-        self.gi.reset_world(self.hparams)
+        self.gi.reset_world(self.hparams, test_case)
         self.state.reset()
         self.gi.sim_pause()  # when NN is updating after resetting, we pause simulation
         return self.obs.get_cur_vals()
