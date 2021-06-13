@@ -27,11 +27,19 @@ class Subscribers:
 
     def ri_callback(self, msg):
         self.state.num_contacts = msg.num_contacts
-        self.state.epsilon_force = msg.epsilon_force
-        self.state.epsilon_torque = msg.epsilon_torque
-        self.state.delta_task = np.clip(msg.delta_task, -5, 5)
-        self.state.delta_cur = np.clip(msg.delta_cur, -2, 8)
+        # in theory epsilon force is already in range [0,1] but practically it is rarely larger than 0.7
+        self.state.epsilon_force = self.normalize(msg.epsilon_force, 0, 0.7)
+        self.state.epsilon_torque = self.normalize(msg.epsilon_torque, 0, 0.03)
+        self.state.delta_task = self.clip_and_normalize(msg.delta_task, -5, 10)
+        self.state.delta_cur = self.clip_and_normalize(msg.delta_cur, -5, 10)
         self.state.sum_contact_forces = msg.sum_contact_forces
+
+    def normalize(self, val, low_bound, high_bound):
+        return (val - low_bound) / (high_bound - low_bound)
+
+    def clip_and_normalize(self, val, low_bound, high_bound):
+        val = np.clip(val, low_bound, high_bound)
+        return self.normalize(val, low_bound, high_bound)
 
     def reflex_callback(self, msg):
         with self.mutex:

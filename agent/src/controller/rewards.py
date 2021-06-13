@@ -16,9 +16,7 @@ class Rewards:
         return self.collect_reward(self.get_exec_secs(rate_of_cur_stage))
 
     def get_reward_end(self):
-        if self.hparams["framework"] == 1:
-            return self.hparams["w_binary_rew"] * int(self.state.sustained_holding)
-        elif self.hparams["framework"] == 4:
+        if self.hparams["framework"] == 4:
             return int(self.state.sustained_holding)
         else:
             return 0
@@ -44,6 +42,7 @@ class Rewards:
     def calc_reward(self):
         with self.mutex:
             epsilons = self.state.epsilon_force + self.hparams["w_eps_torque"] * self.state.epsilon_torque
+            epsilons = self.normalize(epsilons, 0, 1 + self.hparams["w_eps_torque"])
             delta = self.state.delta_task if self.state.stage == Stage.REFINE else self.state.delta_cur
         if self.hparams["framework"] == 1:
             return epsilons + self.hparams["w_delta"] * delta
@@ -55,3 +54,6 @@ class Rewards:
             return 0  # will only get binary reward at end
         else:
             raise KeyError(f"Invalid framework number: {self.hparams['framework']}.")
+
+    def normalize(self, val, low_bound, high_bound):
+        return (val - low_bound) / (high_bound - low_bound)
