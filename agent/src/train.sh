@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # transl offset
-x_error_max=0.02
+x_error_max=0.05
 x_error_min=-$x_error_max
-y_error_max=0.02
+y_error_max=0.05
 y_error_min=-$y_error_max
-z_error_max=0.02
+z_error_max=0.05
 z_error_min=-$z_error_max
 
 # rot offset
@@ -17,15 +17,15 @@ yaw_error_max=5
 yaw_error_min=-$yaw_error_max
 
 # reward weights
-w_binary_rew=2
-w_eps_torque=10
-w_delta=0.05
+w_binary_rew=10
+w_eps_torque=1
+w_delta=1
 
 time_steps=2000
-prefix="Jun8_Local"
+prefix="test"
 
 # occasionally run this
-# rosclean purge -y
+rosclean purge -y
 
 read -r -d '' HPARAMS <<EOM
 --time_steps=$time_steps \ 
