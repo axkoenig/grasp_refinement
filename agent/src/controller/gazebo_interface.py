@@ -247,7 +247,7 @@ class GazeboInterface:
         self.launch_random_object() if not test_case else self.launch_test_obj(test_case)
 
         # reset reflex pose and spawn new reflex
-        self.cmd_wrist_abs(tf.transformations.identity_matrix(), False)
+        self.cmd_wrist_abs(tf.transformations.identity_matrix())
         self.spawn_reflex()
         self.spawn_controllers()
 
