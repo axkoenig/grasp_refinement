@@ -16,6 +16,7 @@ from callbacks.tensorboard import TensorboardCallback
 from callbacks.eval import EvalCallbackWithInfo
 from controller.gazebo_env import GazeboEnv
 from controller.helpers.transforms import deg2rad
+from controller.tests import test, generate_test_cases
 from args import parse_args
 
 
@@ -47,6 +48,8 @@ def main(args):
     env = GazeboEnv(hparams, "TRAIN")
     if args.check_env:
         check_env(env)
+    if args.gen_new_test_cases:
+        generate_test_cases()
 
     rospy.loginfo("Preparing model...")
 
@@ -89,6 +92,10 @@ def main(args):
         model.save(model_path)
         rospy.loginfo("Saved final model under: " + model_path)
 
+        if args.eval_after_training:
+            rospy.loginfo("Testing final model")
+            test(model, env, log_path, args.log_name)
+
     else:
         rospy.loginfo("Loading model from: " + args.eval_model_path)
         model.load(args.eval_model_path)
@@ -96,13 +103,10 @@ def main(args):
 
         for episode in range(20):
             obs = env.reset()
-            env.seed(args.seed)
-            for t in range(1000):
+            while True:
                 action, _state = model.predict(obs, deterministic=True)
                 obs, reward, done, info = env.step(action)
-                env.seed(args.seed)
                 if done:
-                    rospy.loginfo(f"Episode finished after {t+1} timesteps.")
                     break
 
     rospy.loginfo("Done! Have a nice day.")
