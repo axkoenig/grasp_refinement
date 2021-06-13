@@ -24,7 +24,7 @@ from .helpers.services import (
     StringServiceRequest,
     service_call_with_retries,
 )
-from .test import RandomCylinder, RandomBox
+from .tests import RandomCylinder, RandomBox
 
 
 class GazeboInterface:
@@ -333,18 +333,6 @@ class GazeboInterface:
 
         truth_wrist_init_pose = get_homo_matrix_from_tq(wrist_p, wrist_q)
         return np.dot(truth_wrist_init_pose, mat_offset)
-
-    def select_random_object_wrist_pair(self):
-        # select new object randomly
-        self.new_obj_name = random.choice(self.object_names)
-        self.pose_list = rospy.get_param(f"{self.new_obj_name}/pose_list")
-        self.desired_pose_name = random.choice(self.pose_list)
-
-        # get object and grasp pose from yaml file
-        self.obj_t = rospy.get_param(f"{self.new_obj_name}/pose_{self.desired_pose_name}/object_p")
-        self.obj_q = rospy.get_param(f"{self.new_obj_name}/pose_{self.desired_pose_name}/object_q")
-        self.wrist_p = rospy.get_param(f"{self.new_obj_name}/pose_{self.desired_pose_name}/wrist_p")
-        self.wrist_q = rospy.get_param(f"{self.new_obj_name}/pose_{self.desired_pose_name}/wrist_q")
 
     def spawn_object(self):
         req = SpawnModelRequest()
