@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=experiment
-#SBATCH --partition=serial_requeue
+#SBATCH --partition=share
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=awckoenig@gmail.com
 #SBATCH -N 1                          
