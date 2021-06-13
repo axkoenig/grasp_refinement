@@ -14,7 +14,7 @@ TEST_CASES_CSV = os.path.join(controller_dir, "test_cases/test_cases.csv")
 
 
 def sample_from_range(range):
-    return np.random.uniform(range[0], range[1])
+    return np.random.uniform(min(range), max(range))
 
 
 def sample_sign():
@@ -35,6 +35,40 @@ def get_vector_with_length(length):
             return [x, y, z]
         except ValueError:  # this combination doesn't work
             continue
+
+
+def gen_object(object_name):
+    return RandomCylinder() if object_name == "cylinder" else RandomBox()
+
+
+def gen_valid_wrist_error_obj_combination_from_l2(object_name, wrist_l2_error):
+    object = gen_object(object_name)
+    wrist_error = RandomWristErrorFromL2(wrist_l2_error)
+
+    # if this wrist_error, object combination would crash hand into ground, we re-generate a new one
+    while not is_valid_vertical_offset(wrist_error.y, object.get_csv_data()["height"]):
+        wrist_error = RandomWristErrorFromL2(wrist_l2_error)
+        object = gen_object(object_name)
+    return object, wrist_error
+
+
+def gen_valid_wrist_error_obj_combination_from_ranges(object_name, hparams):
+    object = gen_object(object_name)
+
+    x_range = [hparams["x_error_min"], hparams["x_error_max"]]
+    y_range = [hparams["y_error_min"], hparams["y_error_max"]]
+    z_range = [hparams["z_error_min"], hparams["z_error_max"]]
+    roll_range = [hparams["roll_error_min"], hparams["roll_error_max"]]
+    pitch_range = [hparams["pitch_error_min"], hparams["pitch_error_max"]]
+    yaw_range = [hparams["yaw_error_min"], hparams["yaw_error_max"]]
+
+    wrist_error = RandomWristErrorFromRanges(x_range, y_range, z_range, roll_range, pitch_range, yaw_range)
+
+    # if this wrist_error, object combination would crash hand into ground, we re-generate a new one
+    while not is_valid_vertical_offset(wrist_error.y, object.get_csv_data()["height"]):
+        wrist_error = RandomWristErrorFromRanges(x_range, y_range, z_range, roll_range, pitch_range, yaw_range)
+        object = gen_object(object_name)
+    return object, wrist_error
 
 
 class Cylinder:
@@ -71,14 +105,19 @@ class RandomBox(Box):
 
 
 class RandomWristError:
+    def __init__(self):
+        self.x = 0
+        self.y = 0
+        self.z = 0
+        self.roll = 0
+        self.pitch = 0
+        self.yaw = 0
+
+
+class RandomWristErrorFromL2(RandomWristError):
     def __init__(self, l2_error):
+        super().__init__()
         if not l2_error:
-            self.x = 0
-            self.y = 0
-            self.z = 0
-            self.roll = 0
-            self.pitch = 0
-            self.yaw = 0
             return
         result = get_vector_with_length(l2_error / 100)  # convert to meters
         self.x = result[0]
@@ -90,20 +129,22 @@ class RandomWristError:
         self.yaw = result[2]
 
 
+class RandomWristErrorFromRanges(RandomWristError):
+    def __init__(self, x_range, y_range, z_range, roll_range, pitch_range, yaw_range):
+        super().__init__()
+        self.x = sample_from_range(x_range)
+        self.y = sample_from_range(y_range)
+        self.z = sample_from_range(z_range)
+        self.roll = sample_from_range(roll_range)
+        self.pitch = sample_from_range(pitch_range)
+        self.yaw = sample_from_range(yaw_range)
+
+
 class TestCase:
     def __init__(self, object_name, wrist_l2_error):
         self.object_name = object_name
         self.wrist_l2_error = wrist_l2_error
-        self.object = self.gen_object()
-        self.wrist_error = RandomWristError(wrist_l2_error)
-
-        # if this wrist_error, object combination would crash hand into ground, we re-generate a new one
-        while not is_valid_vertical_offset(self.wrist_error.y, self.object.get_csv_data()["height"]):
-            self.wrist_error = RandomWristError(wrist_l2_error)
-            self.object = self.gen_object()
-
-    def gen_object(self):
-        return RandomCylinder() if self.object_name == "cylinder" else RandomBox()
+        self.object, self.wrist_error = gen_valid_wrist_error_obj_combination_from_l2(object_name, wrist_l2_error)
 
     def get_csv_data(self):
         data = dict(

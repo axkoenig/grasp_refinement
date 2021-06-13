@@ -20,7 +20,7 @@ class GazeboEnv(gym.Env):
         self.name = name
 
         self.state = State()
-        self.gi = GazeboInterface(verbose=False)
+        self.gi = GazeboInterface(self.hparams, verbose=False)
         self.acts = ActionSpace()
         self.obs = ObservationSpace()
         self.sub = Subscribers(self.state, self.obs, self.gi)
@@ -58,7 +58,7 @@ class GazeboEnv(gym.Env):
     def reset(self, test_case=None):
         self.gi.sim_unpause()
         rospy.loginfo(f"==={self.name}-RESETTING===")
-        self.gi.reset_world(self.hparams, test_case)
+        self.gi.reset_world(test_case)
         self.state.reset()
         self.gi.sim_pause()  # when NN is updating after resetting, we pause simulation
         return self.obs.get_cur_vals()

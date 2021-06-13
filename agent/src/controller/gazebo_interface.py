@@ -24,12 +24,13 @@ from .helpers.services import (
     StringServiceRequest,
     service_call_with_retries,
 )
-from .tests import RandomCylinder, RandomBox
+from .tests import gen_valid_wrist_error_obj_combination_from_ranges
 
 
 class GazeboInterface:
-    def __init__(self, verbose=True):
+    def __init__(self, hparams, verbose=True):
         self.verbose = verbose
+        self.hparams = hparams
 
         self.object_name = self.get_ros_param_with_retries("/object_name")
         self.object_names = self.get_ros_param_with_retries("/object_names")
@@ -150,7 +151,8 @@ class GazeboInterface:
         self.last_wrist_pose = mat_shell
         self.send_transform(mat_shell)
         if wait_until_reached_pose:
-            self.wait_until_reached_pose(mat_shell)
+            return self.wait_until_reached_pose(mat_shell)
+        return 1
 
     def cmd_wrist_pose_incr(self, p_incr, q_incr, wait_until_reached_pose=False):
         mat_t_incr = tf.transformations.translation_matrix(p_incr)
@@ -159,7 +161,8 @@ class GazeboInterface:
         self.last_wrist_pose = np.dot(self.last_wrist_pose, mat_homo)
         self.send_transform(self.last_wrist_pose)
         if wait_until_reached_pose:
-            self.wait_until_reached_pose(self.last_wrist_pose)
+            return self.wait_until_reached_pose(self.last_wrist_pose)
+        return 1
 
     def wait_until_reached_pose(self, pose, t_tol=0.01, q_tol=0.02, time_out=10):
         r = rospy.Rate(5)
@@ -174,9 +177,10 @@ class GazeboInterface:
             elif np.linalg.norm(q_cur - q) > q_tol and self.verbose:
                 rospy.loginfo(f"Wrist orientation not within tolerance of {q_tol} yet.")
             elif np.linalg.norm(t_cur - t) < t_tol and np.linalg.norm(q_cur - q) < q_tol:
-                return
+                return 1
             r.sleep()
         rospy.loginfo(f"Did not reach pose in time out of {time_out} secs. You're probably crashing into something ...")
+        return 0 
 
     def wait_until_grasp_stabilizes(self):
         rospy.sleep(0.2)
@@ -208,11 +212,6 @@ class GazeboInterface:
         for node in nodes:
             os.system("rosnode kill " + node)
 
-    def launch_random_object(self):
-        object = random.choice(["cylinder", "box"])
-        self.launch_cylinder(RandomCylinder()) if object == "cylinder" else self.launch_box(RandomBox())
-        rospy.sleep(1)
-
     def launch_cylinder(self, cylinder):
         rospy.loginfo(f"Spawning cylinder {cylinder.name} ...")
         os.system(
@@ -235,21 +234,29 @@ class GazeboInterface:
         self.launch_cylinder(test_case.object) if test_case.object_name == "cylinder" else self.launch_box(test_case.object)
         rospy.sleep(1)
 
-    def reset_world(self, hparams, test_case=None):
+    def reset_world(self, test_case=None):
+        # delete reflex
         self.kill_controllers()
         self.delete_model("reflex")
         rospy.sleep(0.5)
 
-        # delete old object and relaunch a new object
+        # delete old object
         self.object_name = self.get_cur_obj_name()
         self.delete_model(self.object_name)
         rospy.sleep(0.5)
-        self.launch_random_object() if not test_case else self.launch_test_obj(test_case)
 
         # reset reflex pose and spawn new reflex
         self.cmd_wrist_abs(tf.transformations.identity_matrix())
         self.spawn_reflex()
         self.spawn_controllers()
+
+        if not test_case:  # we're training
+            object_type = random.choice(["cylinder", "box"])
+            object, wrist_error = gen_valid_wrist_error_obj_combination_from_ranges(object_type, self.hparams)
+            self.launch_cylinder(object) if object_type == "cylinder" else self.launch_box(object)
+        else:  # we're testing
+            wrist_error = test_case.wrist_error
+            self.launch_test_obj(test_case)
 
         # get ground truth pose of reflex (which is offset from object)
         obj_t, _ = get_tq_from_homo_matrix(self.get_object_pose())
@@ -258,12 +265,18 @@ class GazeboInterface:
 
         # move to waypoint poses
         wrist_waypoint_pose = get_homo_matrix_from_tq([0, 0, 0.12], truth_wrist_q)
-        self.cmd_wrist_abs(wrist_waypoint_pose, True, True)
+        res = self.cmd_wrist_abs(wrist_waypoint_pose, True, True)
+        if not res:
+            rospy.logwarn("Could not reach waypoint wrist pose. Resetting again.")
+            return self.reset_world(test_case) 
         self.open_hand(True, self.srv_tolerance, self.srv_time_out)
 
         # move to erroneous wrist pose
-        wrist_init_pose = self.get_wrist_init_pose(truth_wrist_t, truth_wrist_q, hparams, test_case)
-        self.cmd_wrist_abs(wrist_init_pose, True, True)
+        wrist_init_pose = self.get_wrist_init_pose(truth_wrist_t, truth_wrist_q, wrist_error)
+        res = self.cmd_wrist_abs(wrist_init_pose, True, True)
+        if not res:
+            rospy.logwarn("Could not reach erroneous wrist pose. Resetting again.")
+            return self.reset_world(test_case) 
 
         # close fingers
         self.close_until_contact_and_tighten()
@@ -319,25 +332,15 @@ class GazeboInterface:
                 return False
         return True
 
-    def get_wrist_init_pose(self, wrist_p, wrist_q, hparams, test_case=None):
+    def get_wrist_init_pose(self, wrist_p, wrist_q, wrist_error):
 
-        if test_case is None:
-            # generate random offset from initial wrist pose
-            x = np.random.uniform(hparams["x_error_min"], hparams["x_error_max"])
-            y = np.random.uniform(hparams["y_error_min"], hparams["y_error_max"])
-            z = np.random.uniform(hparams["z_error_min"], hparams["z_error_max"])
-            roll = np.random.uniform(hparams["roll_error_min"], hparams["roll_error_max"])
-            pitch = np.random.uniform(hparams["pitch_error_min"], hparams["pitch_error_max"])
-            yaw = np.random.uniform(hparams["yaw_error_min"], hparams["yaw_error_max"])
-        else:
-            rospy.loginfo("Loading wrist error from test case")
-            x, y, z, roll, pitch, yaw = test_case.get_wrist_error()
-
-        rospy.loginfo(f"Random offset for init wrist pose is \n [x: {x}, y: {y}, z: {z}], [roll: {roll}, pitch: {pitch}, yaw: {yaw}].")
+        rospy.loginfo(
+            f"Random offset for init wrist pose is \n [x: {wrist_error.x}, y: {wrist_error.y}, z: {wrist_error.z}], [roll: {wrist_error.roll}, pitch: {wrist_error.pitch}, yaw: {wrist_error.yaw}]."
+        )
 
         # construct matrix that offsets from ground truth pose
-        q = tf.transformations.quaternion_from_euler(roll, pitch, yaw)
-        mat_t_offset = tf.transformations.translation_matrix([x, y, z])
+        q = tf.transformations.quaternion_from_euler(wrist_error.roll, wrist_error.pitch, wrist_error.yaw)
+        mat_t_offset = tf.transformations.translation_matrix([wrist_error.x, wrist_error.y, wrist_error.z])
         mat_q_offset = tf.transformations.quaternion_matrix(q)
         mat_offset = np.dot(mat_t_offset, mat_q_offset)
 
