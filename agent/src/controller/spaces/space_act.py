@@ -11,17 +11,17 @@ class ActionSpace(Space):
     def __init__(self):
         super().__init__()
 
-        self.max_wrist_trans = 0.01
+        self.max_wrist_trans = 0.003
         self.min_wrist_trans = -self.max_wrist_trans
-        self.max_wrist_rot = deg2rad(1)
+        self.max_wrist_rot = deg2rad(0.5)
         self.min_wrist_rot = -self.max_wrist_rot
-        self.max_finger_incr = deg2rad(2)
-        self.min_finger_incr = deg2rad(-2)
+        self.max_finger_incr = deg2rad(4)
+        self.min_finger_incr = deg2rad(-4)
 
         self.max_action = 1
         self.min_action = -self.max_action
 
-        self.add_variable(10, "actions", 0, self.min_action, self.max_action)
+        self.add_variable(9, "actions", 0, self.min_action, self.max_action)
         self.print_num_dimensions()
 
     def map_vals_to_range(self, min, max, vals):
@@ -35,24 +35,13 @@ class ActionSpace(Space):
         except TypeError:  # we only have one value
             return np.interp(vals, (self.min_action, self.max_action), (min, max))
 
-    def get_trigger_regrasp(self, action_value):
-        # TODO remove try catch and nan check (this should not be necessary)
-        if np.isnan(action_value):
-            return 0
-        try:
-            return np.random.binomial(1, self.map_vals_to_range(0, 1, action_value))
-        except ValueError as e:
-            rospy.logwarn(f"Your action is {action_value} and raised a ValueError: '{e}'. Retrying with more strict bounds.")
-            return np.random.binomial(1, self.map_vals_to_range(0.00001, 0.999999, action_value))
-
     def get_action_dict(self, action, verbose=True):
         "Converts action array from gym environment to a more expressive dict with correct ranges"
 
         action_dict = {
-            "trigger_regrasp": self.get_trigger_regrasp(action[0]),
-            "wrist_trans": self.map_vals_to_range(self.min_wrist_trans, self.max_wrist_trans, action[1:4]),
-            "wrist_rot": self.map_vals_to_range(self.min_wrist_rot, self.max_wrist_rot, action[4:7]),
-            "fingers_incr": self.map_vals_to_range(self.min_finger_incr, self.max_finger_incr, action[7:10]),
+            "wrist_trans": self.map_vals_to_range(self.min_wrist_trans, self.max_wrist_trans, action[0:3]),
+            "wrist_rot": self.map_vals_to_range(self.min_wrist_rot, self.max_wrist_rot, action[3:6]),
+            "fingers_incr": self.map_vals_to_range(self.min_finger_incr, self.max_finger_incr, action[6:9]),
         }
         if verbose:
             rospy.loginfo("--- Actions ---")

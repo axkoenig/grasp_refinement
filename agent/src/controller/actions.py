@@ -3,7 +3,8 @@ import tf
 
 from .stage import Stage
 
-class Actions():
+
+class Actions:
     def __init__(self, hparams, state, gazebo_interface):
         self.hparams = hparams
         self.state = state
@@ -15,23 +16,13 @@ class Actions():
         rospy.loginfo("Rate lift is: \t%f", self.rate_lift)
         rospy.loginfo("Rate hold is: \t%f", self.rate_hold)
 
-
     def act(self, action_dict):
-        if action_dict["trigger_regrasp"]:
-            # we only allow wrist control during refinement
-            if self.state.stage == Stage.REFINE:
-                rospy.loginfo(">>REGRASPING<<")
-                rot = action_dict["wrist_rot"]
-                wrist_q = tf.transformations.quaternion_from_euler(rot[0], rot[1], rot[2])
-                self.gi.regrasp(action_dict["wrist_trans"], wrist_q, self.state.prox_angles)
-                self.state.num_regrasps += 1
-            else:
-                rospy.loginfo(">>STAYING<<")
-        else:
-            rospy.loginfo(">>ADJUSTING FINGERS<<")
-            self.wait_if_necessary()
-            f = action_dict["fingers_incr"]
-            self.gi.pos_incr(f[0], f[1], f[2], 0, False, False, 0, 0)
+        rot = action_dict["wrist_rot"]
+        wrist_q = tf.transformations.quaternion_from_euler(rot[0], rot[1], rot[2])
+        self.gi.cmd_wrist_pose_incr(action_dict["wrist_trans"], wrist_q)
+        f = action_dict["fingers_incr"]
+        self.gi.pos_incr(f[0], f[1], f[2], 0, False, False, 0, 0)
+        self.wait_if_necessary()
 
     def get_rate_of_cur_stage(self):
         if self.state.stage == Stage.REFINE:
@@ -54,4 +45,3 @@ class Actions():
             )
             rospy.sleep(0.01)
         self.state.last_time_stamp = rospy.Time.now()
-
