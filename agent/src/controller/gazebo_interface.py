@@ -7,6 +7,7 @@ import numpy as np
 import rospy
 import roslib
 import tf2_ros
+import roslaunch
 import tf
 
 from geometry_msgs.msg import Pose, Point, Quaternion, TransformStamped
@@ -31,7 +32,7 @@ class GazeboInterface:
     def __init__(self, hparams, verbose=True):
         self.verbose = verbose
         self.hparams = hparams
-
+        self.description_path = roslib.packages.get_pkg_dir("description")
         self.object_name = self.get_ros_param_with_retries("/object_name")
         self.object_names = self.get_ros_param_with_retries("/object_names")
 
@@ -68,6 +69,10 @@ class GazeboInterface:
         self.br = tf2_ros.TransformBroadcaster()
         self.sim_unpause()  # make sure simulation is not paused
         rospy.sleep(1)  # broadcaster needs some time to start
+
+        self.uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
+        roslaunch.configure_logging(self.uuid)
+        self.launch_controllers()
 
     def get_ros_param_with_retries(self, param_name, time_out=10):
         r = rospy.Rate(5)
@@ -206,40 +211,43 @@ class GazeboInterface:
             return ""
         return models[0]
 
-    def kill_controllers(self):
-        nodes = [
-            "gazebo/finger_controller_spawner",
-            "gazebo/wrist_controller_spawner",
-        ]
-        if self.verbose:
-            rospy.loginfo("Killing controller nodes")
-        for node in nodes:
-            os.system("rosnode kill " + node)
+    def shutdown_controllers(self):
+        rospy.loginfo("Shutting down reflex controller nodes")
+        self.finger_ctrl_launch.shutdown()
+        self.wrist_ctrl_launch.shutdown()
 
-    def launch_cylinder(self, cylinder):
-        rospy.loginfo(f"Spawning cylinder {cylinder.name} ...")
-        os.system(
-            f"roslaunch description object.launch object_name:=cylinder object_spawn_name:={cylinder.name} cylinder_radius:={cylinder.radius} cylinder_length:={cylinder.length} inertia_scaling_factor:={cylinder.inertia_scaling_factor}"
-        )
-        rospy.set_param("object_name", cylinder.name)
-
-    def launch_box(self, box):
-        rospy.loginfo(f"Spawning box {box.name}...")
-        os.system(
-            f"roslaunch description object.launch object_name:=box object_spawn_name:={box.name} box_x:={box.x} box_y:={box.y} box_z:={box.z} inertia_scaling_factor:={box.inertia_scaling_factor}"
-        )
-        rospy.set_param("object_name", box.name)
-
-    def run_cmd_in_subprocess(self, cmd):
-        subprocess.Popen([cmd], shell=True, stdout=DEVNULL)
-
-    def launch_test_obj(self, test_case):
-        rospy.loginfo("Launching object from test case.")
-        self.launch_cylinder(test_case.object) if test_case.object_name == "cylinder" else self.launch_box(test_case.object)
+    def launch_object(self, object):
+        launch_file = self.description_path + "/launch/object.launch"
+        if object.__class__.__name__ == "RandomCylinder":
+            cli_args = [
+                launch_file,
+                "object_name:=cylinder",
+                f"object_spawn_name:={object.name}",
+                f"cylinder_radius:={object.radius}",
+                f"cylinder_length:={object.length}",
+                f"inertia_scaling_factor:={object.inertia_scaling_factor}",
+            ]
+        elif object.__class__.__name__ == "RandomBox":
+            cli_args = [
+                launch_file,
+                "object_name:=box",
+                f"object_spawn_name:={object.name}",
+                f"box_x:={object.x}",
+                f"box_y:={object.y}",
+                f"box_z:={object.z}",
+                f"inertia_scaling_factor:={object.inertia_scaling_factor}",
+            ]
+        else:
+            rospy.logerr("Unsupported object type!")
+            return
+        roslaunch_file = [(roslaunch.rlutil.resolve_launch_arguments(cli_args)[0], cli_args[1:])]
+        parent = roslaunch.parent.ROSLaunchParent(self.uuid, roslaunch_file)
+        parent.start()
+        rospy.set_param("object_name", object.name)
 
     def reset_world(self, test_case=None):
         # delete reflex
-        self.kill_controllers()
+        self.shutdown_controllers()
         self.delete_model("reflex")
         rospy.sleep(0.5)
 
@@ -252,16 +260,16 @@ class GazeboInterface:
         self.cmd_wrist_abs(tf.transformations.identity_matrix())
         self.spawn_reflex()
         rospy.sleep(1)
-        self.spawn_controllers()
+        self.launch_controllers()
 
         # launch new object
         if not test_case:  # we're training
             object_type = random.choice(["cylinder", "box"])
             object, wrist_error = gen_valid_wrist_error_obj_combination_from_ranges(object_type, self.hparams)
-            self.launch_cylinder(object) if object_type == "cylinder" else self.launch_box(object)
+            self.launch_object(object)
         else:  # we're testing
             wrist_error = test_case.wrist_error
-            self.launch_test_obj(test_case)
+            self.launch_object(test_case.object)
         rospy.sleep(2)  # required s.t. object can register with gazebo
 
         obj_pose = self.get_object_pose()
@@ -294,15 +302,20 @@ class GazeboInterface:
         self.wait_until_grasp_stabilizes()
         self.start_obj_t, _ = get_tq_from_homo_matrix(self.get_object_pose())
 
-    def spawn_controllers(self):
-        rospy.loginfo("Spawning reflex controllers ...")
-        cmd = ["roslaunch finger_controller finger_controller.launch only_spawn:=true"]
-        subprocess.Popen(cmd, shell=True, stdout=DEVNULL)
-        rospy.sleep(2)
-        rospy.loginfo("Spawning wrist controllers ...")
-        cmd = ["roslaunch wrist_controller wrist_controller.launch only_spawn:=true"]
-        subprocess.Popen(cmd, shell=True, stdout=DEVNULL)
-        rospy.sleep(2)
+    def launch_controllers(self):
+        rospy.loginfo("Launching finger controllers ...")
+        launch_file = roslib.packages.get_pkg_dir("finger_controller") + "/launch/finger_controller.launch"
+        cli_args = [launch_file, "only_spawn:=true"]
+        roslaunch_file = [(roslaunch.rlutil.resolve_launch_arguments(cli_args)[0], cli_args[1:])]
+        self.finger_ctrl_launch = roslaunch.parent.ROSLaunchParent(self.uuid, roslaunch_file)
+        self.finger_ctrl_launch.start()
+
+        rospy.loginfo("Launching wrist controllers ...")
+        launch_file = roslib.packages.get_pkg_dir("wrist_controller") + "/launch/wrist_controller.launch"
+        cli_args = [launch_file, "only_spawn:=true"]
+        roslaunch_file = [(roslaunch.rlutil.resolve_launch_arguments(cli_args)[0], cli_args[1:])]
+        self.wrist_ctrl_launch = roslaunch.parent.ROSLaunchParent(self.uuid, roslaunch_file)
+        self.wrist_ctrl_launch.start()
 
     def close_until_contact_and_tighten(self, tighten_incr=0):
         res = self.close_until_contact(TriggerRequest())
@@ -361,7 +374,7 @@ class GazeboInterface:
     def spawn_object(self):
         req = SpawnModelRequest()
         req.model_name = self.new_obj_name
-        urdf_location = roslib.packages.get_pkg_dir("description") + f"/urdf/objects/{self.new_obj_name}.urdf"
+        urdf_location = self.description_path + f"/urdf/objects/{self.new_obj_name}.urdf"
         req.model_xml = open(urdf_location, "r").read()
         req.reference_frame = "world"
         req.initial_pose = Pose(Point(self.obj_t[0], self.obj_t[1], self.obj_t[2]), Quaternion(self.obj_q[0], self.obj_q[1], self.obj_q[2], self.obj_q[3]))
@@ -372,7 +385,7 @@ class GazeboInterface:
 
     def spawn_reflex(self):
         # read xacro file
-        urdf_location = roslib.packages.get_pkg_dir("description") + f"/robots/reflex.robot.xacro"
+        urdf_location = self.description_path + f"/robots/reflex.robot.xacro"
         p = os.popen(
             "xacro " + urdf_location + f" base_link_name:=shell reflex_pub_rate:={self.reflex_pub_rate} simplify_collisions:={self.simplify_collisions}"
         )
