@@ -38,6 +38,8 @@ class Subscribers:
         return (val - low_bound) / (high_bound - low_bound)
 
     def clip_and_normalize(self, val, low_bound, high_bound):
+        if not val:
+            return 0 
         val = np.clip(val, low_bound, high_bound)
         return self.normalize(val, low_bound, high_bound)
 
