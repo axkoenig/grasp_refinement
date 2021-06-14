@@ -95,12 +95,12 @@ class Box:
 
 
 class RandomCylinder(Cylinder):
-    def __init__(self, radius_range=[0.03, 0.05], length_range=[0.1, 0.2], inertia_scaling_factor=0.9):
+    def __init__(self, radius_range=[0.03, 0.05], length_range=[0.13, 0.23], inertia_scaling_factor=0.9):
         super().__init__(sample_from_range(radius_range), sample_from_range(length_range), inertia_scaling_factor)
 
 
 class RandomBox(Box):
-    def __init__(self, x_range=[0.04, 0.10], y_range=[0.04, 0.10], z_range=[0.1, 0.2], inertia_scaling_factor=0.9):
+    def __init__(self, x_range=[0.04, 0.10], y_range=[0.04, 0.10], z_range=[0.13, 0.23], inertia_scaling_factor=0.9):
         super().__init__(sample_from_range(x_range), sample_from_range(y_range), sample_from_range(z_range), inertia_scaling_factor)
 
 
