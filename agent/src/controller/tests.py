@@ -6,7 +6,7 @@ import os
 
 import numpy as np
 
-from .helpers.transforms import is_valid_vertical_offset
+from .helpers.transforms import is_valid_vertical_offset, deg2rad
 
 controller_dir = os.path.dirname(os.path.realpath(__file__))
 TEST_CASES_PKL = os.path.join(controller_dir, "test_cases/test_cases.pkl")
@@ -123,7 +123,7 @@ class RandomWristErrorFromL2(RandomWristError):
         self.x = result[0]
         self.y = result[1]
         self.z = result[2]
-        result = get_vector_with_length(l2_error)
+        result = get_vector_with_length(deg2rad(l2_error))
         self.roll = result[0]
         self.pitch = result[1]
         self.yaw = result[2]
