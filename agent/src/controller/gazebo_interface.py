@@ -92,6 +92,9 @@ class GazeboInterface:
         self.object_name = self.get_cur_obj_name()
         req = StringServiceRequest(self.object_name, "world")
         res = service_call_with_retries(self.get_model_state, req)
+        if not res:  # sometimes we don't get a result (we handle this during resetting)
+            rospy.logwarn("Could not get object pose! Returning identity")
+            return tf.transformations.identity_matrix()
         return get_homo_matrix_from_pose_msg(res.pose)
 
     def get_wrist_pose(self):
@@ -180,7 +183,7 @@ class GazeboInterface:
                 return 1
             r.sleep()
         rospy.loginfo(f"Did not reach pose in time out of {time_out} secs. You're probably crashing into something ...")
-        return 0 
+        return 0
 
     def wait_until_grasp_stabilizes(self):
         rospy.sleep(0.2)
@@ -193,6 +196,7 @@ class GazeboInterface:
     def get_cur_obj_name(self):
         msg = rospy.wait_for_message("/gazebo/model_states", ModelStates)
         models = msg.name
+        rospy.loginfo("Models in world are: " + str(models))
         irrelevant_objects = ["ground_plane", "reflex"]
         for obj in irrelevant_objects:
             if obj in models:
@@ -250,6 +254,7 @@ class GazeboInterface:
         rospy.sleep(1)
         self.spawn_controllers()
 
+        # launch new object
         if not test_case:  # we're training
             object_type = random.choice(["cylinder", "box"])
             object, wrist_error = gen_valid_wrist_error_obj_combination_from_ranges(object_type, self.hparams)
@@ -257,11 +262,15 @@ class GazeboInterface:
         else:  # we're testing
             wrist_error = test_case.wrist_error
             self.launch_test_obj(test_case)
+        rospy.sleep(2)  # required s.t. object can register with gazebo
 
-        rospy.sleep(1) # required s.t. object can register with gazebo 
+        obj_pose = self.get_object_pose()
+        if (obj_pose == tf.transformations.identity_matrix()).all():
+            rospy.logwarn("Could not get object pose. Resetting again.")
+            return self.reset_world(test_case)
 
-        # get ground truth pose of reflex (which is offset from object)
-        obj_t, _ = get_tq_from_homo_matrix(self.get_object_pose())
+        # get ground truth pose of reflex (which is offset from object frame)
+        obj_t, _ = get_tq_from_homo_matrix(obj_pose)
         truth_wrist_t = obj_t - [0, 0.05, 0]  # 5cm offset
         truth_wrist_q = tf.transformations.quaternion_from_euler(-np.pi / 2, 0, 0)
 
@@ -270,7 +279,7 @@ class GazeboInterface:
         res = self.cmd_wrist_abs(wrist_waypoint_pose, True, True)
         if not res:
             rospy.logwarn("Could not reach waypoint wrist pose. Resetting again.")
-            return self.reset_world(test_case) 
+            return self.reset_world(test_case)
         self.open_hand(True, self.srv_tolerance, self.srv_time_out)
 
         # move to erroneous wrist pose
@@ -278,7 +287,7 @@ class GazeboInterface:
         res = self.cmd_wrist_abs(wrist_init_pose, True, True)
         if not res:
             rospy.logwarn("Could not reach erroneous wrist pose. Resetting again.")
-            return self.reset_world(test_case) 
+            return self.reset_world(test_case)
 
         # close fingers
         self.close_until_contact_and_tighten()
