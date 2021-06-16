@@ -395,7 +395,7 @@ class GazeboInterface:
             )
             height = object.length
         elif object.__class__.__name__ == "RandomBox":
-            urdf_location = self.description_path + f"/urdf/environment/cylinder.urdf.xacro"
+            urdf_location = self.description_path + f"/urdf/environment/box.urdf.xacro"
             p = os.popen(
                 "xacro " + urdf_location + f" box_x:={object.x} box_y:={object.y} box_z:={object.z} inertia_scaling_factor:={object.inertia_scaling_factor}"
             )
