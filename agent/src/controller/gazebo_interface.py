@@ -272,10 +272,13 @@ class GazeboInterface:
             if not test_case:  # we're training
                 object_type = random.choice(["cylinder", "box"])
                 object, wrist_error = gen_valid_wrist_error_obj_combination_from_ranges(object_type, self.hparams)
-                self.launch_object(object)
+                res = self.spawn_object(object)
             else:  # we're testing
                 wrist_error = test_case.wrist_error
-                self.launch_object(test_case.object)
+                res = self.spawn_object(test_case.object)
+            if not res:
+                rospy.logwarn("Could not spawn object. Resetting again.")
+                return self.reset_world(test_case)
             rospy.sleep(2)  # required s.t. object can register with gazebo
 
             obj_pose = self.get_object_pose()
@@ -382,17 +385,44 @@ class GazeboInterface:
         truth_wrist_init_pose = get_homo_matrix_from_tq(wrist_p, wrist_q)
         return np.dot(truth_wrist_init_pose, mat_offset)
 
-    def spawn_object(self):
+    def spawn_object(self, object):
+        if object.__class__.__name__ == "RandomCylinder":
+            urdf_location = self.description_path + f"/urdf/environment/cylinder.urdf.xacro"
+            p = os.popen(
+                "xacro "
+                + urdf_location
+                + f" cylinder_radius:={object.radius} cylinder_length:={object.length} inertia_scaling_factor:={object.inertia_scaling_factor}"
+            )
+            height = object.length
+        elif object.__class__.__name__ == "RandomBox":
+            urdf_location = self.description_path + f"/urdf/environment/cylinder.urdf.xacro"
+            p = os.popen(
+                "xacro " + urdf_location + f" box_x:={object.x} box_y:={object.y} box_z:={object.z} inertia_scaling_factor:={object.inertia_scaling_factor}"
+            )
+            height = object.z
+        else:
+            rospy.logerr("Unsupported object type!")
+            return
+
+        xml_string = p.read()
+        p.close()
+
         req = SpawnModelRequest()
-        req.model_name = self.new_obj_name
-        urdf_location = self.description_path + f"/urdf/objects/{self.new_obj_name}.urdf"
-        req.model_xml = open(urdf_location, "r").read()
+        req.model_name = object.name
+        req.model_xml = xml_string
         req.reference_frame = "world"
-        req.initial_pose = Pose(Point(self.obj_t[0], self.obj_t[1], self.obj_t[2]), Quaternion(self.obj_q[0], self.obj_q[1], self.obj_q[2], self.obj_q[3]))
+        req.initial_pose = Pose(Point(0, 0.2, height / 2 + 0.01), Quaternion(0, 0, 0, 1))
         res = service_call_with_retries(self.spawn_sdf_model, req)
 
-        if res.success:
-            rospy.set_param("object_name", self.new_obj_name)
+        if res is None:
+            rospy.logerr("Failed to spawn object. Did not get result from service.")
+            return 0
+        if not res.success:
+            rospy.logerr("Failed to spawn object. Result of service is false.")
+            return 0
+
+        rospy.set_param("object_name", object.name)
+        return 1
 
     def spawn_reflex(self):
         # read xacro file
@@ -410,10 +440,10 @@ class GazeboInterface:
         res = service_call_with_retries(self.spawn_sdf_model, req)
 
         if res is None:
-            rospy.logfatal("Failed to spawn reflex. Did not result from service.")
+            rospy.logerr("Failed to spawn reflex. Did not get result from service.")
             return 0
         if not res.success:
-            rospy.logfatal("Failed to spawn reflex. Result of service is false.")
+            rospy.logerr("Failed to spawn reflex. Result of service is false.")
             return 0
-        
+
         return 1
