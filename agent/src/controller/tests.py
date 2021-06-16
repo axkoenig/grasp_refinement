@@ -41,15 +41,12 @@ def gen_object(object_name):
     return RandomCylinder() if object_name == "cylinder" else RandomBox()
 
 
-def gen_valid_wrist_error_obj_combination_from_l2(object_name, wrist_l2_error):
-    object = gen_object(object_name)
+def gen_valid_wrist_error_from_l2(object, wrist_l2_error):
     wrist_error = RandomWristErrorFromL2(wrist_l2_error)
-
     # if this wrist_error, object combination would crash hand into ground, we re-generate a new one
     while not is_valid_vertical_offset(wrist_error.y, object.get_csv_data()["height"]):
         wrist_error = RandomWristErrorFromL2(wrist_l2_error)
-        object = gen_object(object_name)
-    return object, wrist_error
+    return wrist_error
 
 
 def gen_valid_wrist_error_obj_combination_from_ranges(object_name, hparams):
@@ -77,6 +74,7 @@ class Cylinder:
         self.length = length
         self.inertia_scaling_factor = inertia_scaling_factor
         self.name = "cylinder_" + str(self.radius) + "_" + str(self.length)
+        self.type = "cylinder"
 
     def get_csv_data(self):
         return dict({"length": 0, "width": self.radius, "height": self.length, "inertia_scaling_factor": self.inertia_scaling_factor})
@@ -89,6 +87,7 @@ class Box:
         self.z = z
         self.inertia_scaling_factor = inertia_scaling_factor
         self.name = "box_" + str(self.x) + "_" + str(self.y) + "_" + str(self.z)
+        self.type = "box"
 
     def get_csv_data(self):
         return dict({"length": self.x, "width": self.y, "height": self.z, "inertia_scaling_factor": self.inertia_scaling_factor})
@@ -141,15 +140,15 @@ class RandomWristErrorFromRanges(RandomWristError):
 
 
 class TestCase:
-    def __init__(self, object_name, wrist_l2_error):
-        self.object_name = object_name
+    def __init__(self, object, wrist_l2_error):
+        self.object = object
         self.wrist_l2_error = wrist_l2_error
-        self.object, self.wrist_error = gen_valid_wrist_error_obj_combination_from_l2(object_name, wrist_l2_error)
+        self.wrist_error = gen_valid_wrist_error_from_l2(self.object, wrist_l2_error)
 
     def get_csv_data(self):
         data = dict(
             {
-                "object_name": self.object_name,
+                "object_type": self.object.type,
                 "wrist_l2_error": self.wrist_l2_error,
                 "wrist_x": self.wrist_error.x,
                 "wrist_y": self.wrist_error.y,
@@ -173,12 +172,13 @@ class TestCase:
 class TestCases:
     def __init__(self, num_exp_per_obj=10):
         self.test_cases = []
-        self.objects = ["box", "cylinder"]
+        object_types = ["box", "cylinder"]
         self.wrist_l2_errors = np.arange(0, 6)
-        for obj in self.objects:
-            for error in self.wrist_l2_errors:
-                for i in range(num_exp_per_obj):
-                    self.test_cases.append(TestCase(obj, error))
+        for object_type in object_types:
+            for _ in range(num_exp_per_obj):
+                object = gen_object(object_type)
+                for error in self.wrist_l2_errors:
+                    self.test_cases.append(TestCase(object, error))
 
 
 def generate_test_cases():
