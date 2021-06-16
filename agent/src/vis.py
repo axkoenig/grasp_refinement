@@ -9,7 +9,7 @@ from tensorboard.backend.event_processing.event_accumulator import EventAccumula
 from tensorboard.backend.event_processing.directory_watcher import DirectoryDeletedError
 
 
-def get_experiment_data(log_path, prefix, framework, try_id, scalar_name, new_name=False, log_id=1, window_size=10, cap_len=10000, verbose=False):
+def get_experiment_data(log_path, prefix, framework, try_id, scalar_name, new_name=False, log_id=1, window_size=4, cap_len=10000, verbose=False, remove_200s=True):
 
     # load tensorboard logs
     if not new_name:
@@ -28,7 +28,29 @@ def get_experiment_data(log_path, prefix, framework, try_id, scalar_name, new_na
     except DirectoryDeletedError:
         print(experiment_path + " does not exist. Returning None.")
         return None
+    
+    if remove_200s: 
+        # remove data point at multiples of 200 to compensate logging error
+        time_steps = list(time_steps)
+        vals = list(vals)
+        window = 3
+        desireds = 200 * np.arange(1,11)
+        for i in range(len(time_steps)):
+            for desired in desireds:
+                if time_steps[i] < desired + window and time_steps[i] > desired -window:
+                    time_steps[i] = None
+                    vals[i]= None
+                    break
 
+        final_time_steps = []
+        final_vals = []
+        for i in range(len(time_steps)):
+            if time_steps[i] != None :
+                final_time_steps.append(time_steps[i])
+                final_vals.append(vals[i])
+        vals = final_vals
+        time_steps = final_time_steps
+    
     # smooth data with moving average filter
     vals_smooth = np.convolve(vals, np.ones(window_size), "valid") / window_size
     time_steps_smooth = np.convolve(time_steps, np.ones(window_size), "valid") / window_size
@@ -64,7 +86,7 @@ def add_to_df(df, log_path, prefix, framework, end_try_id, scalar_name, new_name
     return df
 
 
-def get_all_data(args, new_name=False, verbose=True, framework_list=[1, 2, 4, 5, 6]):
+def get_all_data(args, new_name=False, verbose=True, framework_list=[1, 2, 3,4]):
     # loads data from tensorboard logfiles
     df = pd.DataFrame()
     for framework in framework_list:
@@ -74,7 +96,7 @@ def get_all_data(args, new_name=False, verbose=True, framework_list=[1, 2, 4, 5,
     return df
 
 
-def plot(args, df, num_items=5, hue="framework"):
+def plot(args, df, num_items=3, hue="framework"):
     palette = sns.color_palette("tab10", num_items)
     sns.set(style="darkgrid", font_scale=1.5)
 
@@ -131,7 +153,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--prefix",
         type=str,
-        default="26May_NoBernoulliAndDenserTactileObsFixed",
+        default="12Jun_EvalAfterTrain_AvgDelta",
         help="Prefix comment of your experiment.",
     )
     parser.add_argument(
@@ -143,15 +165,19 @@ if __name__ == "__main__":
     parser.add_argument(
         "--max_num_trials",
         type=int,
-        default=14,
+        default=20,
         help="How many trials were in your experiment.",
     )
     args = parser.parse_args()
 
-    df = get_all_data(args, new_name=True)
+    framework_list = [4]
+    df = get_all_data(args, new_name=True, framework_list=framework_list)
 
-    # args.prefix="19May_NewActionSpaceDelta0.05"
-    # df = pd.concat([df, get_all_data(args, new_name=True)])
-    plot(args, df)
+    args.prefix="8Jun_ExactInputs"
+    framework_list = [1,2,3]
+    df = pd.concat([df, get_all_data(args, new_name=True, framework_list = framework_list)])
+
+    framework_list = [1,2,3,4]
+    plot(args, df, len(framework_list))
 
     # plot_percentiles(args, df)
