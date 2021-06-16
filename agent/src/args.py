@@ -33,7 +33,7 @@ def parse_args():
 
     # episode / training end critera
     parser.add_argument("--joint_lim", type=float, default=3, help="End episode if joint limit reached.")
-    parser.add_argument("--obj_shift_tol", type=float, default=0.05, help="How far object is allowed to shift.")
+    parser.add_argument("--obj_shift_tol", type=float, default=0.1, help="How far object is allowed to shift.")
     parser.add_argument("--time_steps", type=float, default=2000, help="How many time steps to train.")
 
     # error added to ground truth wrist pose
