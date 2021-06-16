@@ -13,7 +13,6 @@ def parse_args():
     parser.add_argument("--chkpt_freq", type=int, default=300, help="Save model every n training steps.")
     parser.add_argument("--check_env", type=int, default=0, help="Whether to check environment using stable baselines checker.")
     parser.add_argument("--algorithm", type=str, default="td3", help="Which algorithm to train with.")
-    parser.add_argument("--contribution", type=int, default=1, help="Which contribution of our paper to train/test.")
     parser.add_argument("--log_interval", type=int, default=1, help="After how many episodes to log.")
 
     # reward framework and reward weights
@@ -21,6 +20,7 @@ def parse_args():
     parser.add_argument("--w_binary_rew", type=float, default=10, help="Weight for binary reward")
     parser.add_argument("--w_eps_torque", type=float, default=1, help="Weight for epsilon torque")
     parser.add_argument("--w_delta", type=float, default=1, help="Weight for delta")
+    parser.add_argument("--force_sensing", type=int, default=1, help="(1=full), (2=normal), (3=binary), (4=none).")
 
     # length and update rates of stages
     parser.add_argument("--refine_steps", type=float, default=15, help="Time steps to refine grasp.")
