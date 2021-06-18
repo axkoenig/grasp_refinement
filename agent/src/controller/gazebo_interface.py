@@ -269,6 +269,7 @@ class GazeboInterface:
             self.launch_controllers()
 
             # launch new object
+            self.sim_pause() # TODO this is an attempt to get rid of segfault
             if not test_case:  # we're training
                 object_type = random.choice(["cylinder", "box"])
                 object, wrist_error = gen_valid_wrist_error_obj_combination_from_ranges(object_type, self.hparams)
@@ -279,6 +280,7 @@ class GazeboInterface:
             if not res:
                 rospy.logwarn("Could not spawn object. Resetting again.")
                 return self.reset_world(test_case)
+            self.sim_unpause() # TODO this is an attempt to get rid of segfault
             rospy.sleep(2)  # required s.t. object can register with gazebo
 
             obj_pose = self.get_object_pose()
@@ -412,7 +414,7 @@ class GazeboInterface:
         req.model_xml = xml_string
         req.reference_frame = "world"
         req.initial_pose = Pose(Point(0, 0.2, height / 2 + 0.01), Quaternion(0, 0, 0, 1))
-        res = service_call_with_retries(self.spawn_sdf_model, req)
+        res = service_call_with_retries(self.spawn_urdf_model, req)
 
         if res is None:
             rospy.logerr("Failed to spawn object. Did not get result from service.")
@@ -437,7 +439,7 @@ class GazeboInterface:
         req.model_name = "reflex"
         req.model_xml = xml_string
         req.reference_frame = "world"
-        res = service_call_with_retries(self.spawn_sdf_model, req)
+        res = service_call_with_retries(self.spawn_urdf_model, req)
 
         if res is None:
             rospy.logerr("Failed to spawn reflex. Did not get result from service.")
