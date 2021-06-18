@@ -412,7 +412,7 @@ class GazeboInterface:
         req.model_xml = xml_string
         req.reference_frame = "world"
         req.initial_pose = Pose(Point(0, 0.2, height / 2 + 0.01), Quaternion(0, 0, 0, 1))
-        res = service_call_with_retries(self.spawn_sdf_model, req)
+        res = service_call_with_retries(self.spawn_urdf_model, req)
 
         if res is None:
             rospy.logerr("Failed to spawn object. Did not get result from service.")
@@ -437,7 +437,7 @@ class GazeboInterface:
         req.model_name = "reflex"
         req.model_xml = xml_string
         req.reference_frame = "world"
-        res = service_call_with_retries(self.spawn_sdf_model, req)
+        res = service_call_with_retries(self.spawn_urdf_model, req)
 
         if res is None:
             rospy.logerr("Failed to spawn reflex. Did not get result from service.")
