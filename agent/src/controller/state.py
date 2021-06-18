@@ -13,7 +13,7 @@ class State:
         self.sum_contact_forces = 0
         self.prox_angles = [0, 0, 0]
 
-        # this info is modified by GazeboEnv
+        # this info is modified by Controller
         self.stage = Stage(0)
         self.obj_shift = 0
         self.dist_tcp_obj = 0

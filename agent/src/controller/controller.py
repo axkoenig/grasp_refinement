@@ -13,7 +13,7 @@ from .rewards import Rewards
 from .actions import Actions
 
 
-class GazeboEnv(gym.Env):
+class Controller(gym.Env):
     def __init__(self, hparams, name="TRAIN"):
 
         self.hparams = hparams

@@ -14,7 +14,7 @@ from stable_baselines3.common.env_checker import check_env
 
 from callbacks.tensorboard import TensorboardCallback
 from callbacks.eval import EvalCallbackWithInfo
-from controller.gazebo_env import GazeboEnv
+from controller.controller import Controller
 from controller.helpers.transforms import deg2rad
 from controller.tests import test, generate_test_cases
 from args import parse_args
@@ -45,7 +45,7 @@ def main(args):
         rospy.loginfo(f"- {key:20}{value}")
 
     rospy.loginfo("Loading training environment...")
-    env = GazeboEnv(hparams, "TRAIN")
+    env = Controller(hparams, "TRAIN")
     if args.check_env:
         check_env(env)
     if args.gen_new_test_cases:
@@ -75,7 +75,7 @@ def main(args):
         ]
         if args.eval_during_training:
             rospy.loginfo("Loading evaluation environment ...")
-            eval_env = GazeboEnv(hparams, "EVAL")
+            eval_env = Controller(hparams, "EVAL")
             callbacks.append(
                 EvalCallbackWithInfo(
                     eval_env,
