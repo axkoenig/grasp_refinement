@@ -41,11 +41,10 @@ class Rewards:
 
     def calc_reward(self):
         with self.mutex:
-            epsilons = self.state.epsilon_force + self.hparams["w_eps_torque"] * self.state.epsilon_torque
-            epsilons = self.normalize(epsilons, 0, 1 + self.hparams["w_eps_torque"])
+            epsilons = self.combine_and_normalize(self.state.epsilon_force, self.state.epsilon_torque, self.hparams["w_eps_torque"])
             delta = self.state.delta_task if self.state.stage == Stage.REFINE else self.state.delta_cur
         if self.hparams["framework"] == 1:
-            return epsilons + self.hparams["w_delta"] * delta
+            return self.combine_and_normalize(epsilons, delta, self.hparams["w_delta"])
         elif self.hparams["framework"] == 2:
             return delta
         elif self.hparams["framework"] == 3:
@@ -55,5 +54,7 @@ class Rewards:
         else:
             raise KeyError(f"Invalid framework number: {self.hparams['framework']}.")
 
-    def normalize(self, val, low_bound, high_bound):
-        return (val - low_bound) / (high_bound - low_bound)
+    def combine_and_normalize(self, val_1, val_2, weight_2):
+        # takes two normalized rewards (in [0,1]) and returns normalized, weighted combination
+        combination = val_1 + weight_2 * val_2
+        return combination / (1 + weight_2)
