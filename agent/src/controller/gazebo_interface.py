@@ -12,7 +12,7 @@ import tf
 
 from geometry_msgs.msg import Pose, Point, Quaternion, TransformStamped
 from std_srvs.srv import Empty, Trigger, TriggerRequest
-from gazebo_msgs.srv import GetModelState, GetLinkState, SetModelState, DeleteModel, SpawnModel, DeleteModelRequest, SpawnModelRequest
+from gazebo_msgs.srv import GetModelState, GetLinkState, SetModelState, DeleteModel, SpawnModel, DeleteModelRequest, SpawnModelRequest, GetWorldProperties
 from gazebo_msgs.msg import ModelState, ModelStates, ContactsState
 
 from reflex_interface.srv import PosIncrement, GraspPrimitive
@@ -33,8 +33,6 @@ class GazeboInterface:
         self.verbose = verbose
         self.hparams = hparams
         self.description_path = roslib.packages.get_pkg_dir("description")
-        self.object_name = self.get_ros_param_with_retries("/object_name")
-        self.object_names = self.get_ros_param_with_retries("/object_names")
 
         # gazebo services
         rospy.wait_for_service("/gazebo/unpause_physics")
@@ -46,7 +44,7 @@ class GazeboInterface:
         self.spawn_urdf_model = rospy.ServiceProxy("/gazebo/spawn_urdf_model", SpawnModel)
         self.get_model_state = rospy.ServiceProxy("/gazebo/get_model_state", GetModelState)
         self.get_link_state = rospy.ServiceProxy("/gazebo/get_link_state", GetLinkState)
-        self.reset_sim = rospy.ServiceProxy("/gazebo/reset_simulation", Empty)
+        self.get_world_properties = rospy.ServiceProxy("/gazebo/get_world_properties", GetWorldProperties)
 
         # reflex services
         rospy.wait_for_service("/reflex_interface/open")
@@ -94,8 +92,8 @@ class GazeboInterface:
         service_call_with_retries(self.pause_physics)
 
     def get_object_pose(self):
-        self.object_name = self.get_cur_obj_name()
-        req = StringServiceRequest(self.object_name, "world")
+        object_name = self.get_cur_obj_name()
+        req = StringServiceRequest(object_name, "world")
         res = service_call_with_retries(self.get_model_state, req)
         if not res:  # sometimes we don't get a result (we handle this during resetting)
             rospy.logwarn("Could not get object pose! Returning identity")
@@ -199,8 +197,8 @@ class GazeboInterface:
         service_call_with_retries(self.delete_model, req)
 
     def get_cur_obj_name(self):
-        msg = rospy.wait_for_message("/gazebo/model_states", ModelStates)
-        models = msg.name
+        res = service_call_with_retries(self.get_world_properties)
+        models = res.model_names
         rospy.loginfo("Models in world are: " + str(models))
         irrelevant_objects = ["ground_plane", "reflex"]
         for obj in irrelevant_objects:
@@ -221,7 +219,7 @@ class GazeboInterface:
         if object.__class__.__name__ == "RandomCylinder":
             cli_args = [
                 launch_file,
-                "object_name:=cylinder",
+                "object_type:=cylinder",
                 f"object_spawn_name:={object.name}",
                 f"cylinder_radius:={object.radius}",
                 f"cylinder_length:={object.length}",
@@ -230,7 +228,7 @@ class GazeboInterface:
         elif object.__class__.__name__ == "RandomBox":
             cli_args = [
                 launch_file,
-                "object_name:=box",
+                "object_type:=box",
                 f"object_spawn_name:={object.name}",
                 f"box_x:={object.x}",
                 f"box_y:={object.y}",
@@ -247,9 +245,9 @@ class GazeboInterface:
 
     def delete_all_models(self):
         # deletes all models except ground plane
-        msg = rospy.wait_for_message("/gazebo/model_states", ModelStates)
-        models = msg.name
-        for model in models:
+        # TODO make sure that we handle if res is false
+        res = service_call_with_retries(self.get_world_properties)
+        for model in res.model_names:
             if model != "ground_plane":
                 self.delete_model(model)
                 rospy.sleep(0.5)
@@ -269,7 +267,6 @@ class GazeboInterface:
             self.launch_controllers()
 
             # launch new object
-            self.sim_pause() # TODO this is an attempt to get rid of segfault
             if not test_case:  # we're training
                 object_type = random.choice(["cylinder", "box"])
                 object, wrist_error = gen_valid_wrist_error_obj_combination_from_ranges(object_type, self.hparams)
@@ -280,7 +277,6 @@ class GazeboInterface:
             if not res:
                 rospy.logwarn("Could not spawn object. Resetting again.")
                 return self.reset_world(test_case)
-            self.sim_unpause() # TODO this is an attempt to get rid of segfault
             rospy.sleep(2)  # required s.t. object can register with gazebo
 
             obj_pose = self.get_object_pose()
