@@ -19,6 +19,7 @@ class State:
         self.dist_tcp_obj = 0
         self.num_regrasps = 0
         self.cur_time_step = 0
+        self.object_lifted = False
         self.sustained_holding = False
         self.sustained_lifting = False
         self.last_time_stamp = rospy.Time.now()

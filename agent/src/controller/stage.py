@@ -26,7 +26,7 @@ class StageController:
         if self.state.stage == Stage.REFINE and self.end_refinement_early():
             self.state.stage = Stage.END
             rospy.loginfo("Ending episode early while refining.")
-        elif self.state.stage == Stage.HOLD and not self.gi.object_lifted():
+        elif self.state.stage == Stage.HOLD and not self.state.object_lifted:
             self.state.stage = Stage.END
             rospy.loginfo("Object dropped while holding! New stage is END. :-(")
 
@@ -39,7 +39,7 @@ class StageController:
             self.lift_thread.start()
         elif self.state.cur_time_step == self.hparams["lift_steps"] and self.state.stage == Stage.LIFT:
             self.lift_thread.join()  # wait for lifting to be done
-            self.state.sustained_lifting = self.gi.object_lifted()
+            self.state.sustained_lifting = self.state.object_lifted
             rospy.loginfo("Done with %i lift steps.", self.hparams["lift_steps"])
             self.state.cur_time_step = 0
             if not self.state.sustained_lifting:
@@ -52,7 +52,7 @@ class StageController:
                 self.hold_thread.start()
         elif self.state.cur_time_step == self.hparams["hold_steps"] and self.state.stage == Stage.HOLD:
             self.hold_thread.join()  # wait for holding to be done (to get holding outcome)
-            self.state.sustained_holding = self.gi.object_lifted()
+            self.state.sustained_holding = self.state.object_lifted
             rospy.loginfo("Done with %i hold steps. New stage is END.", self.hparams["hold_steps"])
             self.state.stage = Stage.END
 
