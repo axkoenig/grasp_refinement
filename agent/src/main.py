@@ -21,7 +21,7 @@ from args import parse_args
 
 
 def main(args):
-    rospy.init_node("agent", anonymous=True)
+    rospy.init_node("agent")
 
     log_path = os.path.join(args.output_dir, "logs", args.environment)
     ckpt_path = os.path.join(args.output_dir, "models", args.environment, args.log_name)
