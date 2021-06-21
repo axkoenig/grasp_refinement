@@ -1,5 +1,6 @@
 from enum import Enum
 import threading
+from multiprocessing import Lock
 
 import tf
 import rospy
@@ -20,13 +21,14 @@ class StageController:
         self.hparams = hparams
         self.state = state
         self.gi = gazebo_interface
+        self.mutex = Lock()
 
     def update_stage(self):
         # check if we're done early
         if self.state.stage == Stage.REFINE and self.end_refinement_early():
             self.state.stage = Stage.END
             rospy.loginfo("Ending episode early while refining.")
-        elif self.state.stage == Stage.HOLD and not self.state.object_lifted:
+        elif self.state.stage == Stage.HOLD and not self.is_object_lifted():
             self.state.stage = Stage.END
             rospy.loginfo("Object dropped while holding! New stage is END. :-(")
 
@@ -39,7 +41,7 @@ class StageController:
             self.lift_thread.start()
         elif self.state.cur_time_step == self.hparams["lift_steps"] and self.state.stage == Stage.LIFT:
             self.lift_thread.join()  # wait for lifting to be done
-            self.state.sustained_lifting = self.state.object_lifted
+            self.state.sustained_lifting = self.is_object_lifted()
             rospy.loginfo("Done with %i lift steps.", self.hparams["lift_steps"])
             self.state.cur_time_step = 0
             if not self.state.sustained_lifting:
@@ -52,7 +54,7 @@ class StageController:
                 self.hold_thread.start()
         elif self.state.cur_time_step == self.hparams["hold_steps"] and self.state.stage == Stage.HOLD:
             self.hold_thread.join()  # wait for holding to be done (to get holding outcome)
-            self.state.sustained_holding = self.state.object_lifted
+            self.state.sustained_holding = self.is_object_lifted()
             rospy.loginfo("Done with %i hold steps. New stage is END.", self.hparams["hold_steps"])
             self.state.stage = Stage.END
 
@@ -88,3 +90,7 @@ class StageController:
     def hold_object(self):
         rospy.loginfo("Starting to hold object.")
         rospy.sleep(self.hparams["secs_to_hold"])
+
+    def is_object_lifted(self):
+        with self.mutex:
+            return self.state.object_lifted

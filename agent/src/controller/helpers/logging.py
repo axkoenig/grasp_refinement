@@ -1,7 +1,10 @@
+from multiprocessing import Lock
+
 import numpy as np
 import rospy
 from ..stage import Stage
 
+mutex = Lock()
 
 def merge_dicts(dict_1, dict_2):
     "Merges two dicts. If key exists value be saved in a numpy array, else we create a new key."
@@ -58,35 +61,36 @@ def get_quality_metrics_dict(state, prefix=""):
 
 
 def get_infos(state, verbose=True):
-    # log the below data in each time step
-    infos = {
-        "num_contacts": state.num_contacts,
-        "sum_contact_forces": state.sum_contact_forces,
-        "joint_diff": get_joint_difference(state.prox_angles),
-    }
-    infos.update(get_quality_metrics_dict(state, "a"))
+    with mutex:
+        # log the below data in each time step
+        infos = {
+            "num_contacts": state.num_contacts,
+            "sum_contact_forces": state.sum_contact_forces,
+            "joint_diff": get_joint_difference(state.prox_angles),
+        }
+        infos.update(get_quality_metrics_dict(state, "a"))
 
-    # log data that is stage-specific
-    if state.stage == Stage.REFINE:
-        infos.update(
-            {
-                "r_dist_tcp_obj": state.dist_tcp_obj,
-                "r_obj_shift": state.obj_shift,
-            }
-        )
-        infos.update(get_quality_metrics_dict(state, "r"))
-    elif state.stage == Stage.LIFT:
-        infos.update(get_quality_metrics_dict(state, "l"))
-    elif state.stage == Stage.HOLD:
-        infos.update(get_quality_metrics_dict(state, "h"))
-    elif state.stage == Stage.END:
-        infos.update(
-            {
-                "num_regrasps": state.num_regrasps,
-                "sustained_holding": state.sustained_holding,
-                "sustained_lifting": state.sustained_lifting,
-            }
-        )
+        # log data that is stage-specific
+        if state.stage == Stage.REFINE:
+            infos.update(
+                {
+                    "r_dist_tcp_obj": state.dist_tcp_obj,
+                    "r_obj_shift": state.obj_shift,
+                }
+            )
+            infos.update(get_quality_metrics_dict(state, "r"))
+        elif state.stage == Stage.LIFT:
+            infos.update(get_quality_metrics_dict(state, "l"))
+        elif state.stage == Stage.HOLD:
+            infos.update(get_quality_metrics_dict(state, "h"))
+        elif state.stage == Stage.END:
+            infos.update(
+                {
+                    "num_regrasps": state.num_regrasps,
+                    "sustained_holding": state.sustained_holding,
+                    "sustained_lifting": state.sustained_lifting,
+                }
+            )
 
     if verbose:
         rospy.loginfo("--- Infos ---")
