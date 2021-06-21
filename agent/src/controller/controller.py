@@ -30,7 +30,7 @@ class Controller(gym.Env):
 
         self.action_space = gym.spaces.Box(low=self.acts.get_min_vals(), high=self.acts.get_max_vals())
         self.observation_space = gym.spaces.Box(low=self.obs.get_min_vals(), high=self.obs.get_max_vals())
-        self.reward_range = (-np.inf, np.inf)
+        self.reward_range = (0, 1)
 
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)
