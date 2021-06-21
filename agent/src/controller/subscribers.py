@@ -6,6 +6,7 @@ import numpy as np
 from reflex_interface.msg import HandStateStamped
 from reflex_msgs.msg import Hand
 from sensor_listener.msg import ContactFrames
+from gazebo_msgs.msg import ContactsState
 
 from .helpers.services import ros_vector_to_list as to_list
 
@@ -19,9 +20,7 @@ class Subscribers:
         self.gi = gi
         self.mutex = Lock()
 
-        # sleep here to give node some time to register
-        rospy.sleep(1)
-
+        rospy.Subscriber("gazebo/object_sensor_bumper", ContactsState, self.object_bumper_callback, queue_size=1)
         rospy.Subscriber("reflex_interface/hand_state", HandStateStamped, self.ri_callback, queue_size=1)
         rospy.Subscriber("reflex_takktile/hand_state", Hand, self.reflex_callback, queue_size=1)
 
@@ -29,14 +28,24 @@ class Subscribers:
         if self.hparams["force_sensing"] != 4:
             rospy.Subscriber("reflex_takktile/sim_contact_frames", ContactFrames, self.contacts_callback, queue_size=1)
 
+    def object_bumper_callback(self, msg):
+        with self.mutex:
+            collision_name = "ground_plane::link::collision"
+            for i in range(len(msg.states)):
+                if msg.states[i].collision1_name == collision_name or msg.states[i].collision2_name == collision_name:
+                    self.state.object_lifted = False
+                    return
+            self.state.object_lifted = True
+
     def ri_callback(self, msg):
-        self.state.num_contacts = msg.num_contacts
-        # in theory epsilon force is already in range [0,1] but practically it is rarely larger than 0.7
-        self.state.epsilon_force = self.normalize(msg.epsilon_force, 0, 0.7)
-        self.state.epsilon_torque = self.normalize(msg.epsilon_torque, 0, 0.03)
-        self.state.delta_task = self.clip_and_normalize(msg.delta_task, -5, 12)
-        self.state.delta_cur = self.clip_and_normalize(msg.delta_cur, -5, 12)
-        self.state.sum_contact_forces = msg.sum_contact_forces
+        with self.mutex:
+            self.state.num_contacts = msg.num_contacts
+            # in theory epsilon force is already in range [0,1] but practically it is rarely larger than 0.7
+            self.state.epsilon_force = self.normalize(msg.epsilon_force, 0, 0.7)
+            self.state.epsilon_torque = self.normalize(msg.epsilon_torque, 0, 0.03)
+            self.state.delta_task = self.clip_and_normalize(msg.delta_task, -5, 12)
+            self.state.delta_cur = self.clip_and_normalize(msg.delta_cur, -5, 12)
+            self.state.sum_contact_forces = msg.sum_contact_forces
 
     def normalize(self, val, low_bound, high_bound):
         return (val - low_bound) / (high_bound - low_bound)
