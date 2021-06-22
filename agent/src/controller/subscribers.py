@@ -30,9 +30,9 @@ class Subscribers:
 
     def object_bumper_callback(self, msg):
         with self.mutex:
-            collision_name = "ground_plane::link::collision"
+            ground = "ground_plane"
             for i in range(len(msg.states)):
-                if msg.states[i].collision1_name == collision_name or msg.states[i].collision2_name == collision_name:
+                if ground in msg.states[i].collision1_name or ground in msg.states[i].collision2_name:
                     self.state.object_lifted = False
                     return
             self.state.object_lifted = True
