@@ -216,7 +216,15 @@ class GazeboInterface:
 
     def launch_object(self, object):
         launch_file = self.description_path + "/launch/object.launch"
-        if object.__class__.__name__ == "RandomCylinder":
+        if object.__class__.__name__ == "RandomSphere":
+            cli_args = [
+                launch_file,
+                "object_type:=sphere",
+                f"object_spawn_name:={object.name}",
+                f"sphere_radius:={object.radius}",
+                f"inertia_scaling_factor:={object.inertia_scaling_factor}",
+            ]
+        elif object.__class__.__name__ == "RandomCylinder":
             cli_args = [
                 launch_file,
                 "object_type:=cylinder",
@@ -248,14 +256,25 @@ class GazeboInterface:
         # TODO make sure that we handle if res is false
         res = service_call_with_retries(self.get_world_properties)
         for model in res.model_names:
-            if model != "ground_plane":
-                self.delete_model(model)
-                rospy.sleep(0.5)
+            self.delete_model(model)
+            rospy.sleep(0.5)
 
     def reset_world(self, test_case=None):
         try:
             self.shutdown_controllers()
             self.delete_all_models()
+
+            # launch new object
+            if not test_case:  # we're training
+                # TODO revert
+                object_type = random.choice(["sphere"])
+                # object_type = random.choice(["sphere", "cylinder", "box"])
+                object, wrist_error = gen_valid_wrist_error_obj_combination_from_ranges(object_type, self.hparams)
+                self.launch_object(object)
+            else:  # we're testing
+                wrist_error = test_case.wrist_error
+                self.launch_object(test_case.object)
+            rospy.sleep(2)  # required s.t. object can register with gazebo
 
             # reset reflex pose and spawn new reflex
             self.cmd_wrist_abs(tf.transformations.identity_matrix())
@@ -265,19 +284,6 @@ class GazeboInterface:
                 return self.reset_world(test_case)
             rospy.sleep(2)
             self.launch_controllers()
-
-            # launch new object
-            if not test_case:  # we're training
-                object_type = random.choice(["cylinder", "box"])
-                object, wrist_error = gen_valid_wrist_error_obj_combination_from_ranges(object_type, self.hparams)
-                res = self.spawn_object(object)
-            else:  # we're testing
-                wrist_error = test_case.wrist_error
-                res = self.spawn_object(test_case.object)
-            if not res:
-                rospy.logwarn("Could not spawn object. Resetting again.")
-                return self.reset_world(test_case)
-            rospy.sleep(2)  # required s.t. object can register with gazebo
 
             obj_pose = self.get_object_pose()
             if (obj_pose == tf.transformations.identity_matrix()).all():
