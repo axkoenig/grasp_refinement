@@ -37,20 +37,27 @@ def get_vector_with_length(length):
             continue
 
 
-def gen_object(object_name):
-    return RandomCylinder() if object_name == "cylinder" else RandomBox()
+def gen_object(object_type):
+    if object_type == "sphere":
+        return RandomSphere()
+    elif object_type == "cylinder":
+        return RandomCylinder()
+    elif object_type == "box":
+        return RandomBox()
+    else: 
+        raise ValueError("Unsupported object name.")
 
 
 def gen_valid_wrist_error_from_l2(object, wrist_l2_error):
     wrist_error = RandomWristErrorFromL2(wrist_l2_error)
     # if this wrist_error, object combination would crash hand into ground, we re-generate a new one
-    while not is_valid_vertical_offset(wrist_error.y, object.get_csv_data()["height"]):
+    while not is_valid_vertical_offset(wrist_error.y, object.get_height()):
         wrist_error = RandomWristErrorFromL2(wrist_l2_error)
     return wrist_error
 
 
-def gen_valid_wrist_error_obj_combination_from_ranges(object_name, hparams):
-    object = gen_object(object_name)
+def gen_valid_wrist_error_obj_combination_from_ranges(object_type, hparams):
+    object = gen_object(object_type)
 
     x_range = [hparams["x_error_min"], hparams["x_error_max"]]
     y_range = [hparams["y_error_min"], hparams["y_error_max"]]
@@ -61,11 +68,25 @@ def gen_valid_wrist_error_obj_combination_from_ranges(object_name, hparams):
 
     wrist_error = RandomWristErrorFromRanges(x_range, y_range, z_range, roll_range, pitch_range, yaw_range)
 
-    # if this wrist_error, object combination would crash hand into ground, we re-generate a new one
-    while not is_valid_vertical_offset(wrist_error.y, object.get_csv_data()["height"]):
+    # if this (wrist_error, object) combination would crash hand into ground, we re-generate a new one
+    while not is_valid_vertical_offset(wrist_error.y, object.get_height()):
         wrist_error = RandomWristErrorFromRanges(x_range, y_range, z_range, roll_range, pitch_range, yaw_range)
-        object = gen_object(object_name)
+        object = gen_object(object_type)
     return object, wrist_error
+
+
+class Sphere:
+    def __init__(self, radius, inertia_scaling_factor):
+        self.radius = radius
+        self.inertia_scaling_factor = inertia_scaling_factor
+        self.name = "sphere_" + str(self.radius)
+        self.type = "sphere"
+
+    def get_csv_data(self):
+        return dict({"dimension_1": self.radius, "dimension_2": 0, "dimension_3": 0, "inertia_scaling_factor": self.inertia_scaling_factor})
+
+    def get_height(self):
+        return self.radius * 2
 
 
 class Cylinder:
@@ -77,7 +98,10 @@ class Cylinder:
         self.type = "cylinder"
 
     def get_csv_data(self):
-        return dict({"length": 0, "width": self.radius, "height": self.length, "inertia_scaling_factor": self.inertia_scaling_factor})
+        return dict({"dimension_1": self.radius, "dimension_2": self.length, "dimension_3": 0, "inertia_scaling_factor": self.inertia_scaling_factor})
+
+    def get_height(self):
+        return self.length
 
 
 class Box:
@@ -90,16 +114,24 @@ class Box:
         self.type = "box"
 
     def get_csv_data(self):
-        return dict({"length": self.x, "width": self.y, "height": self.z, "inertia_scaling_factor": self.inertia_scaling_factor})
+        return dict({"dimension_1": self.x, "dimension_2": self.y, "dimension_3": self.z, "inertia_scaling_factor": self.inertia_scaling_factor})
+
+    def get_height(self):
+        return self.z
+
+
+class RandomSphere(Sphere):
+    def __init__(self, radius_range=[0.06, 0.08], inertia_scaling_factor=0.9):
+        super().__init__(sample_from_range(radius_range), inertia_scaling_factor)
 
 
 class RandomCylinder(Cylinder):
-    def __init__(self, radius_range=[0.03, 0.05], length_range=[0.13, 0.23], inertia_scaling_factor=0.9):
+    def __init__(self, radius_range=[0.03, 0.05], length_range=[0.12, 0.23], inertia_scaling_factor=0.9):
         super().__init__(sample_from_range(radius_range), sample_from_range(length_range), inertia_scaling_factor)
 
 
 class RandomBox(Box):
-    def __init__(self, x_range=[0.04, 0.10], y_range=[0.04, 0.10], z_range=[0.13, 0.23], inertia_scaling_factor=0.9):
+    def __init__(self, x_range=[0.04, 0.10], y_range=[0.04, 0.10], z_range=[0.12, 0.23], inertia_scaling_factor=0.9):
         super().__init__(sample_from_range(x_range), sample_from_range(y_range), sample_from_range(z_range), inertia_scaling_factor)
 
 
