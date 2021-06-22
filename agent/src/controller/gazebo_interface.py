@@ -266,9 +266,7 @@ class GazeboInterface:
 
             # launch new object
             if not test_case:  # we're training
-                # TODO revert
-                object_type = random.choice(["sphere"])
-                # object_type = random.choice(["sphere", "cylinder", "box"])
+                object_type = random.choice(["sphere", "cylinder", "box"])
                 object, wrist_error = gen_valid_wrist_error_obj_combination_from_ranges(object_type, self.hparams)
                 self.launch_object(object)
             else:  # we're testing
