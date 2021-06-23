@@ -46,12 +46,14 @@ def main(args):
     for key, value in hparams.items():
         rospy.loginfo(f"- {key:20}{value}")
 
+    if args.gen_new_test_cases:
+        rospy.loginfo("Generating new test cases...")
+        generate_test_cases()
+
     rospy.loginfo("Loading training environment...")
     env = Controller(hparams, "TRAIN")
     if args.check_env:
         check_env(env)
-    if args.gen_new_test_cases:
-        generate_test_cases()
 
     rospy.loginfo("Preparing model...")
 

@@ -44,15 +44,15 @@ def gen_object(object_type):
         return RandomCylinder()
     elif object_type == "box":
         return RandomBox()
-    else: 
+    else:
         raise ValueError("Unsupported object name.")
 
 
-def gen_valid_wrist_error_from_l2(object, wrist_l2_error):
-    wrist_error = RandomWristErrorFromL2(wrist_l2_error)
+def gen_valid_wrist_error_from_l2(object, trans_l2_error, rot_l2_error):
+    wrist_error = RandomWristErrorFromL2(trans_l2_error, rot_l2_error)
     # if this wrist_error, object combination would crash hand into ground, we re-generate a new one
     while not is_valid_vertical_offset(wrist_error.y, object.get_height()):
-        wrist_error = RandomWristErrorFromL2(wrist_l2_error)
+        wrist_error = RandomWristErrorFromL2(trans_l2_error, rot_l2_error)
     return wrist_error
 
 
@@ -121,17 +121,17 @@ class Box:
 
 
 class RandomSphere(Sphere):
-    def __init__(self, radius_range=[0.06, 0.08], inertia_scaling_factor=0.9):
+    def __init__(self, radius_range=[0.065, 0.08], inertia_scaling_factor=0.9):
         super().__init__(sample_from_range(radius_range), inertia_scaling_factor)
 
 
 class RandomCylinder(Cylinder):
-    def __init__(self, radius_range=[0.03, 0.05], length_range=[0.12, 0.23], inertia_scaling_factor=0.9):
+    def __init__(self, radius_range=[0.03, 0.05], length_range=[0.13, 0.23], inertia_scaling_factor=0.9):
         super().__init__(sample_from_range(radius_range), sample_from_range(length_range), inertia_scaling_factor)
 
 
 class RandomBox(Box):
-    def __init__(self, x_range=[0.04, 0.10], y_range=[0.04, 0.10], z_range=[0.12, 0.23], inertia_scaling_factor=0.9):
+    def __init__(self, x_range=[0.04, 0.10], y_range=[0.04, 0.10], z_range=[0.13, 0.23], inertia_scaling_factor=0.9):
         super().__init__(sample_from_range(x_range), sample_from_range(y_range), sample_from_range(z_range), inertia_scaling_factor)
 
 
@@ -146,15 +146,13 @@ class RandomWristError:
 
 
 class RandomWristErrorFromL2(RandomWristError):
-    def __init__(self, l2_error):
+    def __init__(self, trans_l2_error, rot_l2_error):
         super().__init__()
-        if not l2_error:
-            return
-        result = get_vector_with_length(l2_error / 100)  # convert to meters
+        result = get_vector_with_length(trans_l2_error / 100)  # convert to meters
         self.x = result[0]
         self.y = result[1]
         self.z = result[2]
-        result = get_vector_with_length(deg2rad(l2_error))
+        result = get_vector_with_length(deg2rad(rot_l2_error))
         self.roll = result[0]
         self.pitch = result[1]
         self.yaw = result[2]
@@ -172,16 +170,18 @@ class RandomWristErrorFromRanges(RandomWristError):
 
 
 class TestCase:
-    def __init__(self, object, wrist_l2_error):
+    def __init__(self, object, trans_l2_error, rot_l2_error):
         self.object = object
-        self.wrist_l2_error = wrist_l2_error
-        self.wrist_error = gen_valid_wrist_error_from_l2(self.object, wrist_l2_error)
+        self.trans_l2_error = trans_l2_error
+        self.rot_l2_error = rot_l2_error
+        self.wrist_error = gen_valid_wrist_error_from_l2(self.object, self.trans_l2_error, self.rot_l2_error)
 
     def get_csv_data(self):
         data = dict(
             {
                 "object_type": self.object.type,
-                "wrist_l2_error": self.wrist_l2_error,
+                "trans_l2_error": self.trans_l2_error,
+                "rot_l2_error": self.rot_l2_error,
                 "wrist_x": self.wrist_error.x,
                 "wrist_y": self.wrist_error.y,
                 "wrist_z": self.wrist_error.z,
@@ -204,13 +204,14 @@ class TestCase:
 class TestCases:
     def __init__(self, num_exp_per_obj=10):
         self.test_cases = []
-        object_types = ["box", "cylinder"]
-        self.wrist_l2_errors = np.arange(0, 6)
+        object_types = ["sphere", "cylinder", "box"]
+        self.trans_l2_errors = np.arange(0, 6)  # 0 to 5 cm
+        self.rot_l2_errors = np.arange(0, 6) * 2  # 0, 2, ... , 10 deg
         for object_type in object_types:
             for _ in range(num_exp_per_obj):
                 object = gen_object(object_type)
-                for error in self.wrist_l2_errors:
-                    self.test_cases.append(TestCase(object, error))
+                for i in range(len(self.trans_l2_errors)):
+                    self.test_cases.append(TestCase(object, self.trans_l2_errors[i], self.rot_l2_errors[i]))
 
 
 def generate_test_cases():
