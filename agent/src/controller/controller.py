@@ -1,5 +1,4 @@
 import gym
-import numpy as np
 import rospy
 
 from .helpers.logging import get_infos
@@ -18,7 +17,6 @@ class Controller(gym.Env):
 
         self.hparams = hparams
         self.name = name
-        self.seed(self.hparams["seed"])
 
         self.state = State()
         self.gi = GazeboInterface(self.hparams, verbose=False)

@@ -11,6 +11,7 @@ from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.td3.policies import MlpPolicy
 from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.env_checker import check_env
+from stable_baselines3.common.utils import set_random_seed
 
 from callbacks.tensorboard import TensorboardCallback
 from callbacks.eval import EvalCallbackWithInfo
@@ -19,6 +20,12 @@ from controller.helpers.transforms import deg2rad
 from controller.tests import test, generate_test_cases
 from args import parse_args
 
+
+def make_env(hparams, name):
+    env = Controller(hparams, name)
+    env.seed(hparams["seed"])
+    set_random_seed(hparams["seed"])
+    return env
 
 def main(args):
     rospy.init_node("agent")
@@ -51,7 +58,7 @@ def main(args):
         generate_test_cases()
 
     rospy.loginfo("Loading training environment...")
-    env = Controller(hparams, "TRAIN")
+    env = make_env(hparams, "TRAIN")
     if args.check_env:
         check_env(env)
 
@@ -79,7 +86,7 @@ def main(args):
         ]
         if args.eval_during_training:
             rospy.loginfo("Loading evaluation environment ...")
-            eval_env = Controller(hparams, "EVAL")
+            eval_env = make_env(hparams, "EVAL")
             callbacks.append(
                 EvalCallbackWithInfo(
                     eval_env,
