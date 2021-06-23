@@ -25,7 +25,7 @@ from .helpers.services import (
     StringServiceRequest,
     service_call_with_retries,
 )
-from .tests import gen_valid_wrist_error_obj_combination_from_ranges
+from .tests import TestCaseFromRanges
 
 
 class GazeboInterface:
@@ -56,6 +56,7 @@ class GazeboInterface:
         self.num_srv_tries = 0
         self.srv_time_out = 5
         self.srv_tolerance = 0.01
+        self.resetting_attempts = 0
 
         # get some info on reflex setup
         self.simplify_collisions = rospy.get_param("simplify_collisions")
@@ -265,14 +266,15 @@ class GazeboInterface:
             self.shutdown_controllers()
             self.delete_all_models()
 
-            # launch new object
-            if not test_case:  # we're training
-                object_type = random.choice(["sphere", "cylinder", "box"])
-                object, wrist_error = gen_valid_wrist_error_obj_combination_from_ranges(object_type, self.hparams)
-                self.spawn_object(object)
-            else:  # we're testing
-                wrist_error = test_case.wrist_error
-                self.spawn_object(test_case.object)
+            if self.resetting_attempts > 20:
+                test_case = None
+                rospy.logerr("We tried with this wrist-combination for 20 times, but something is wrong. Moving on to next test case.")
+
+            # generate own test case when training (this is technically a "train" case)
+            if not test_case:
+                test_case = TestCaseFromRanges(self.hparams)
+
+            self.spawn_object(test_case.object)
             rospy.sleep(2)  # required s.t. object can register with gazebo
 
             # reset reflex pose and spawn new reflex
@@ -280,6 +282,7 @@ class GazeboInterface:
             res = self.spawn_reflex()
             if not res:
                 rospy.logwarn("Could not spawn reflex. Resetting again.")
+                self.resetting_attempts += 1
                 return self.reset_world(test_case)
             rospy.sleep(2)
             self.launch_controllers()
@@ -287,6 +290,7 @@ class GazeboInterface:
             obj_pose = self.get_object_pose()
             if (obj_pose == tf.transformations.identity_matrix()).all():
                 rospy.logwarn("Could not get object pose. Resetting again.")
+                self.resetting_attempts += 1
                 return self.reset_world(test_case)
 
             # get ground truth pose of reflex (which is offset from object frame)
@@ -299,14 +303,16 @@ class GazeboInterface:
             res = self.cmd_wrist_abs(wrist_waypoint_pose, True, True)
             if not res:
                 rospy.logwarn("Could not reach waypoint wrist pose. Resetting again.")
+                self.resetting_attempts += 1
                 return self.reset_world(test_case)
             self.open_hand(True, self.srv_tolerance, self.srv_time_out)
 
             # move to erroneous wrist pose
-            wrist_init_pose = self.get_wrist_init_pose(truth_wrist_t, truth_wrist_q, wrist_error)
+            wrist_init_pose = self.get_wrist_init_pose(truth_wrist_t, truth_wrist_q, test_case.wrist_error)
             res = self.cmd_wrist_abs(wrist_init_pose, True, True)
             if not res:
                 rospy.logwarn("Could not reach erroneous wrist pose. Resetting again.")
+                self.resetting_attempts += 1
                 return self.reset_world(test_case)
 
             # close fingers
@@ -317,7 +323,11 @@ class GazeboInterface:
             # TODO delete this once we found the problem!
             rospy.logerr(f"Exception occurred while resetting: '{e}'. Resetting again")
             rospy.sleep(2)
+            self.resetting_attempts += 1
             return self.reset_world(test_case)
+
+        # all good reset counter
+        self.resetting_attempts = 0
 
     def launch_controllers(self):
         rospy.loginfo("Launching finger controllers ...")

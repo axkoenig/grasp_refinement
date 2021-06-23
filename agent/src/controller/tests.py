@@ -157,11 +157,11 @@ class RandomWristError:
 class RandomWristErrorFromL2(RandomWristError):
     def __init__(self, trans_l2_error, rot_l2_error):
         super().__init__()
-        result = get_vector_with_length(trans_l2_error / 100)  # convert to meters
+        result = get_vector_with_length(trans_l2_error)
         self.x = result[0]
         self.y = result[1]
         self.z = result[2]
-        result = get_vector_with_length(deg2rad(rot_l2_error))
+        result = get_vector_with_length(rot_l2_error)
         self.roll = result[0]
         self.pitch = result[1]
         self.yaw = result[2]
@@ -179,11 +179,12 @@ class RandomWristErrorFromRanges(RandomWristError):
 
 
 class TestCase:
-    def __init__(self, object, trans_l2_error, rot_l2_error):
-        self.object = object
-        self.trans_l2_error = trans_l2_error
-        self.rot_l2_error = rot_l2_error
-        self.wrist_error = gen_valid_wrist_error_from_l2(self.object, self.trans_l2_error, self.rot_l2_error)
+    def __init__(self):
+        # default parameters (will be overriden by child classes)
+        self.object = RandomSphere()
+        self.trans_l2_error = 0
+        self.rot_l2_error = 0
+        self.wrist_error = RandomWristErrorFromL2(0, 0)
 
     def get_csv_data(self):
         data = dict(
@@ -206,21 +207,38 @@ class TestCase:
         d = self.get_csv_data()
         return [*d]
 
-    def get_wrist_error(self):
-        return self.wrist_error.x, self.wrist_error.y, self.wrist_error.z, self.wrist_error.roll, self.wrist_error.pitch, self.wrist_error.yaw
+
+class TestCaseFromObjectAndL2Errors(TestCase):
+    def __init__(self, object, trans_l2_error, rot_l2_error):
+        # for this test case we know the object and want a suitable l2 wrist error
+        super().__init__()
+        self.object = object
+        self.trans_l2_error = trans_l2_error
+        self.rot_l2_error = rot_l2_error
+        self.wrist_error = gen_valid_wrist_error_from_l2(self.object, self.trans_l2_error, self.rot_l2_error)
+
+
+class TestCaseFromRanges(TestCase):
+    def __init__(self, hparams):
+        # for this case we only know the ranges of object size and wrist error
+        super().__init__()
+        object_type = random.choice(["sphere", "cylinder", "box"])
+        self.object, self.wrist_error = gen_valid_wrist_error_obj_combination_from_ranges(object_type, hparams)
+        self.trans_l2_error = np.linalg.norm([self.wrist_error.x, self.wrist_error.y, self.wrist_error.z])
+        self.rot_l2_error = np.linalg.norm([self.wrist_error.roll, self.wrist_error.pitch, self.wrist_error.yaw])
 
 
 class TestCases:
     def __init__(self, num_exp_per_obj=10):
         self.test_cases = []
         object_types = ["sphere", "cylinder", "box"]
-        self.trans_l2_errors = np.arange(0, 6)  # 0 to 5 cm
+        self.trans_l2_errors = np.arange(0, 6) / 100  # 0 to 5 cm
         self.rot_l2_errors = np.arange(0, 6) * 2  # 0, 2, ... , 10 deg
         for object_type in object_types:
             for _ in range(num_exp_per_obj):
                 object = gen_object(object_type)
                 for i in range(len(self.trans_l2_errors)):
-                    self.test_cases.append(TestCase(object, self.trans_l2_errors[i], self.rot_l2_errors[i]))
+                    self.test_cases.append(TestCaseFromObjectAndL2Errors(object, self.trans_l2_errors[i], deg2rad(self.rot_l2_errors[i])))
 
 
 def generate_test_cases():
