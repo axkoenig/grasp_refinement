@@ -10,7 +10,18 @@ from tensorboard.backend.event_processing.directory_watcher import DirectoryDele
 
 
 def get_experiment_data(
-    log_path, prefix, framework, try_id, scalar_name, sensor_framework=False, log_id=1, window_size=10, cap_len=10000, verbose=False, remove_200s=False
+    log_path,
+    prefix,
+    framework,
+    try_id,
+    scalar_name,
+    sensor_framework=False,
+    log_id=1,
+    window_size=1,
+    cap_len=10000,
+    verbose=False,
+    remove_200s=False,
+    use_episodes=True,
 ):
 
     if sensor_framework:
@@ -52,6 +63,15 @@ def get_experiment_data(
         vals = final_vals
         time_steps = final_time_steps
 
+    if use_episodes: 
+        episodes = np.arange(0, len(vals))
+        data = {"steps": episodes, scalar_name: vals}
+        df = pd.DataFrame(data)
+        df["prefix"] = prefix
+        df["framework"] = framework
+        df["try_id"] = try_id
+        return df
+
     # smooth data with moving average filter
     vals_smooth = np.convolve(vals, np.ones(window_size), "valid") / window_size
     time_steps_smooth = np.convolve(time_steps, np.ones(window_size), "valid") / window_size
@@ -65,7 +85,7 @@ def get_experiment_data(
         dense_vals = dense_vals[:cap_len]
 
     # create pd dataframe
-    data = {"dense_time_steps": dense_time_steps, scalar_name: dense_vals}
+    data = {"steps": dense_time_steps, scalar_name: dense_vals}
     df = pd.DataFrame(data)
     df["prefix"] = prefix
     df["framework"] = framework
@@ -101,14 +121,13 @@ def plot(args, df, num_items=3, hue="framework"):
     palette = sns.color_palette("tab10", num_items)
     sns.set(style="darkgrid", font_scale=1.5)
 
-    ax = sns.lineplot(data=df, x="dense_time_steps", y=args.scalar_name, palette=palette, hue=hue)
+    ax = sns.lineplot(data=df, x="steps", y=args.scalar_name, palette=palette, hue=hue)
     ax.set_title(f'{df["try_id"].max()} Trainings Runs')
-    ax.set_xlabel("Number of Time Steps")
+    ax.set_xlabel("Number of Episodes")
     ax.set_ylabel(args.scalar_name)
 
     plt.tight_layout(pad=0.5)
     plt.ylim(0, 1.2)
-    plt.xlim(0, 2950)
     plt.show()
 
 
@@ -178,7 +197,7 @@ if __name__ == "__main__":
     # args.prefix = "16Jun_FinalWednesdayForces"
     # df = pd.concat([df, get_all_data(args, sensor_framework=True, framework_list = framework_list)])
     # framework_list = [1,2,3,4]
-    
+
     plot(args, df, len(framework_list))
 
     # plot_percentiles(args, df)
