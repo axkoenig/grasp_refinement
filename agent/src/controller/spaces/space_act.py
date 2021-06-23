@@ -17,7 +17,7 @@ class ActionSpace(Space):
         self.min_wrist_rot = -self.max_wrist_rot
         self.max_finger_incr = deg2rad(6)
         self.min_finger_incr = -self.max_finger_incr
-        self.max_preshape_incr = deg2rad(3)
+        self.max_preshape_incr = deg2rad(1)
         self.min_preshape_incr = -self.max_preshape_incr
 
         self.max_action = 1
