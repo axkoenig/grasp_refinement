@@ -6,11 +6,13 @@ class StringServiceRequest:
         self.part_name = part_name
         self.reference_frame = reference_frame
 
+class SimulationException(Exception):
+    pass
 
 def service_call(service, request, service_name):
     rospy.wait_for_service(service_name)
     try:
-        if request.__class__.__name__ is "StringServiceRequest":
+        if request.__class__.__name__ == "StringServiceRequest":
             res = service(request.part_name, request.reference_frame)
             return True, res
         else:
@@ -36,7 +38,7 @@ def service_call_with_retries(service, request=None, max_retries=100, wait_secs=
         rospy.loginfo(f"Service call to {service_name} failed. Trying again in {wait_secs} secs...")
         tries += 1
         rospy.sleep(wait_secs)
-    rospy.loginfo(f"Service call to {service_name} failed even after {max_retries} retries.")
+    raise SimulationException(f"Service call to {service_name} failed even after {max_retries} retries.")
 
 
 def ros_vector_to_list(ros_vector):
