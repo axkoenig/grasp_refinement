@@ -21,7 +21,7 @@ class Actions:
         wrist_q = tf.transformations.quaternion_from_euler(rot[0], rot[1], rot[2])
         self.gi.cmd_wrist_pose_incr(action_dict["wrist_trans"], wrist_q)
         f = action_dict["fingers_incr"]
-        self.gi.pos_incr(f[0], f[1], f[2], 0, False, False, 0, 0)
+        self.gi.pos_incr(f[0], f[1], f[2], action_dict["preshape_incr"], False, False, 0, 0)
         self.wait_if_necessary()
 
     def get_rate_of_cur_stage(self):
