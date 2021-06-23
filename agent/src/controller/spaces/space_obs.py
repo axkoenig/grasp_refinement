@@ -15,8 +15,8 @@ class ObservationSpace(Space):
         self.num_sensors = 9
 
         self.prox_angle_max = 3
-        self.motor_torque_max = 5
-        self.motor_torque_min = -1
+        self.motor_torque_max = 10
+        self.motor_torque_min = -3
         self.preshape_angle_max = np.pi / 2
 
         self.tactile_pos_min = [-0.2, -0.2, 0.05]

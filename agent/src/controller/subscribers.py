@@ -1,3 +1,4 @@
+import random
 from multiprocessing import Lock
 
 import rospy
@@ -18,7 +19,10 @@ class Subscribers:
         self.state = state
         self.obs = obs
         self.gi = gi
+
         self.mutex = Lock()
+        self.random_gen = random.Random()
+        self.random_gen.seed(hparams["seed"])
 
         rospy.Subscriber("gazebo/object_sensor_bumper", ContactsState, self.object_bumper_callback, queue_size=1)
         rospy.Subscriber("reflex_interface/hand_state", HandStateStamped, self.ri_callback, queue_size=1)
@@ -62,12 +66,11 @@ class Subscribers:
                 id_str = "_f" + str(i + 1)
                 self.obs.set_cur_val_by_name("prox_angle" + id_str, msg.finger[i].proximal)
                 self.obs.set_cur_val_by_name("dist_angle" + id_str, msg.finger[i].distal_approx)
-                self.obs.set_cur_val_by_name("motor_torque" + id_str, msg.motor[i].load)
-
+                self.set_torque_val("motor_torque" + id_str, msg.motor[i].load)
                 self.state.prox_angles[i] = msg.finger[i].proximal
 
             self.obs.set_cur_val_by_name("preshape_angle", msg.motor[3].joint_angle)
-            self.obs.set_cur_val_by_name("preshape_motor_torque", msg.motor[3].load)
+            self.set_torque_val("preshape_motor_torque", msg.motor[3].load)
 
     def contacts_callback(self, msg):
         with self.mutex:
@@ -98,3 +101,8 @@ class Subscribers:
             self.obs.set_cur_val_by_name(name, int(np.linalg.norm(force) > 0))
         else:
             raise ValueError("Unsupported force sensing framework.")
+
+    def set_torque_val(self, name, val):
+        if self.hparams["noisy_torque"]:  # provide noisy torque info (10% of max torque)
+            val += self.random_gen.gauss(0, 0.1 * self.obs.motor_torque_max)
+        self.obs.set_cur_val_by_name(name, val)

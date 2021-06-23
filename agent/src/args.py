@@ -21,6 +21,7 @@ def parse_args():
     parser.add_argument("--w_eps_torque", type=float, default=1, help="Weight for epsilon torque")
     parser.add_argument("--w_delta", type=float, default=1, help="Weight for delta")
     parser.add_argument("--force_sensing", type=int, default=1, help="(1=full), (2=normal), (3=binary), (4=none).")
+    parser.add_argument("--noisy_torque", type=int, default=0, help="Whether to add noise to torque measurement.")
 
     # length and update rates of stages
     parser.add_argument("--refine_steps", type=float, default=15, help="Time steps to refine grasp.")
