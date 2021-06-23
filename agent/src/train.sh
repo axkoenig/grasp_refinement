@@ -9,11 +9,11 @@ z_error_max=0.05
 z_error_min=-$z_error_max
 
 # rot offset
-roll_error_max=5
+roll_error_max=10
 roll_error_min=-$roll_error_max
-pitch_error_max=5
+pitch_error_max=10
 pitch_error_min=-$pitch_error_max
-yaw_error_max=5
+yaw_error_max=10
 yaw_error_min=-$yaw_error_max
 
 # reward weights
