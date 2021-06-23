@@ -406,21 +406,21 @@ class GazeboInterface:
                 "xacro "
                 + self.description_path
                 + f"/urdf/environment/sphere.urdf.xacro"
-                + f" sphere_radius:={object.radius} inertia_scaling_factor:={object.inertia_scaling_factor}"
+                + f" sphere_radius:={object.radius} sphere_mass:={object.mass} inertia_scaling_factor:={object.inertia_scaling_factor}"
             )
         elif object.__class__.__name__ == "RandomCylinder":
             p = os.popen(
                 "xacro "
                 + self.description_path
                 + f"/urdf/environment/cylinder.urdf.xacro"
-                + f" cylinder_radius:={object.radius} cylinder_length:={object.length} inertia_scaling_factor:={object.inertia_scaling_factor}"
+                + f" cylinder_radius:={object.radius} cylinder_length:={object.length} cylinder_mass:={object.mass} inertia_scaling_factor:={object.inertia_scaling_factor}"
             )
         elif object.__class__.__name__ == "RandomBox":
             p = os.popen(
                 "xacro "
                 + self.description_path
                 + f"/urdf/environment/box.urdf.xacro"
-                + f" box_x:={object.x} box_y:={object.y} box_z:={object.z} inertia_scaling_factor:={object.inertia_scaling_factor}"
+                + f" box_x:={object.x} box_y:={object.y} box_z:={object.z} box_mass:={object.mass} inertia_scaling_factor:={object.inertia_scaling_factor}"
             )
         else:
             rospy.logerr("Unsupported object type!")
@@ -444,6 +444,7 @@ class GazeboInterface:
             return 0
 
         rospy.set_param("object_name", object.name)
+        rospy.set_param("object_mass", object.mass)
         return 1
 
     def spawn_reflex(self):

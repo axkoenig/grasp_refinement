@@ -76,63 +76,72 @@ def gen_valid_wrist_error_obj_combination_from_ranges(object_type, hparams):
 
 
 class Sphere:
-    def __init__(self, radius, inertia_scaling_factor):
+    def __init__(self, radius, mass, inertia_scaling_factor):
         self.radius = radius
+        self.mass = mass
         self.inertia_scaling_factor = inertia_scaling_factor
         self.name = "sphere_" + str(self.radius)
         self.type = "sphere"
 
     def get_csv_data(self):
-        return dict({"dimension_1": self.radius, "dimension_2": 0, "dimension_3": 0, "inertia_scaling_factor": self.inertia_scaling_factor})
+        return dict({"dimension_1": self.radius, "dimension_2": 0, "dimension_3": 0, "mass": self.mass, "inertia_scaling_factor": self.inertia_scaling_factor})
 
     def get_height(self):
         return self.radius * 2
 
 
 class Cylinder:
-    def __init__(self, radius, length, inertia_scaling_factor):
+    def __init__(self, radius, length, mass, inertia_scaling_factor):
         self.radius = radius
         self.length = length
+        self.mass = mass
         self.inertia_scaling_factor = inertia_scaling_factor
         self.name = "cylinder_" + str(self.radius) + "_" + str(self.length)
         self.type = "cylinder"
 
     def get_csv_data(self):
-        return dict({"dimension_1": self.radius, "dimension_2": self.length, "dimension_3": 0, "inertia_scaling_factor": self.inertia_scaling_factor})
+        return dict(
+            {"dimension_1": self.radius, "dimension_2": self.length, "dimension_3": 0, "mass": self.mass, "inertia_scaling_factor": self.inertia_scaling_factor}
+        )
 
     def get_height(self):
         return self.length
 
 
 class Box:
-    def __init__(self, x, y, z, inertia_scaling_factor):
+    def __init__(self, x, y, z, mass, inertia_scaling_factor):
         self.x = x
         self.y = y
         self.z = z
+        self.mass = mass
         self.inertia_scaling_factor = inertia_scaling_factor
         self.name = "box_" + str(self.x) + "_" + str(self.y) + "_" + str(self.z)
         self.type = "box"
 
     def get_csv_data(self):
-        return dict({"dimension_1": self.x, "dimension_2": self.y, "dimension_3": self.z, "inertia_scaling_factor": self.inertia_scaling_factor})
+        return dict(
+            {"dimension_1": self.x, "dimension_2": self.y, "dimension_3": self.z, "mass": self.mass, "inertia_scaling_factor": self.inertia_scaling_factor}
+        )
 
     def get_height(self):
         return self.z
 
 
 class RandomSphere(Sphere):
-    def __init__(self, radius_range=[0.065, 0.08], inertia_scaling_factor=0.9):
-        super().__init__(sample_from_range(radius_range), inertia_scaling_factor)
+    def __init__(self, radius_range=[0.065, 0.08], mass_range=[0.3, 0.6], inertia_scaling_factor=0.9):
+        super().__init__(sample_from_range(radius_range), sample_from_range(mass_range), inertia_scaling_factor)
 
 
 class RandomCylinder(Cylinder):
-    def __init__(self, radius_range=[0.03, 0.05], length_range=[0.13, 0.23], inertia_scaling_factor=0.9):
-        super().__init__(sample_from_range(radius_range), sample_from_range(length_range), inertia_scaling_factor)
+    def __init__(self, radius_range=[0.03, 0.05], length_range=[0.13, 0.23], mass_range=[0.3, 0.6], inertia_scaling_factor=0.9):
+        super().__init__(sample_from_range(radius_range), sample_from_range(length_range), sample_from_range(mass_range), inertia_scaling_factor)
 
 
 class RandomBox(Box):
-    def __init__(self, x_range=[0.04, 0.10], y_range=[0.04, 0.10], z_range=[0.13, 0.23], inertia_scaling_factor=0.9):
-        super().__init__(sample_from_range(x_range), sample_from_range(y_range), sample_from_range(z_range), inertia_scaling_factor)
+    def __init__(self, x_range=[0.04, 0.10], y_range=[0.04, 0.10], z_range=[0.13, 0.23], mass_range=[0.3, 0.6], inertia_scaling_factor=0.9):
+        super().__init__(
+            sample_from_range(x_range), sample_from_range(y_range), sample_from_range(z_range), sample_from_range(mass_range), inertia_scaling_factor
+        )
 
 
 class RandomWristError:
