@@ -200,7 +200,7 @@ class GazeboInterface:
         res = service_call_with_retries(self.get_world_properties)
         models = res.model_names
         rospy.loginfo("Models in world are: " + str(models))
-        irrelevant_objects = ["ground_plane", "reflex"]
+        irrelevant_objects = ["ground_plane", "reflex", "sphere_mount"]
         for obj in irrelevant_objects:
             if obj in models:
                 models.remove(obj)
@@ -256,8 +256,9 @@ class GazeboInterface:
         # TODO make sure that we handle if res is false
         res = service_call_with_retries(self.get_world_properties)
         for model in res.model_names:
-            self.delete_model(model)
-            rospy.sleep(0.5)
+            if model != "ground_plane":
+                self.delete_model(model)
+                rospy.sleep(0.5)
 
     def reset_world(self, test_case=None):
         try:
@@ -268,10 +269,10 @@ class GazeboInterface:
             if not test_case:  # we're training
                 object_type = random.choice(["sphere", "cylinder", "box"])
                 object, wrist_error = gen_valid_wrist_error_obj_combination_from_ranges(object_type, self.hparams)
-                self.launch_object(object)
+                self.spawn_object(object)
             else:  # we're testing
                 wrist_error = test_case.wrist_error
-                self.launch_object(test_case.object)
+                self.spawn_object(test_case.object)
             rospy.sleep(2)  # required s.t. object can register with gazebo
 
             # reset reflex pose and spawn new reflex
@@ -387,21 +388,40 @@ class GazeboInterface:
         truth_wrist_init_pose = get_homo_matrix_from_tq(wrist_p, wrist_q)
         return np.dot(truth_wrist_init_pose, mat_offset)
 
+    def spawn_sphere_mount(self):
+        p = os.popen("xacro " + self.description_path + f"/urdf/environment/sphere_mount.xacro")
+        xml_string = p.read()
+        p.close()
+        req = SpawnModelRequest()
+        req.model_name = "sphere_mount"
+        req.model_xml = xml_string
+        req.reference_frame = "world"
+        req.initial_pose = Pose(Point(0, 0.2, 0), Quaternion(0, 0, 0, 1))
+        service_call_with_retries(self.spawn_urdf_model, req)
+
     def spawn_object(self, object):
-        if object.__class__.__name__ == "RandomCylinder":
-            urdf_location = self.description_path + f"/urdf/environment/cylinder.urdf.xacro"
+        if object.__class__.__name__ == "RandomSphere":
+            self.spawn_sphere_mount()
             p = os.popen(
                 "xacro "
-                + urdf_location
+                + self.description_path
+                + f"/urdf/environment/sphere.urdf.xacro"
+                + f" sphere_radius:={object.radius} inertia_scaling_factor:={object.inertia_scaling_factor}"
+            )
+        elif object.__class__.__name__ == "RandomCylinder":
+            p = os.popen(
+                "xacro "
+                + self.description_path
+                + f"/urdf/environment/cylinder.urdf.xacro"
                 + f" cylinder_radius:={object.radius} cylinder_length:={object.length} inertia_scaling_factor:={object.inertia_scaling_factor}"
             )
-            height = object.length
         elif object.__class__.__name__ == "RandomBox":
-            urdf_location = self.description_path + f"/urdf/environment/box.urdf.xacro"
             p = os.popen(
-                "xacro " + urdf_location + f" box_x:={object.x} box_y:={object.y} box_z:={object.z} inertia_scaling_factor:={object.inertia_scaling_factor}"
+                "xacro "
+                + self.description_path
+                + f"/urdf/environment/box.urdf.xacro"
+                + f" box_x:={object.x} box_y:={object.y} box_z:={object.z} inertia_scaling_factor:={object.inertia_scaling_factor}"
             )
-            height = object.z
         else:
             rospy.logerr("Unsupported object type!")
             return
@@ -413,7 +433,7 @@ class GazeboInterface:
         req.model_name = object.name
         req.model_xml = xml_string
         req.reference_frame = "world"
-        req.initial_pose = Pose(Point(0, 0.2, height / 2 + 0.01), Quaternion(0, 0, 0, 1))
+        req.initial_pose = Pose(Point(0, 0.2, object.get_height() / 2 + 0.01), Quaternion(0, 0, 0, 1))
         res = service_call_with_retries(self.spawn_urdf_model, req)
 
         if res is None:
