@@ -6,11 +6,15 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-def get_csv_data(args, verbose=True, framework_list=[1, 2, 3, 4]):
+def get_csv_data(args, verbose=True, sensor_framework=True, framework_list=[1, 2, 3, 4]):
     df = pd.DataFrame()
     for framework in framework_list:
         for try_id in range(1, args.max_num_trials + 1):
-            path = os.path.join(args.log_path, f"{args.prefix}_f{framework}_id{try_id}_algotd3.csv")
+            if sensor_framework:
+                path = os.path.join(args.log_path, f"{args.prefix}_f1_s{framework}_id{try_id}_algotd3.csv")
+            else:
+
+                path = os.path.join(args.log_path, f"{args.prefix}_f{framework}_s1_id{try_id}_algotd3.csv")
             try:
                 data = pd.read_csv(path)
                 print("Got data from path " + path)
@@ -48,7 +52,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--prefix",
         type=str,
-        default="12Jun_EvalAfterTrain_AvgDelta",
+        default="21Jun_HopefullyFixSegfaultNew",
         help="Prefix comment of your experiment.",
     )
     parser.add_argument(
@@ -59,7 +63,11 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    framework_list = [1, 2, 3]
+    framework_list = [1, 2, 3, 4]
 
-    df = get_csv_data(args, framework_list=framework_list)
+    df = get_csv_data(args, framework_list=framework_list, sensor_framework=False)
+    # args.prefix ="16Jun_FinalWednesdayForces"
+    # df = pd.concat([df, get_csv_data(args, framework_list=[1], sensor_framework=True)])
+    # framework_list = [1, 2, 3,4]
+    
     plot(df, len(framework_list))

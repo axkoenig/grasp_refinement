@@ -9,13 +9,14 @@ from tensorboard.backend.event_processing.event_accumulator import EventAccumula
 from tensorboard.backend.event_processing.directory_watcher import DirectoryDeletedError
 
 
-def get_experiment_data(log_path, prefix, framework, try_id, scalar_name, new_name=False, log_id=1, window_size=4, cap_len=10000, verbose=False, remove_200s=True):
+def get_experiment_data(
+    log_path, prefix, framework, try_id, scalar_name, sensor_framework=False, log_id=1, window_size=10, cap_len=10000, verbose=False, remove_200s=False
+):
 
-    # load tensorboard logs
-    if not new_name:
-        experiment_path = os.path.join(log_path, f"{prefix}_f{framework}_id{try_id}_{log_id}")
+    if sensor_framework:
+        experiment_path = os.path.join(log_path, f"{prefix}_f1_s{framework}_id{try_id}_algotd3_{log_id}")
     else:
-        experiment_path = os.path.join(log_path, f"{prefix}_f{framework}_id{try_id}_algotd3_{log_id}")
+        experiment_path = os.path.join(log_path, f"{prefix}_f{framework}_s1_id{try_id}_algotd3_{log_id}")
 
     try:
         event_acc = EventAccumulator(experiment_path)
@@ -28,29 +29,29 @@ def get_experiment_data(log_path, prefix, framework, try_id, scalar_name, new_na
     except DirectoryDeletedError:
         print(experiment_path + " does not exist. Returning None.")
         return None
-    
-    if remove_200s: 
+
+    if remove_200s:
         # remove data point at multiples of 200 to compensate logging error
         time_steps = list(time_steps)
         vals = list(vals)
         window = 3
-        desireds = 200 * np.arange(1,11)
+        desireds = 200 * np.arange(1, 11)
         for i in range(len(time_steps)):
             for desired in desireds:
-                if time_steps[i] < desired + window and time_steps[i] > desired -window:
+                if time_steps[i] < desired + window and time_steps[i] > desired - window:
                     time_steps[i] = None
-                    vals[i]= None
+                    vals[i] = None
                     break
 
         final_time_steps = []
         final_vals = []
         for i in range(len(time_steps)):
-            if time_steps[i] != None :
+            if time_steps[i] != None:
                 final_time_steps.append(time_steps[i])
                 final_vals.append(vals[i])
         vals = final_vals
         time_steps = final_time_steps
-    
+
     # smooth data with moving average filter
     vals_smooth = np.convolve(vals, np.ones(window_size), "valid") / window_size
     time_steps_smooth = np.convolve(time_steps, np.ones(window_size), "valid") / window_size
@@ -86,11 +87,11 @@ def add_to_df(df, log_path, prefix, framework, end_try_id, scalar_name, new_name
     return df
 
 
-def get_all_data(args, new_name=False, verbose=True, framework_list=[1, 2, 3,4]):
+def get_all_data(args, sensor_framework=False, verbose=True, framework_list=[1, 2, 3, 4]):
     # loads data from tensorboard logfiles
     df = pd.DataFrame()
     for framework in framework_list:
-        df = add_to_df(df, args.log_path, args.prefix, framework, args.max_num_trials, args.scalar_name, new_name)
+        df = add_to_df(df, args.log_path, args.prefix, framework, args.max_num_trials, args.scalar_name, sensor_framework)
     if verbose:
         print(df)
     return df
@@ -107,7 +108,7 @@ def plot(args, df, num_items=3, hue="framework"):
 
     plt.tight_layout(pad=0.5)
     plt.ylim(0, 1.2)
-    plt.xlim(0, 1950)
+    plt.xlim(0, 2950)
     plt.show()
 
 
@@ -153,7 +154,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--prefix",
         type=str,
-        default="12Jun_EvalAfterTrain_AvgDelta",
+        default="21Jun_HopefullyFixSegfaultNew",
         help="Prefix comment of your experiment.",
     )
     parser.add_argument(
@@ -170,14 +171,14 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    framework_list = [4]
-    df = get_all_data(args, new_name=True, framework_list=framework_list)
+    framework_list = [1, 2, 3, 4]
+    df = get_all_data(args, sensor_framework=False, framework_list=framework_list)
 
-    args.prefix="8Jun_ExactInputs"
-    framework_list = [1,2,3]
-    df = pd.concat([df, get_all_data(args, new_name=True, framework_list = framework_list)])
-
-    framework_list = [1,2,3,4]
+    # framework_list = [1]
+    # args.prefix = "16Jun_FinalWednesdayForces"
+    # df = pd.concat([df, get_all_data(args, sensor_framework=True, framework_list = framework_list)])
+    # framework_list = [1,2,3,4]
+    
     plot(args, df, len(framework_list))
 
     # plot_percentiles(args, df)
