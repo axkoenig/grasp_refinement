@@ -95,7 +95,7 @@ class Subscribers:
         elif self.hparams["force_sensing"] == 2:  # only normal force
             force = to_list(cf_shell.contact_wrench.force)
             normal = to_list(cf_shell.contact_normal)
-            self.obs.set_cur_val_by_name(name, np.dot(force, normal))
+            self.obs.set_cur_val_by_name(name, abs(np.dot(force, normal)))
         elif self.hparams["force_sensing"] == 3:  # only binary contact signals
             force = to_list(cf_shell.contact_wrench.force)
             self.obs.set_cur_val_by_name(name, int(np.linalg.norm(force) > 0))
