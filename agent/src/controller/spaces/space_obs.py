@@ -15,6 +15,7 @@ class ObservationSpace(Space):
         self.num_sensors = 9
 
         self.prox_angle_max = 3
+        self.joint_angle_min = -0.01
         self.motor_torque_max = 10
         self.motor_torque_min = -3
         self.preshape_angle_max = np.pi / 2
@@ -30,8 +31,8 @@ class ObservationSpace(Space):
         # information obtainable from real hand
         for i in range(self.num_fingers):
             id_str = "_f" + str(i + 1)
-            self.add_variable(1, "prox_angle" + id_str, 0, 0, self.prox_angle_max)
-            self.add_variable(1, "dist_angle" + id_str, 0, 0, 0.2 * self.prox_angle_max)
+            self.add_variable(1, "prox_angle" + id_str, 0, self.joint_angle_min, self.prox_angle_max)
+            self.add_variable(1, "dist_angle" + id_str, 0, self.joint_angle_min, 0.2 * self.prox_angle_max)
             self.add_variable(1, "motor_torque" + id_str, 0, self.motor_torque_min, self.motor_torque_max)
         self.add_variable(1, "preshape_angle", 0, 0, self.preshape_angle_max)
         self.add_variable(1, "preshape_motor_torque", 0, self.motor_torque_min, self.motor_torque_max)
