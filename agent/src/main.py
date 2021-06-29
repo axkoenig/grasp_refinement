@@ -30,8 +30,6 @@ def make_env(hparams, name):
 
 def main(args):
     rospy.init_node("agent")
-    # give node some time to register
-    rospy.sleep(1)
 
     log_path = os.path.join(args.output_dir, "logs", args.environment)
     ckpt_path = os.path.join(args.output_dir, "models", args.environment, args.log_name)
