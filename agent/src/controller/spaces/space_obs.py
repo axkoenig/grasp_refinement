@@ -19,8 +19,8 @@ class ObservationSpace(Space):
         self.motor_torque_min = -3
         self.preshape_angle_max = np.pi / 2
 
-        self.tactile_pos_min = [-0.2, -0.2, 0.05]
-        self.tactile_pos_max = [0.2, 0.2, 0.3]
+        self.tactile_pos_min = [-0.2, -0.3, 0.05]
+        self.tactile_pos_max = [0.2, 0.3, 0.3]
         self.tactile_pos_default = [0, 0, 0.06]
 
         self.contact_normal_min = [-1, -1, -1]
