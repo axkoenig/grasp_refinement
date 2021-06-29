@@ -1,6 +1,5 @@
 from enum import Enum
 import threading
-from multiprocessing import Lock
 
 import tf
 import rospy
@@ -21,7 +20,6 @@ class StageController:
         self.hparams = hparams
         self.state = state
         self.gi = gazebo_interface
-        self.mutex = Lock()
 
     def update_stage(self):
         # check if we're done early
@@ -92,5 +90,5 @@ class StageController:
         rospy.sleep(self.hparams["secs_to_hold"])
 
     def is_object_lifted(self):
-        with self.mutex:
+        with self.state.mutex:
             return self.state.object_lifted

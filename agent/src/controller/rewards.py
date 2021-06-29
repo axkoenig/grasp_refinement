@@ -1,5 +1,3 @@
-from multiprocessing import Lock
-
 import rospy
 
 from .stage import Stage
@@ -7,7 +5,6 @@ from .stage import Stage
 
 class Rewards:
     def __init__(self, hparams, state):
-        self.mutex = Lock()
         self.hparams = hparams
         self.state = state
 
@@ -40,7 +37,7 @@ class Rewards:
         return reward / counter
 
     def calc_reward(self):
-        with self.mutex:
+        with self.state.mutex:
             epsilons = self.combine_and_normalize(self.state.epsilon_force, self.state.epsilon_torque, self.hparams["w_eps_torque"])
             delta = self.state.delta_task if self.state.stage == Stage.REFINE else self.state.delta_cur
         if self.hparams["framework"] == 1:

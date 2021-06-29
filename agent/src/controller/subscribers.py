@@ -1,5 +1,4 @@
 import random
-from multiprocessing import Lock
 
 import rospy
 import numpy as np
@@ -20,7 +19,6 @@ class Subscribers:
         self.obs = obs
         self.gi = gi
 
-        self.mutex = Lock()
         self.random_gen = random.Random()
         self.random_gen.seed(hparams["seed"])
 
@@ -33,7 +31,7 @@ class Subscribers:
             rospy.Subscriber("reflex_takktile/sim_contact_frames", ContactFrames, self.contacts_callback, queue_size=1)
 
     def object_bumper_callback(self, msg):
-        with self.mutex:
+        with self.state.mutex:
             ground = "ground_plane"
             for i in range(len(msg.states)):
                 if ground in msg.states[i].collision1_name or ground in msg.states[i].collision2_name:
@@ -42,7 +40,7 @@ class Subscribers:
             self.state.object_lifted = True
 
     def ri_callback(self, msg):
-        with self.mutex:
+        with self.state.mutex:
             self.state.num_contacts = msg.num_contacts
             # in theory epsilon force is already in range [0,1] but practically it is rarely larger than 0.7
             self.state.epsilon_force = self.normalize(msg.epsilon_force, 0, 0.7)
@@ -61,7 +59,7 @@ class Subscribers:
         return self.normalize(val, low_bound, high_bound)
 
     def reflex_callback(self, msg):
-        with self.mutex:
+        with self.obs.mutex:
             for i in range(self.obs.num_fingers):
                 id_str = "_f" + str(i + 1)
                 self.obs.set_cur_val_by_name("prox_angle" + id_str, msg.finger[i].proximal)
@@ -73,7 +71,7 @@ class Subscribers:
             self.set_torque_val("preshape_motor_torque", msg.motor[3].load)
 
     def contacts_callback(self, msg):
-        with self.mutex:
+        with self.obs.mutex:
             self.obs.reset_contact_obs()
             for i in range(msg.num_contact_frames):
                 id_str = "_p" + str(msg.contact_frames_shell[i].hand_part_id)

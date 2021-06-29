@@ -1,9 +1,13 @@
+from multiprocessing import Lock
+    
 import rospy
 
 from .stage import Stage
 
 class State:
     def __init__(self):
+        self.mutex = Lock()
+
         # this info comes from reflex interface
         self.epsilon_force = 0
         self.epsilon_torque = 0

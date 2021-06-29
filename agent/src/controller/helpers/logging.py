@@ -1,10 +1,6 @@
-from multiprocessing import Lock
-
 import numpy as np
 import rospy
 from ..stage import Stage
-
-mutex = Lock()
 
 def merge_dicts(dict_1, dict_2):
     "Merges two dicts. If key exists value be saved in a numpy array, else we create a new key."
@@ -61,7 +57,7 @@ def get_quality_metrics_dict(state, prefix=""):
 
 
 def get_infos(state, verbose=True):
-    with mutex:
+    with state.mutex:
         # log the below data in each time step
         infos = {
             "num_contacts": state.num_contacts,
