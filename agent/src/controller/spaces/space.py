@@ -43,6 +43,13 @@ class Space:
         rospy.loginfo("Max values of " + self.__class__.__name__ + f" are {max_vals}.")
         return np.float32(max_vals)
 
+    def set_cur_val_by_name(self, name, cur_val):
+        for i in range(self.dim):
+            if self.vars[i].name == name:
+                self.vars[i].cur_val = cur_val
+                return
+        raise ValueError(f"Variable with name {name} not found.")
+
     def get_cur_vals(self, verbose=False):
         with self.mutex:
             cur_vals = np.empty((0,))
@@ -70,14 +77,6 @@ class Space:
             if verbose:
                 rospy.loginfo("Cur values of " + self.__class__.__name__ + f" that match the name {name} are {cur_vals}.")
             return np.float32(cur_vals)
-
-    def set_cur_val_by_name(self, name, cur_val):
-        with self.mutex:
-            for i in range(self.dim):
-                if self.vars[i].name == name:
-                    self.vars[i].cur_val = cur_val
-                    return
-            raise ValueError(f"Variable with name {name} not found.")
 
     def print_all_cur_vals(self):
         with self.mutex:
