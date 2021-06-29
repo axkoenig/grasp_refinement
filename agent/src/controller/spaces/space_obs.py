@@ -81,7 +81,7 @@ class ObservationSpace(Space):
             self.contact_force_default = [0, 0, 0]
             self.add_variable(1, var_name, self.contact_force_default, self.contact_force_min, self.contact_force_max)
         elif self.hparams["force_sensing"] == 2:  # only normal force
-            self.contact_force_min = -15
+            self.contact_force_min = 0
             self.contact_force_max = 15
             self.contact_force_default = 0
             self.add_variable(1, var_name, self.contact_force_default, self.contact_force_min, self.contact_force_max)
