@@ -61,5 +61,8 @@ def parse_args():
     parser.add_argument("--eval_at_init", type=int, default=1, help="Whether to evaluate the random policy before training.")
     parser.add_argument("--eval_model_path", type=str, help="The path to the model you would like to evaluate.")
 
+    # td3 hparams 
+    parser.add_argument("--policy_delay", type=int, default=5, help="Q values will be updated policy_delay more often than policy.")
+
     args, unknown = parser.parse_known_args()
     return args

@@ -27,6 +27,7 @@ def make_env(hparams, name):
     set_random_seed(hparams["seed"])
     return env
 
+
 def main(args):
     rospy.init_node("agent")
     # give node some time to register
@@ -67,7 +68,7 @@ def main(args):
     if args.algorithm == "td3":
         n_actions = env.action_space.shape[-1]
         action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
-        model = TD3(MlpPolicy, env, action_noise=action_noise, verbose=1, tensorboard_log=log_path)
+        model = TD3(MlpPolicy, env, action_noise=action_noise, verbose=1, tensorboard_log=log_path, policy_delay=hparams["policy_delay"])
     elif args.algorithm == "sac":
         model = SAC("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
     elif args.algorithm == "ppo":
@@ -111,14 +112,7 @@ def main(args):
         rospy.loginfo("Loading model from: " + args.eval_model_path)
         model.load(args.eval_model_path)
         rospy.loginfo("Evaluating model...")
-
-        for episode in range(20):
-            obs = env.reset()
-            while True:
-                action, _state = model.predict(obs, deterministic=True)
-                obs, reward, done, info = env.step(action)
-                if done:
-                    break
+        test(model, env, log_path, "eval_" + args.log_name)
 
     rospy.loginfo("Done! Have a nice day.")
 
