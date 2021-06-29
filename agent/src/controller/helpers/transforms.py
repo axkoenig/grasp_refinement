@@ -2,6 +2,20 @@ import numpy as np
 import tf
 
 
+def normalize(val, low_bound, high_bound):
+    return (val - low_bound) / (high_bound - low_bound)
+
+
+def normalize_list_items(list_val, list_low_bound, list_high_bound):
+    is_float = type(list_val) is float or type(list_low_bound) is float or type(list_high_bound) is float 
+    is_int = type(list_val) is int or type(list_low_bound) is int or type(list_high_bound) is int 
+    if is_int or is_float:
+        return normalize(list_val, list_low_bound, list_high_bound)
+    for i in range(len(list_val)):
+        list_val[i] = normalize(list_val[i], list_low_bound[i], list_high_bound[i])
+    return list_val
+
+
 def is_valid_vertical_offset(wrist_y_offset, object_height, ground_clearance=0.02):
     # prevents random wrist poses that would touch ground (wrist_y_offset in shell frame and object z in world coosy!)
     # TODO: this is a bit hacky, better work with transforms in world coosy, but we don't always know them a priori

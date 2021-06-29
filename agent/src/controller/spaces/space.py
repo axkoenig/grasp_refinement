@@ -3,6 +3,8 @@ from multiprocessing import Lock
 import numpy as np
 import rospy
 
+from ..helpers.transforms import normalize_list_items
+
 
 class Variable:
     """Defines one action or observation variable."""
@@ -50,7 +52,7 @@ class Space:
                 return
         raise ValueError(f"Variable with name {name} not found.")
 
-    def get_cur_vals(self, verbose=False):
+    def get_cur_vals(self, verbose=False, normalize=True):
         with self.mutex:
             cur_vals = np.empty((0,))
             for i in range(self.dim):
@@ -64,6 +66,10 @@ class Space:
                     val = np.clip(val, self.vars[i].min_val, self.vars[i].max_val)
                     rospy.logwarn(f"Clipped {self.vars[i].name} value is {val}")
 
+                if normalize:
+                    val = normalize_list_items(val, self.vars[i].min_val, self.vars[i].max_val)
+                    if verbose:
+                        rospy.loginfo("Normalized value of " + self.vars[i].name + f" is {val}.")
                 cur_vals = np.append(cur_vals, val)
             return np.float32(cur_vals)
 

@@ -10,6 +10,7 @@ from sensor_listener.msg import ContactFrames
 from gazebo_msgs.msg import ContactsState
 
 from .helpers.services import ros_vector_to_list as to_list
+from .helpers.transforms import normalize
 from .spaces.space_obs import ObservationSpace
 
 
@@ -61,14 +62,11 @@ class Subscribers:
                 self.default_obs.set_cur_val_by_name("contact_normal" + id_str + "_prox", to_list(msg.finger_state[i].prox_normal))
                 self.default_obs.set_cur_val_by_name("contact_normal" + id_str + "_dist", to_list(msg.finger_state[i].dist_normal))
 
-    def normalize(self, val, low_bound, high_bound):
-        return (val - low_bound) / (high_bound - low_bound)
-
     def clip_and_normalize(self, val, low_bound, high_bound):
-        if not val:
+        if not val: # makes sure that a zero input will always be mapped to zero output
             return 0
         val = np.clip(val, low_bound, high_bound)
-        return self.normalize(val, low_bound, high_bound)
+        return normalize(val, low_bound, high_bound)
 
     def reflex_callback(self, msg):
         with self.obs.mutex:

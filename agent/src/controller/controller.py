@@ -1,5 +1,6 @@
 import gym
 import rospy
+import numpy as np
 
 from .helpers.logging import get_infos
 from .spaces.space_act import ActionSpace
@@ -28,7 +29,7 @@ class Controller(gym.Env):
         self.actions = Actions(self.hparams, self.state, self.gi)
 
         self.action_space = gym.spaces.Box(low=self.acts.get_min_vals(), high=self.acts.get_max_vals())
-        self.observation_space = gym.spaces.Box(low=self.obs.get_min_vals(), high=self.obs.get_max_vals())
+        self.observation_space = gym.spaces.Box(low=np.zeros(np.shape(self.obs.get_min_vals())), high=np.ones(np.shape(self.obs.get_max_vals())))
         self.reward_range = (0, 1)
 
     def seed(self, seed=None):
