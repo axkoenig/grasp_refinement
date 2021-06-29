@@ -65,6 +65,10 @@ def get_experiment_data(
 
     if use_episodes: 
         episodes = np.arange(0, len(vals))
+        # smoothing
+        episodes = np.convolve(episodes, np.ones(window_size), "valid") / window_size
+        vals = np.convolve(vals, np.ones(window_size), "valid") / window_size
+
         data = {"steps": episodes, scalar_name: vals}
         df = pd.DataFrame(data)
         df["prefix"] = prefix
@@ -102,8 +106,7 @@ def add_to_df(df, log_path, prefix, framework, end_try_id, scalar_name, new_name
     try_ids = list(range(1, end_try_id + 1))
     log_ids = list(range(1, end_log_id + 1))
     for try_id in try_ids:
-        for log_id in log_ids:
-            df = df.append(get_experiment_data(log_path, prefix, framework, try_id, scalar_name, new_name, log_id))
+        df = df.append(get_experiment_data(log_path, prefix, framework, try_id, scalar_name, new_name, 1))
     return df
 
 
@@ -128,6 +131,7 @@ def plot(args, df, num_items=3, hue="framework"):
 
     plt.tight_layout(pad=0.5)
     plt.ylim(0, 1.2)
+    plt.xlim(0, 140)
     plt.show()
 
 
@@ -173,7 +177,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--prefix",
         type=str,
-        default="21Jun_HopefullyFixSegfaultNew",
+        default="23Jun_SpheresAnd4thDOFSeedsWeightForceFrameworks",
         help="Prefix comment of your experiment.",
     )
     parser.add_argument(
@@ -185,19 +189,24 @@ if __name__ == "__main__":
     parser.add_argument(
         "--max_num_trials",
         type=int,
-        default=20,
+        default=51,
         help="How many trials were in your experiment.",
     )
     args = parser.parse_args()
 
-    framework_list = [1, 2, 3, 4]
-    df = get_all_data(args, sensor_framework=False, framework_list=framework_list)
-
+    # this is for force frameworks 
+    # framework_list = [2, 3, 4]
+    # df = get_all_data(args, sensor_framework=True, framework_list=framework_list)
     # framework_list = [1]
-    # args.prefix = "16Jun_FinalWednesdayForces"
-    # df = pd.concat([df, get_all_data(args, sensor_framework=True, framework_list = framework_list)])
+    # args.prefix = "23Jun_SpheresAnd4thDOFSeedsWeight"
+    # df = pd.concat([df, get_all_data(args, sensor_framework=False, framework_list = framework_list)])
     # framework_list = [1,2,3,4]
 
+    # this is for reward frameworks
+    args.prefix = "23Jun_SpheresAnd4thDOFSeedsWeight"    
+    framework_list = [1,2,3,4]
+    df = get_all_data(args, sensor_framework=False, framework_list=framework_list)
+    
     plot(args, df, len(framework_list))
 
     # plot_percentiles(args, df)
