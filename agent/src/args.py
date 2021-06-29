@@ -18,7 +18,7 @@ def parse_args():
     # reward framework and reward weights
     parser.add_argument("--framework", type=int, default=1, help="Which reward framework to train with.")
     parser.add_argument("--w_binary_rew", type=float, default=10, help="Weight for binary reward")
-    parser.add_argument("--w_eps_torque", type=float, default=3, help="Weight for epsilon torque")
+    parser.add_argument("--w_eps_torque", type=float, default=8, help="Weight for epsilon torque")
     parser.add_argument("--w_delta", type=float, default=0.5, help="Weight for delta")
     parser.add_argument("--force_sensing", type=int, default=1, help="(1=full), (2=normal), (3=binary), (4=none).")
     parser.add_argument("--noisy_torque", type=int, default=0, help="Whether to add noise to torque measurement.")

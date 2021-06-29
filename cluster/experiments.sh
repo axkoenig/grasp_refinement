@@ -46,7 +46,7 @@ YAW_ERROR_MIN=-$YAW_ERROR_MAX
 
 # reward weights
 W_BINARY_REW=10
-W_EPS_TORQUE=3
+W_EPS_TORQUE=8
 W_DELTA=0.5
 
 # ports
