@@ -49,8 +49,7 @@ def get_joint_difference(prox_angles):
 
 def get_quality_metrics_dict(state, prefix=""):
     return {
-        f"{prefix}_epsilon_force": state.epsilon_force,
-        f"{prefix}_epsilon_torque": state.epsilon_torque,
+        f"{prefix}_epsilon": state.epsilon,
         f"{prefix}_delta_task": state.delta_task,
         f"{prefix}_delta_cur": state.delta_cur,
     }

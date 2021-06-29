@@ -38,14 +38,14 @@ class Rewards:
 
     def calc_reward(self):
         with self.state.mutex:
-            epsilons = self.combine_and_normalize(self.state.epsilon_force, self.state.epsilon_torque, self.hparams["w_eps_torque"])
+            epsilon = self.state.epsilon
             delta = self.state.delta_task if self.state.stage == Stage.REFINE else self.state.delta_cur
         if self.hparams["framework"] == 1:
-            return self.combine_and_normalize(epsilons, delta, self.hparams["w_delta"])
+            return self.combine_and_normalize(epsilon, delta, self.hparams["w_delta"])
         elif self.hparams["framework"] == 2:
             return delta
         elif self.hparams["framework"] == 3:
-            return epsilons
+            return epsilon
         elif self.hparams["framework"] == 4:
             return 0  # will only get binary reward at end
         else:
