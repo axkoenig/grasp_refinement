@@ -28,6 +28,36 @@ def make_env(hparams, name):
     return env
 
 
+def make_model_train(algorithm, env, log_path, policy_delay):
+    if algorithm == "td3":
+        n_actions = env.action_space.shape[-1]
+        action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
+        return TD3(MlpPolicy, env, action_noise=action_noise, verbose=1, tensorboard_log=log_path, policy_delay=policy_delay)
+    elif algorithm == "sac":
+        return SAC("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
+    elif algorithm == "ppo":
+        return PPO("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
+    elif algorithm == "a2c":
+        return A2C("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
+    else:
+        rospy.logerr("Unrecognized algorithm: " + algorithm)
+        return
+
+
+def make_model_test(algorithm, test_model_path):
+    if algorithm == "td3":
+        return TD3.load(test_model_path)
+    elif algorithm == "sac":
+        return SAC.load(test_model_path)
+    elif algorithm == "ppo":
+        return PPO.load(test_model_path)
+    elif algorithm == "a2c":
+        return A2C.load(test_model_path)
+    else:
+        rospy.logerr("Unrecognized algorithm: " + algorithm)
+        return
+
+
 def main(args):
     rospy.init_node("agent")
 
@@ -36,48 +66,39 @@ def main(args):
     model_path = os.path.join(ckpt_path, "final_model")
     best_model_path = os.path.join(ckpt_path, "best_model")
 
-    rospy.loginfo("Log path \t%s", log_path)
-    rospy.loginfo("Ckpt path \t%s", ckpt_path)
-    rospy.loginfo("Model path \t%s", model_path)
-    rospy.loginfo("Best model path \t%s", best_model_path)
-
-    rospy.loginfo("Training with arguments")
     hparams = vars(args)
+    hparams.update(
+        {
+            "log_path": log_path,
+            "ckpt_path": ckpt_path,
+            "model_path": model_path,
+            "best_model_path": best_model_path,
+        }
+    )
 
     # convert degrees to radians
     names = ["roll_error_min", "roll_error_max", "pitch_error_min", "pitch_error_max", "yaw_error_min", "yaw_error_max"]
     for name in names:
         hparams[name] = deg2rad(hparams[name])
 
+    rospy.loginfo("Running with arguments")
     for key, value in hparams.items():
         rospy.loginfo(f"- {key:20}{value}")
 
     if args.gen_new_test_cases:
         rospy.loginfo("Generating new test cases...")
         generate_test_cases()
-
-    rospy.loginfo("Loading training environment...")
-    env = make_env(hparams, "TRAIN")
-    if args.check_env:
-        check_env(env)
-
-    rospy.loginfo("Preparing model...")
-
-    if args.algorithm == "td3":
-        n_actions = env.action_space.shape[-1]
-        action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
-        model = TD3(MlpPolicy, env, action_noise=action_noise, verbose=1, tensorboard_log=log_path, policy_delay=hparams["policy_delay"])
-    elif args.algorithm == "sac":
-        model = SAC("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
-    elif args.algorithm == "ppo":
-        model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
-    elif args.algorithm == "a2c":
-        model = A2C("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
-    else:
-        rospy.logerr("Unrecognized algorithm: " + args.algorithm)
-        return
+    
+    env_name = "TRAIN" if args.train else "TEST"
+    rospy.loginfo(f"Making {env_name} environment and model...")
+    env = make_env(hparams, env_name)
 
     if args.train:
+        model = make_model_train(args.algorithm, env, log_path, args.policy_delay)
+
+        if args.check_env:
+            rospy.loginfo("Checking environment...")
+            check_env(env)
 
         callbacks = [
             CheckpointCallback(save_freq=args.chkpt_freq, save_path=ckpt_path, name_prefix="chkpt"),
@@ -107,10 +128,10 @@ def main(args):
             test(model, env, log_path, args.log_name)
 
     else:
-        rospy.loginfo("Loading model from: " + args.eval_model_path)
-        model.load(args.eval_model_path)
-        rospy.loginfo("Evaluating model...")
-        test(model, env, log_path, "eval_" + args.log_name)
+        rospy.loginfo("Loading model from: " + args.test_model_path)
+        model = make_model_test(args.algorithm, args.test_model_path)
+        rospy.loginfo("Testing model...")
+        test(model, env, log_path, "test_" + args.log_name)
 
     rospy.loginfo("Done! Have a nice day.")
 

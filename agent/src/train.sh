@@ -42,7 +42,7 @@ read -r -d '' HPARAMS <<EOM
 EOM
 
 # evaluate model
-# python main.py --framework=1 --train=0 $HPARAMS --eval_model_path=/home/parallels/cluster_logs/final_model.zip
+# python main.py --framework=1 --train=0 $HPARAMS --test_model_path=/home/parallels/cluster_logs/final_model.zip
 
 trap "exit" INT
 for i in 1 2 3 4 5 6 7 8 9 10; do
