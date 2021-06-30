@@ -49,7 +49,9 @@ class Subscribers:
     def ri_callback(self, msg, prox_sensor_id=2, dist_sensor_id=2):
         with self.state.mutex:
             self.state.num_contacts = msg.num_contacts
-            self.state.epsilon = self.clip_and_normalize(msg.epsilon, 0, 0.03)
+            # in theory epsilon force is already in range [0,1] but practically it is rarely larger than 0.7
+            self.state.epsilon_force = normalize(msg.epsilon_force, 0, 0.7)
+            self.state.epsilon_torque = normalize(msg.epsilon_torque, 0, 0.03)
             self.state.delta_task = self.clip_and_normalize(msg.delta_task, -5, 12)
             self.state.delta_cur = self.clip_and_normalize(msg.delta_cur, -5, 12)
             self.state.sum_contact_forces = msg.sum_contact_forces

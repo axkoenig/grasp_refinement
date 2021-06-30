@@ -18,7 +18,7 @@ def parse_args():
     # reward framework and reward weights
     parser.add_argument("--framework", type=int, default=1, help="Which reward framework to train with.")
     parser.add_argument("--w_binary_rew", type=float, default=10, help="Weight for binary reward")
-    parser.add_argument("--w_eps_torque", type=float, default=8, help="Weight for epsilon torque")
+    parser.add_argument("--w_eps_torque", type=float, default=5, help="Weight for epsilon torque")
     parser.add_argument("--w_delta", type=float, default=0.5, help="Weight for delta")
     parser.add_argument("--force_sensing", type=int, default=1, help="(1=full), (2=normal), (3=binary), (4=none).")
     parser.add_argument("--noisy_torque", type=int, default=0, help="Whether to add noise to torque measurement.")
@@ -59,7 +59,7 @@ def parse_args():
     parser.add_argument("--eval_after_episode", type=int, default=1, help="Whether to evaluate after time steps or after episodes.")
     parser.add_argument("--n_eval_episodes", type=int, default=10, help="How many episodes to run when evaluating.")
     parser.add_argument("--eval_at_init", type=int, default=1, help="Whether to evaluate the random policy before training.")
-    parser.add_argument("--eval_model_path", type=str, help="The path to the model you would like to evaluate.")
+    parser.add_argument("--test_model_path", type=str, help="The path to the model you would like to test.")
 
     # td3 hparams 
     parser.add_argument("--policy_delay", type=int, default=5, help="Q values will be updated policy_delay more often than policy.")

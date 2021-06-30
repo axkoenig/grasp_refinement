@@ -1,15 +1,17 @@
 from multiprocessing import Lock
-    
+
 import rospy
 
 from .stage import Stage
+
 
 class State:
     def __init__(self):
         self.mutex = Lock()
 
         # this info comes from reflex interface
-        self.epsilon = 0
+        self.epsilon_force = 0
+        self.epsilon_torque = 0
         self.delta_task = 0
         self.delta_cur = 0
         self.num_contacts = 0
