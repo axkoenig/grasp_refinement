@@ -28,6 +28,7 @@ class State:
         self.sustained_holding = False
         self.sustained_lifting = False
         self.last_time_stamp = rospy.Time.now()
+        self.io_buffer = []  # array of dicts
 
     def reset(self):
         # only reset some variables as the other ones will be continously updated anyway
@@ -37,3 +38,17 @@ class State:
         self.sustained_holding = False
         self.sustained_lifting = False
         self.last_time_stamp = rospy.Time.now()
+        self.io_buffer = []
+
+    def store_io_in_buffer(self, obs_dict, action_dict, reward, infos_dict):
+
+        # we only log quality metrics for now
+        desired_infos = ["a_epsilon_force", "a_epsilon_torque", "a_delta_task", "a_delta_cur"]
+        infos_dict = {key: value for key, value in infos_dict.items() if key in desired_infos}
+
+        # concat into one dict
+        super_dict = {}
+        for d in [obs_dict, action_dict, {"reward": reward}, infos_dict]:
+            super_dict.update(d)
+
+        self.io_buffer.append(super_dict)

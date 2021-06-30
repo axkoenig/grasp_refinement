@@ -11,6 +11,7 @@ from .stage import Stage, StageController
 from .state import State
 from .rewards import Rewards
 from .actions import Actions
+from .writer import Writer
 
 
 class Controller(gym.Env):
@@ -27,6 +28,7 @@ class Controller(gym.Env):
         self.rewards = Rewards(self.hparams, self.state)
         self.stage_controller = StageController(self.hparams, self.state, self.gi)
         self.actions = Actions(self.hparams, self.state, self.gi)
+        self.writer = Writer(self.hparams)
 
         self.action_space = gym.spaces.Box(low=self.acts.get_min_vals(), high=self.acts.get_max_vals())
         self.observation_space = gym.spaces.Box(low=np.zeros(np.shape(self.obs.get_min_vals())), high=np.ones(np.shape(self.obs.get_max_vals())))
@@ -52,12 +54,16 @@ class Controller(gym.Env):
             reward += self.rewards.get_reward_end()
 
         rospy.loginfo(f"--> REWARD: \t {reward}")
-        obs_dict = self.obs.get_cur_vals()
 
-        return list(obs_dict.values()), reward, self.done, get_infos(self.state)
+        obs_dict = self.obs.get_cur_vals()
+        infos_dict = get_infos(self.state)
+        self.state.store_io_in_buffer(obs_dict, action_dict, reward, infos_dict)
+
+        return list(obs_dict.values()), reward, self.done, infos_dict
 
     def reset(self, test_case=None):
         self.gi.sim_unpause()
+        self.writer.write(self.state.io_buffer)
         rospy.loginfo(f"==={self.name}-RESETTING===")
         self.gi.reset_world(test_case)
         self.state.reset()
