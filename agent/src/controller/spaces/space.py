@@ -54,7 +54,7 @@ class Space:
 
     def get_cur_vals(self, verbose=False, normalize=True):
         with self.mutex:
-            cur_vals = np.empty((0,))
+            vals_dict = {}
             for i in range(self.dim):
                 if verbose:
                     rospy.loginfo("Cur value of " + self.vars[i].name + f" is {self.vars[i].cur_val}.")
@@ -70,8 +70,12 @@ class Space:
                     val = normalize_list_items(val, self.vars[i].min_val, self.vars[i].max_val)
                     if verbose:
                         rospy.loginfo("Normalized value of " + self.vars[i].name + f" is {val}.")
-                cur_vals = np.append(cur_vals, val)
-            return np.float32(cur_vals)
+                val = np.float32(val)
+                if type(val) is np.float32:  # we have a scalar
+                    vals_dict.update({self.vars[i].name: val})
+                else:  # we have an array
+                    vals_dict.update({f"{self.vars[i].name}_x": val[0], f"{self.vars[i].name}_y": val[1], f"{self.vars[i].name}_z": val[2]})
+            return vals_dict
 
     def get_cur_vals_by_name(self, name, verbose=False):
         "Returns a concatenation of all current values that match the given name."

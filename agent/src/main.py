@@ -43,6 +43,7 @@ def main(args):
 
     rospy.loginfo("Training with arguments")
     hparams = vars(args)
+    hparams.update({"log_path": log_path})
 
     # convert degrees to radians
     names = ["roll_error_min", "roll_error_max", "pitch_error_min", "pitch_error_max", "yaw_error_min", "yaw_error_max"]

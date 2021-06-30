@@ -20,6 +20,7 @@ from .helpers.transforms import (
     get_tq_from_homo_matrix,
     get_homo_matrix_from_tq,
     get_homo_matrix_from_pose_msg,
+    deg2rad,
 )
 from .helpers.services import (
     StringServiceRequest,
@@ -161,10 +162,12 @@ class GazeboInterface:
             return self.wait_until_reached_pose(mat_shell)
         return 1
 
-    def cmd_wrist_pose_incr(self, p_incr, q_incr, wait_until_reached_pose=False):
-        mat_t_incr = tf.transformations.translation_matrix(p_incr)
-        mat_q_incr = tf.transformations.quaternion_matrix(q_incr)
-        mat_homo = np.dot(mat_t_incr, mat_q_incr)
+    def cmd_wrist_pose_incr(self, t_incr, q_incr, t_vel=0.01, q_vel=2, wait_until_reached_pose=False):
+        # rate = 1000
+        # q_vel = deg2rad(q_vel)
+        # time = 
+        
+        mat_homo = get_homo_matrix_from_tq(t_incr, q_incr)
         self.last_wrist_pose = np.dot(self.last_wrist_pose, mat_homo)
         self.send_transform(self.last_wrist_pose)
         if wait_until_reached_pose:

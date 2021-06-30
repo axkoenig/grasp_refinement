@@ -52,8 +52,9 @@ class Controller(gym.Env):
             reward += self.rewards.get_reward_end()
 
         rospy.loginfo(f"--> REWARD: \t {reward}")
+        obs_dict = self.obs.get_cur_vals()
 
-        return self.obs.get_cur_vals(), reward, self.done, get_infos(self.state)
+        return list(obs_dict.values()), reward, self.done, get_infos(self.state)
 
     def reset(self, test_case=None):
         self.gi.sim_unpause()
@@ -61,4 +62,4 @@ class Controller(gym.Env):
         self.gi.reset_world(test_case)
         self.state.reset()
         self.gi.sim_pause()  # when NN is updating after resetting, we pause simulation
-        return self.obs.get_cur_vals()
+        return list(self.obs.get_cur_vals().values())
