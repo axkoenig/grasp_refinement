@@ -34,7 +34,7 @@ def make_model_train(algorithm, env, log_path, policy_delay):
         action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
         return TD3(MlpPolicy, env, action_noise=action_noise, verbose=1, tensorboard_log=log_path, policy_delay=policy_delay)
     elif algorithm == "sac":
-        return SAC("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
+        return SAC("MlpPolicy", env, verbose=1, tensorboard_log=log_path, train_freq=(2, "episode"))
     elif algorithm == "ppo":
         return PPO("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
     elif algorithm == "a2c":
