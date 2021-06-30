@@ -2,6 +2,7 @@ import numpy as np
 import rospy
 from ..stage import Stage
 
+
 def merge_dicts(dict_1, dict_2):
     "Merges two dicts. If key exists value be saved in a numpy array, else we create a new key."
     if not dict_1 and not dict_2:
@@ -49,7 +50,8 @@ def get_joint_difference(prox_angles):
 
 def get_quality_metrics_dict(state, prefix=""):
     return {
-        f"{prefix}_epsilon": state.epsilon,
+        f"{prefix}_epsilon_force": state.epsilon_force,
+        f"{prefix}_epsilon_torque": state.epsilon_torque,
         f"{prefix}_delta_task": state.delta_task,
         f"{prefix}_delta_cur": state.delta_cur,
     }
