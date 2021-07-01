@@ -1,6 +1,8 @@
-# Teleoperated Grasp Refinement
+# Grasp Refinement
 
 [![Build Status](https://travis-ci.com/axkoenig/grasp_refinement.svg?token=KeJradpJgXCJqZfQ8pwB&branch=main)](https://travis-ci.com/axkoenig/grasp_refinement)
+
+# TODO: some of below info is outdated! Check reflex_stack for an up-to-date readme.
 
 ## Run Software with Singularity
 
