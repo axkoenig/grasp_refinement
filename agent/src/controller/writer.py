@@ -4,9 +4,9 @@ import rospy
 
 
 class Writer:
-    def __init__(self, hparams):
+    def __init__(self, hparams, log_suffix):
         self.hparams = hparams
-        self.save_path = os.path.join(hparams["log_path"], hparams["log_name"] + "_io.csv")
+        self.save_path = os.path.join(hparams["log_path"], hparams["log_name"] + "_" + log_suffix + "_io.csv")
         self.written_header = False
 
     def write(self, io_buffer):
