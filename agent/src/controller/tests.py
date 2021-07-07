@@ -232,8 +232,8 @@ class TestCases:
     def __init__(self, num_exp_per_obj=10):
         self.test_cases = []
         object_types = ["sphere", "cylinder", "box"]
-        self.trans_l2_errors = np.arange(0, 6) / 100  # 0 to 5 cm
-        self.rot_l2_errors = np.arange(0, 6) * 2  # 0, 2, ... , 10 deg
+        self.trans_l2_errors = np.arange(0, 8) / 100  # 0 to 7 cm
+        self.rot_l2_errors = np.arange(0, 8) * 2  # 0, 2, ... , 14 deg
         for object_type in object_types:
             for _ in range(num_exp_per_obj):
                 object = gen_object(object_type)
