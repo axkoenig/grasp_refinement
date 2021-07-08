@@ -25,13 +25,15 @@ def complete_vec_to_length(var1, var2, length):
     return math.sqrt(pow(length, 2) - pow(var1, 2) - pow(var2, 2))
 
 
-def get_vector_with_length(length):
+def get_vector_with_length(length, x_error_min, x_error_max, y_error_min, y_error_max, z_error_min, z_error_max):
     while True:
         # sample two values from range and get other one from pythagoras
-        x = sample_sign() * sample_from_range([0, length])
-        z = sample_sign() * sample_from_range([0, length])
+        x = np.clip(sample_from_range([0, sample_sign() * length]), x_error_min, x_error_max)
+        z = np.clip(sample_from_range([0, sample_sign() * length]), z_error_min, z_error_max)
         try:
             y = sample_sign() * complete_vec_to_length(x, z, length)
+            if y < y_error_min or y > y_error_max:
+                continue
             return [x, y, z]
         except ValueError:  # this combination doesn't work
             continue
@@ -48,11 +50,11 @@ def gen_object(object_type):
         raise ValueError("Unsupported object name.")
 
 
-def gen_valid_wrist_error_from_l2(object, trans_l2_error, rot_l2_error):
-    wrist_error = RandomWristErrorFromL2(trans_l2_error, rot_l2_error)
+def gen_valid_wrist_error_from_l2(object, trans_l2_error, rot_l2_error, hparams):
+    wrist_error = RandomWristErrorFromL2(trans_l2_error, rot_l2_error, hparams)
     # if this wrist_error, object combination would crash hand into ground, we re-generate a new one
     while not is_valid_vertical_offset(wrist_error.y, object.get_height()):
-        wrist_error = RandomWristErrorFromL2(trans_l2_error, rot_l2_error)
+        wrist_error = RandomWristErrorFromL2(trans_l2_error, rot_l2_error, hparams)
     return wrist_error
 
 
@@ -155,13 +157,13 @@ class RandomWristError:
 
 
 class RandomWristErrorFromL2(RandomWristError):
-    def __init__(self, trans_l2_error, rot_l2_error):
+    def __init__(self, trans_l2_error, rot_l2_error, hparams):
         super().__init__()
-        result = get_vector_with_length(trans_l2_error)
+        result = get_vector_with_length(trans_l2_error, hparams["x_error_min"], hparams["x_error_max"], hparams["y_error_min"], hparams["y_error_max"], hparams["z_error_min"], hparams["z_error_max"])
         self.x = result[0]
         self.y = result[1]
         self.z = result[2]
-        result = get_vector_with_length(rot_l2_error)
+        result = get_vector_with_length(rot_l2_error, hparams["roll_error_min"], hparams["roll_error_max"], hparams["pitch_error_min"], hparams["pitch_error_max"], hparams["yaw_error_min"], hparams["yaw_error_max"])
         self.roll = result[0]
         self.pitch = result[1]
         self.yaw = result[2]
@@ -179,12 +181,12 @@ class RandomWristErrorFromRanges(RandomWristError):
 
 
 class TestCase:
-    def __init__(self):
+    def __init__(self, hparams):
         # default parameters (will be overriden by child classes)
         self.object = RandomSphere()
         self.trans_l2_error = 0
         self.rot_l2_error = 0
-        self.wrist_error = RandomWristErrorFromL2(0, 0)
+        self.wrist_error = RandomWristErrorFromL2(0, 0, hparams)
 
     def get_csv_data(self):
         data = dict(
@@ -209,19 +211,19 @@ class TestCase:
 
 
 class TestCaseFromObjectAndL2Errors(TestCase):
-    def __init__(self, object, trans_l2_error, rot_l2_error):
+    def __init__(self, object, trans_l2_error, rot_l2_error, hparams):
         # for this test case we know the object and want a suitable l2 wrist error
-        super().__init__()
+        super().__init__(hparams)
         self.object = object
         self.trans_l2_error = trans_l2_error
         self.rot_l2_error = rot_l2_error
-        self.wrist_error = gen_valid_wrist_error_from_l2(self.object, self.trans_l2_error, self.rot_l2_error)
+        self.wrist_error = gen_valid_wrist_error_from_l2(self.object, self.trans_l2_error, self.rot_l2_error, hparams)
 
 
 class TestCaseFromRanges(TestCase):
     def __init__(self, hparams):
         # for this case we only know the ranges of object size and wrist error
-        super().__init__()
+        super().__init__(hparams)
         object_type = random.choice(["sphere", "cylinder", "box"])
         self.object, self.wrist_error = gen_valid_wrist_error_obj_combination_from_ranges(object_type, hparams)
         self.trans_l2_error = np.linalg.norm([self.wrist_error.x, self.wrist_error.y, self.wrist_error.z])
@@ -229,7 +231,7 @@ class TestCaseFromRanges(TestCase):
 
 
 class TestCases:
-    def __init__(self, num_exp_per_obj=10):
+    def __init__(self, hparams, num_exp_per_obj=10):
         self.test_cases = []
         object_types = ["sphere", "cylinder", "box"]
         self.trans_l2_errors = np.arange(0, 8) / 100  # 0 to 7 cm
@@ -238,12 +240,12 @@ class TestCases:
             for _ in range(num_exp_per_obj):
                 object = gen_object(object_type)
                 for i in range(len(self.trans_l2_errors)):
-                    self.test_cases.append(TestCaseFromObjectAndL2Errors(object, self.trans_l2_errors[i], deg2rad(self.rot_l2_errors[i])))
+                    self.test_cases.append(TestCaseFromObjectAndL2Errors(object, self.trans_l2_errors[i], deg2rad(self.rot_l2_errors[i]), hparams))
 
 
-def generate_test_cases():
+def generate_test_cases(hparams):
     # generate test cases and save to disk
-    t = TestCases()
+    t = TestCases(hparams)
     with open(TEST_CASES_PKL, "wb") as file:
         pickle.dump(t, file)
 

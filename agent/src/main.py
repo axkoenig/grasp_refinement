@@ -87,7 +87,7 @@ def main(args):
 
     if args.gen_new_test_cases:
         rospy.loginfo("Generating new test cases...")
-        generate_test_cases()
+        generate_test_cases(hparams)
     
     env_name = "TRAIN" if args.train else "TEST"
     rospy.loginfo(f"Making {env_name} environment...")
