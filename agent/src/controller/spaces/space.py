@@ -52,7 +52,7 @@ class Space:
                 return
         raise ValueError(f"Variable with name {name} not found.")
 
-    def get_cur_vals(self, verbose=False, normalize=True):
+    def get_cur_vals(self, verbose=False, normalize=False):
         with self.mutex:
             vals_dict = {}
             for i in range(self.dim):
@@ -93,3 +93,13 @@ class Space:
             rospy.loginfo("\n=== Cur values of " + self.__class__.__name__ + f" ===")
             for i in range(self.dim):
                 rospy.loginfo(self.vars[i].name + ": " + str(self.vars[i].cur_val))
+
+    def print_min_vals(self):
+        rospy.loginfo("\n=== Min values of " + self.__class__.__name__ + f" ===")
+        for i in range(self.dim):
+            rospy.loginfo(self.vars[i].name + ": " + str(self.vars[i].min_val))
+
+    def print_max_vals(self):
+        rospy.loginfo("\n=== Max values of " + self.__class__.__name__ + f" ===")
+        for i in range(self.dim):
+            rospy.loginfo(self.vars[i].name + ": " + str(self.vars[i].max_val))

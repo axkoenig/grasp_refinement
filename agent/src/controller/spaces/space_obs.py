@@ -36,8 +36,8 @@ class ObservationSpace(Space):
         self.f_contact_normal_default = [0, 0, 0]
 
         # palm contact limits
-        self.p_contact_pos_min = [-shell_box_x / 2, -shell_box_y / 2, shell_box_z - 0.01]
-        self.p_contact_pos_max = [shell_box_x / 2, shell_box_y / 2, shell_box_z + 0.01]
+        self.p_contact_pos_min = [-shell_box_x / 2, -shell_box_y / 2, shell_box_z - 0.02]
+        self.p_contact_pos_max = [shell_box_x / 2, shell_box_y / 2, shell_box_z + 0.02]
         self.p_contact_pos_default = [0, 0, shell_box_z]
         self.p_contact_normal_min = [-1, -1, 0]  # normal always points away from palm
         self.p_contact_normal_max = [1, 1, 1]
