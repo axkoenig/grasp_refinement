@@ -38,7 +38,6 @@ def make_model_train(algorithm, env, log_path, policy_delay):
             action_noise=action_noise,
             verbose=1,
             tensorboard_log=log_path,
-            policy_delay=10,
             learning_starts=200,
             gradient_steps=10,
             batch_size=200,
