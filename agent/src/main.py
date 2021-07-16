@@ -8,7 +8,6 @@ import rospy
 
 from stable_baselines3 import TD3, SAC, PPO, A2C
 from stable_baselines3.common.noise import NormalActionNoise
-from stable_baselines3.td3.policies import MlpPolicy
 from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.utils import set_random_seed
@@ -28,28 +27,26 @@ def make_env(hparams, name):
     return env
 
 
-def make_model_train(algorithm, env, log_path, policy_delay):
-    if algorithm == "td3":
+def make_model_train(env, hparams):
+    # td3 and sac have some arguments in common
+    ac_args = ["learning_starts", "gradient_steps", "batch_size"]
+    ac_kwargs = {key: value for (key, value) in hparams.items() if key in ac_args}
+    ac_kwargs.update({"train_freq": (hparams["train_freq"], "episode")})
+
+    if hparams["algorithm"] == "td3":
         n_actions = env.action_space.shape[-1]
         action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
         return TD3(
-            MlpPolicy,
-            env,
-            action_noise=action_noise,
-            verbose=1,
-            tensorboard_log=log_path,
-            learning_starts=200,
-            gradient_steps=10,
-            batch_size=200,
+            "MlpPolicy", env, action_noise=action_noise, verbose=1, tensorboard_log=hparams["log_path"], policy_delay=hparams["policy_delay"], **ac_kwargs
         )
-    elif algorithm == "sac":
-        return SAC("MlpPolicy", env, verbose=1, tensorboard_log=log_path, train_freq=(1, "episode"), gradient_steps=20, learning_starts=200)
-    elif algorithm == "ppo":
-        return PPO("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
-    elif algorithm == "a2c":
-        return A2C("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
+    elif hparams["algorithm"] == "sac":
+        return SAC("MlpPolicy", env, verbose=1, tensorboard_log=hparams["log_path"], **ac_kwargs)
+    elif hparams["algorithm"] == "ppo":
+        return PPO("MlpPolicy", env, verbose=1, tensorboard_log=hparams["log_path"])
+    elif hparams["algorithm"] == "a2c":
+        return A2C("MlpPolicy", env, verbose=1, tensorboard_log=hparams["log_path"])
     else:
-        rospy.logerr("Unrecognized algorithm: " + algorithm)
+        rospy.logerr("Unrecognized algorithm: " + hparams["algorithm"])
         return
 
 
@@ -103,7 +100,7 @@ def main(args):
     env = make_env(hparams, env_name)
 
     if args.train:
-        model = make_model_train(args.algorithm, env, log_path, args.policy_delay)
+        model = make_model_train(env, hparams)
 
         if args.check_env:
             rospy.loginfo("Checking environment...")

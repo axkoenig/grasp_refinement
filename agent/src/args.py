@@ -63,6 +63,12 @@ def parse_args():
 
     # td3 hparams 
     parser.add_argument("--policy_delay", type=int, default=5, help="Q values will be updated policy_delay more often than policy.")
+    
+    # td3 and sac hparams 
+    parser.add_argument("--learning_starts", type=int, default=200, help="How many data points to collect before starting to train.")
+    parser.add_argument("--batch_size", type=int, default=200, help="Minibatch size for each gradient update.")
+    parser.add_argument("--gradient_steps", type=int, default=15, help="How many gradient steps to do after each rollout.")
+    parser.add_argument("--train_freq", type=int, default=2, help="Update the model every train_freq episodes.")
 
     args, unknown = parser.parse_known_args()
     return args
