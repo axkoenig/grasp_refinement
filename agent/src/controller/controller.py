@@ -31,7 +31,7 @@ class Controller(gym.Env):
         self.writer = Writer(self.hparams, self.name)
 
         self.action_space = gym.spaces.Box(low=self.acts.get_min_vals(), high=self.acts.get_max_vals())
-        self.observation_space = gym.spaces.Box(low=self.obs.get_min_vals(), high=self.obs.get_max_vals())
+        self.observation_space = gym.spaces.Box(low=np.zeros(self.obs.dim), high=np.ones(self.obs.dim))
         self.reward_range = (0, 1)
 
     def seed(self, seed=None):

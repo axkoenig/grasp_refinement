@@ -1,4 +1,5 @@
 from multiprocessing import Lock
+from copy import deepcopy
 
 import numpy as np
 import rospy
@@ -52,29 +53,53 @@ class Space:
                 return
         raise ValueError(f"Variable with name {name} not found.")
 
-    def get_cur_vals(self, verbose=False, normalize=False):
+    def clip(self, val, min, max, name):
+
+        if np.any(np.less(val, min)) or np.any(np.greater(val, max)):
+            rospy.logwarn(f"Oops value {val} with name {name} is out of bounds [{min},{max}]!")
+            val = np.clip(val, min, max)
+            rospy.logwarn(f"Clipped {name} value is {val}")
+        return val
+
+    def normalize(self, val, from_min, from_max, to_min=0, to_max=1):
+        return np.interp(val, [from_min, from_max], [to_min, to_max])
+
+    def get_cur_vals(self, verbose=False, normalize=True):
         with self.mutex:
             vals_dict = {}
             for i in range(self.dim):
                 if verbose:
                     rospy.loginfo("Cur value of " + self.vars[i].name + f" is {self.vars[i].cur_val}.")
-                val = self.vars[i].cur_val
 
-                # clip value to bounds if necessary
-                if np.any(np.less(val, self.vars[i].min_val)) or np.any(np.greater(val, self.vars[i].max_val)):
-                    rospy.logwarn(f"Oops value {val} with name {self.vars[i].name} is out of bounds [{self.vars[i].min_val},{self.vars[i].max_val}]!")
-                    val = np.clip(val, self.vars[i].min_val, self.vars[i].max_val)
-                    rospy.logwarn(f"Clipped {self.vars[i].name} value is {val}")
-
-                if normalize:
-                    val = normalize_list_items(val, self.vars[i].min_val, self.vars[i].max_val)
-                    if verbose:
-                        rospy.loginfo("Normalized value of " + self.vars[i].name + f" is {val}.")
+                val = deepcopy(self.vars[i].cur_val)
                 val = np.float32(val)
-                if type(val) is np.float32:  # we have a scalar
+                default_val = 0
+
+                # we have a scalar
+                if type(val) is np.float32:
+                    if np.isnan(val):
+                        vals_dict.update({self.vars[i].name: default_val})
+                        continue
+                    val = self.clip(val, self.vars[i].min_val, self.vars[i].max_val, self.vars[i].name)
+                    if normalize:
+                        val = self.normalize(val, self.vars[i].min_val, self.vars[i].max_val)
                     vals_dict.update({self.vars[i].name: val})
-                else:  # we have an array
+
+                # we have an array
+                else:
+                    if np.any(np.isnan(val)):
+                        vals_dict.update({f"{self.vars[i].name}_x": default_val, f"{self.vars[i].name}_y": default_val, f"{self.vars[i].name}_z": default_val})
+                        continue
+                    val = self.clip(val, self.vars[i].min_val, self.vars[i].max_val, self.vars[i].name)
+                    for j in range(len(val)):
+                        val[j] = self.normalize(val[j], self.vars[i].min_val[j], self.vars[i].max_val[j])
                     vals_dict.update({f"{self.vars[i].name}_x": val[0], f"{self.vars[i].name}_y": val[1], f"{self.vars[i].name}_z": val[2]})
+
+                if verbose:
+                    rospy.loginfo("Current values are")
+                    for key, value in vals_dict.items():
+                        rospy.loginfo(f"- {key:20}{value}")
+
             return vals_dict
 
     def get_cur_vals_by_name(self, name, verbose=False):
