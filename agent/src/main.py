@@ -32,9 +32,19 @@ def make_model_train(algorithm, env, log_path, policy_delay):
     if algorithm == "td3":
         n_actions = env.action_space.shape[-1]
         action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
-        return TD3(MlpPolicy, env, action_noise=action_noise, verbose=1, tensorboard_log=log_path, policy_delay=policy_delay)
+        return TD3(
+            MlpPolicy,
+            env,
+            action_noise=action_noise,
+            verbose=1,
+            tensorboard_log=log_path,
+            policy_delay=10,
+            learning_starts=200,
+            gradient_steps=10,
+            batch_size=200,
+        )
     elif algorithm == "sac":
-        return SAC("MlpPolicy", env, verbose=1, tensorboard_log=log_path, train_freq=(2, "episode"))
+        return SAC("MlpPolicy", env, verbose=1, tensorboard_log=log_path, train_freq=(1, "episode"), gradient_steps=20, learning_starts=200)
     elif algorithm == "ppo":
         return PPO("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
     elif algorithm == "a2c":
@@ -88,7 +98,7 @@ def main(args):
     if args.gen_new_test_cases:
         rospy.loginfo("Generating new test cases...")
         generate_test_cases(hparams)
-    
+
     env_name = "TRAIN" if args.train else "TEST"
     rospy.loginfo(f"Making {env_name} environment...")
     env = make_env(hparams, env_name)
