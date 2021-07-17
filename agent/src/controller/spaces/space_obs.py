@@ -91,16 +91,19 @@ class ObservationSpace(Space):
             raise ValueError("Unsupported force sensing framework.")
 
     def reset_contact_obs(self):
+        # we only have an array if in full force vector framework
+        cf_default = self.nan_array if self.hparams["force_sensing"] == 1 else np.nan
+
         for i in range(self.num_parts):
             id_str = "_p" + str(i)
             # palm
             if i == 0:
                 self.set_cur_val_by_name("contact_normal" + id_str, self.nan_array)
                 self.set_cur_val_by_name("contact_pos" + id_str, self.nan_array)
-                self.set_cur_val_by_name("contact_force" + id_str, self.nan_array)
+                self.set_cur_val_by_name("contact_force" + id_str, cf_default)
                 continue
             # fingers
             for link in ["_prox", "_dist"]:
                 self.set_cur_val_by_name("contact_normal" + id_str + link, self.nan_array)
                 self.set_cur_val_by_name("contact_pos" + id_str + link, self.nan_array)
-                self.set_cur_val_by_name("contact_force" + id_str + link, self.nan_array)
+                self.set_cur_val_by_name("contact_force" + id_str + link, cf_default)
