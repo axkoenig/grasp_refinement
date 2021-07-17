@@ -98,6 +98,7 @@ def main(args):
     env_name = "TRAIN" if args.train else "TEST"
     rospy.loginfo(f"Making {env_name} environment...")
     env = make_env(hparams, env_name)
+    deterministic = False if args.algorithm == "sac" else True
 
     if args.train:
         model = make_model_train(env, hparams)
@@ -120,7 +121,7 @@ def main(args):
                     eval_freq=args.eval_freq,
                     n_eval_episodes=args.n_eval_episodes,
                     eval_at_init=args.eval_at_init,
-                    deterministic=True,
+                    deterministic=deterministic,
                 ),
             )
 
@@ -131,13 +132,13 @@ def main(args):
 
         if args.eval_after_training:
             rospy.loginfo("Testing final model")
-            test(model, env, log_path, args.log_name)
+            test(model, env, log_path, args.log_name, deterministic)
 
     else:
         rospy.loginfo("Loading model from: " + args.test_model_path)
         model = make_model_test(args.algorithm, args.test_model_path)
         rospy.loginfo("Testing model...")
-        test(model, env, log_path, "test_" + args.log_name)
+        test(model, env, log_path, "test_" + args.log_name, deterministic)
 
     rospy.loginfo("Done! Have a nice day.")
 

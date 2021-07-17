@@ -159,11 +159,27 @@ class RandomWristError:
 class RandomWristErrorFromL2(RandomWristError):
     def __init__(self, trans_l2_error, rot_l2_error, hparams):
         super().__init__()
-        result = get_vector_with_length(trans_l2_error, hparams["x_error_min"], hparams["x_error_max"], hparams["y_error_min"], hparams["y_error_max"], hparams["z_error_min"], hparams["z_error_max"])
+        result = get_vector_with_length(
+            trans_l2_error,
+            hparams["x_error_min"],
+            hparams["x_error_max"],
+            hparams["y_error_min"],
+            hparams["y_error_max"],
+            hparams["z_error_min"],
+            hparams["z_error_max"],
+        )
         self.x = result[0]
         self.y = result[1]
         self.z = result[2]
-        result = get_vector_with_length(rot_l2_error, hparams["roll_error_min"], hparams["roll_error_max"], hparams["pitch_error_min"], hparams["pitch_error_max"], hparams["yaw_error_min"], hparams["yaw_error_max"])
+        result = get_vector_with_length(
+            rot_l2_error,
+            hparams["roll_error_min"],
+            hparams["roll_error_max"],
+            hparams["pitch_error_min"],
+            hparams["pitch_error_max"],
+            hparams["yaw_error_min"],
+            hparams["yaw_error_max"],
+        )
         self.roll = result[0]
         self.pitch = result[1]
         self.yaw = result[2]
@@ -257,7 +273,7 @@ def generate_test_cases(hparams):
             writer.writerows([case.get_csv_data()])
 
 
-def test(model, env, log_path, log_name):
+def test(model, env, log_path, log_name, deterministic=False):
     # load test cases from disk
     with open(TEST_CASES_PKL, "rb") as file:
         t = pickle.load(file)
@@ -277,7 +293,7 @@ def test(model, env, log_path, log_name):
             # run episode until end
             obs = env.reset(test_case)
             while True:
-                action, state = model.predict(obs, deterministic=True)
+                action, state = model.predict(obs, deterministic=deterministic)
                 obs, reward, done, info = env.step(action)
                 if done:
                     # save experiment outcome
