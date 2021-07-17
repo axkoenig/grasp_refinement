@@ -264,7 +264,7 @@ class GazeboInterface:
                 self.delete_model(model)
                 rospy.sleep(0.5)
 
-    def reset_world(self, test_case=None):
+    def reset_world(self, state, test_case=None):
         try:
             self.shutdown_controllers()
             self.delete_all_models()
@@ -277,6 +277,7 @@ class GazeboInterface:
             if not test_case:
                 test_case = TestCaseFromRanges(self.hparams)
 
+            state.cur_test_case = test_case
             self.spawn_object(test_case.object)
             rospy.sleep(2)  # required s.t. object can register with gazebo
 

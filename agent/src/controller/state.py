@@ -24,6 +24,7 @@ class State:
         self.dist_tcp_obj = 0
         self.num_regrasps = 0
         self.cur_time_step = 0
+        self.cur_test_case = None
         self.object_lifted = False
         self.sustained_holding = False
         self.sustained_lifting = False
@@ -48,7 +49,8 @@ class State:
 
         # concat into one dict
         super_dict = {}
-        for d in [obs_dict, action_dict, {"reward": reward}, infos_dict]:
+        dicts = [self.cur_test_case.get_csv_data(), obs_dict, action_dict, {"reward": reward}, infos_dict]
+        for d in dicts:
             super_dict.update(d)
 
         self.io_buffer.append(super_dict)

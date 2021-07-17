@@ -65,7 +65,7 @@ class Controller(gym.Env):
         self.gi.sim_unpause()
         self.writer.write(self.state.io_buffer)
         rospy.loginfo(f"==={self.name}-RESETTING===")
-        self.gi.reset_world(test_case)
+        self.gi.reset_world(self.state, test_case)
         self.state.reset()
         self.gi.sim_pause()  # when NN is updating after resetting, we pause simulation
         return list(self.obs.get_cur_vals().values())

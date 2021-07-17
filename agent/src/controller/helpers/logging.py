@@ -86,6 +86,8 @@ def get_infos(state, verbose=True):
                     "num_regrasps": state.num_regrasps,
                     "sustained_holding": state.sustained_holding,
                     "sustained_lifting": state.sustained_lifting,
+                    f"sustained_holding_{state.cur_test_case.object.type}": state.sustained_holding,
+                    f"sustained_lifting_{state.cur_test_case.object.type}": state.sustained_lifting,
                 }
             )
 
