@@ -30,8 +30,9 @@ class Subscribers:
         rospy.Subscriber("reflex_interface/hand_state", HandStateStamped, self.ri_callback, queue_size=1)
         rospy.Subscriber("reflex_takktile/hand_state", Hand, self.reflex_callback, queue_size=1)
 
-        # we don't have any contact sensing in force framework 4
-        if self.hparams["force_sensing"] != 4:
+        # only allow contact sensing in force framework 1,2,3
+        use_forces = [1, 2, 3]
+        if self.hparams["force_sensing"] in use_forces:
             rospy.Subscriber("reflex_takktile/sim_contact_frames", ContactFrames, self.contacts_callback, queue_size=1)
 
     def object_bumper_callback(self, msg):
@@ -96,10 +97,9 @@ class Subscribers:
         elif self.hparams["force_sensing"] == 3:  # only binary contact signals
             force = to_list(cf_shell.contact_wrench.force)
             self.obs.set_cur_val_by_name(name, int(np.linalg.norm(force) > 0))
-        else:
-            raise ValueError("Unsupported force sensing framework.")
 
     def set_torque_val(self, name, val):
         if self.hparams["noisy_torque"]:  # provide noisy torque info (10% of max torque)
             val += self.random_gen.gauss(0, 0.1 * self.obs.motor_torque_max)
-        self.obs.set_cur_val_by_name(name, val)
+        if self.hparams["force_sensing"] != 5:  # in framework 5 we don't provide torque info
+            self.obs.set_cur_val_by_name(name, val)

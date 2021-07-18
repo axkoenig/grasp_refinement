@@ -45,12 +45,14 @@ class ObservationSpace(Space):
             id_str = "_f" + str(i + 1)
             self.add_variable(1, "prox_angle" + id_str, 0, self.joint_angle_min, self.prox_angle_max)
             self.add_variable(1, "dist_angle" + id_str, 0, self.joint_angle_min, 0.2 * self.prox_angle_max)
-            self.add_variable(1, "motor_torque" + id_str, 0, self.motor_torque_min, self.motor_torque_max)
+            if self.hparams["force_sensing"] != 5:
+                self.add_variable(1, "motor_torque" + id_str, 0, self.motor_torque_min, self.motor_torque_max)
         self.add_variable(1, "preshape_angle", 0, 0, self.preshape_angle_max)
-        self.add_variable(1, "preshape_motor_torque", 0, self.motor_torque_min, self.motor_torque_max)
+        if self.hparams["force_sensing"] != 5:
+            self.add_variable(1, "preshape_motor_torque", 0, self.motor_torque_min, self.motor_torque_max)
 
         # if no contact sensing, we're done
-        if self.hparams["force_sensing"] == 4:
+        if self.hparams["force_sensing"] == 4 or self.hparams["force_sensing"] == 5:
             self.print_num_dimensions()
             return
 
@@ -87,8 +89,6 @@ class ObservationSpace(Space):
             self.contact_force_max = 1
             self.contact_force_default = 0
             self.add_variable(1, var_name, self.contact_force_default, self.contact_force_min, self.contact_force_max)
-        else:
-            raise ValueError("Unsupported force sensing framework.")
 
     def reset_contact_obs(self):
         # we only have an array if in full force vector framework
