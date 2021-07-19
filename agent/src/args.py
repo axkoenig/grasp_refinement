@@ -60,6 +60,7 @@ def parse_args():
     parser.add_argument("--n_eval_episodes", type=int, default=10, help="How many episodes to run when evaluating.")
     parser.add_argument("--eval_at_init", type=int, default=1, help="Whether to evaluate the random policy before training.")
     parser.add_argument("--test_model_path", type=str, help="The path to the model you would like to test.")
+    parser.add_argument("--deterministic_eval", type=int, default=1, help="Whether model evaluation should be deterministic.")
 
     # td3 hparams
     parser.add_argument("--policy_delay", type=int, default=10, help="Q values will be updated policy_delay more often than policy.")
