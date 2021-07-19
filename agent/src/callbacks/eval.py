@@ -143,10 +143,13 @@ class EvalCallbackWithInfo(EvalCallback):
         eval_at_init=False,
         eval_after_episode=True,
     ):
-        super(EvalCallbackWithInfo, self).__init__(eval_env, callback_on_new_best, n_eval_episodes, eval_freq, log_path, best_model_save_path, deterministic, render, verbose, warn)
+        super(EvalCallbackWithInfo, self).__init__(
+            eval_env, callback_on_new_best, n_eval_episodes, eval_freq, log_path, best_model_save_path, deterministic, render, verbose, warn
+        )
         self.exclude_infos_from_logging = exclude_infos_from_logging
         self.eval_at_init = eval_at_init
         self.eval_after_episode = eval_after_episode
+        self.epside_counter = 0
 
     def _init_callback(self) -> None:
         # Does not work in some corner cases, where the wrapper is not the same
@@ -232,11 +235,13 @@ class EvalCallbackWithInfo(EvalCallback):
                 return self._on_event()
 
     def _on_step(self) -> bool:
+        if get_done_or_dones(self): 
+            self.epside_counter += 1
         eval_after_step = self.n_calls % self.eval_freq == 0 and not self.eval_after_episode
-        eval_after_episode = get_done_or_dones(self) and self.eval_after_episode
+        eval_after_episode = self.epside_counter % self.eval_freq == 0 and self.eval_after_episode
         is_final_step = self.num_timesteps == self.model._total_timesteps
 
         if self.eval_freq > 0 and (eval_after_step or eval_after_episode or is_final_step):
             self.eval_with_info()
-            
+
         return True
