@@ -72,7 +72,6 @@ class GazeboInterface:
 
         self.uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(self.uuid)
-        self.launch_controllers()
 
     def get_ros_param_with_retries(self, param_name, time_out=10):
         r = rospy.Rate(5)
@@ -203,7 +202,6 @@ class GazeboInterface:
     def get_cur_obj_name(self):
         res = service_call_with_retries(self.get_world_properties)
         models = res.model_names
-        rospy.loginfo("Models in world are: " + str(models))
         irrelevant_objects = ["ground_plane", "reflex", "sphere_mount"]
         for obj in irrelevant_objects:
             if obj in models:
@@ -215,8 +213,11 @@ class GazeboInterface:
 
     def shutdown_controllers(self):
         rospy.loginfo("Shutting down reflex controller nodes")
-        self.finger_ctrl_launch.shutdown()
-        self.wrist_ctrl_launch.shutdown()
+        try:
+            self.finger_ctrl_launch.shutdown()
+            self.wrist_ctrl_launch.shutdown()
+        except AttributeError:
+            pass # when we reset the first time these vars don't exist yet, no need to worry
 
     def launch_object(self, object):
         launch_file = self.description_path + "/launch/object.launch"
