@@ -19,9 +19,9 @@ class Rewards:
             return 0
 
     def get_exec_secs(self, rate_of_cur_stage):
-        # this is to wait 80% of one time step to collect reward
-        # we leave 20% for other code to run (later on we make sure we get the exact update rate via the wait_if_necessary method)
-        return 0.8 * (1 / rate_of_cur_stage)
+        # this is to wait 70% of one time step to collect reward
+        # we leave 30% for other code to run (later on we make sure we get the exact update rate via the wait_if_necessary method)
+        return 0.7 * (1 / rate_of_cur_stage)
 
     def collect_reward(self, duration, rate=60):
         # records average reward over duration
