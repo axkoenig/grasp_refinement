@@ -1,7 +1,4 @@
-import random
 import os
-import subprocess
-from subprocess import DEVNULL
 
 import numpy as np
 import rospy
@@ -13,20 +10,16 @@ import tf
 from geometry_msgs.msg import Pose, Point, Quaternion, TransformStamped
 from std_srvs.srv import Empty, Trigger, TriggerRequest
 from gazebo_msgs.srv import GetModelState, GetLinkState, SetModelState, DeleteModel, SpawnModel, DeleteModelRequest, SpawnModelRequest, GetWorldProperties
-from gazebo_msgs.msg import ModelState, ModelStates, ContactsState
+from gazebo_msgs.msg import ModelState, ContactsState
 
 from reflex_interface.srv import PosIncrement, GraspPrimitive
 from .helpers.transforms import (
     get_tq_from_homo_matrix,
     get_homo_matrix_from_tq,
     get_homo_matrix_from_pose_msg,
-    deg2rad,
 )
-from .helpers.services import (
-    StringServiceRequest,
-    service_call_with_retries,
-)
-from .tests import TestCaseFromRanges
+from .helpers.services import StringServiceRequest, service_call_with_retries, GazeboServiceException
+from .tests import TestCaseFromRanges, gen_valid_wrist_error_from_l2
 
 
 class GazeboInterface:
@@ -41,7 +34,6 @@ class GazeboInterface:
         self.pause_physics = rospy.ServiceProxy("/gazebo/pause_physics", Empty)
         self.set_model_state = rospy.ServiceProxy("/gazebo/set_model_state", SetModelState)
         self.delete_model = rospy.ServiceProxy("/gazebo/delete_model", DeleteModel)
-        self.spawn_sdf_model = rospy.ServiceProxy("/gazebo/spawn_sdf_model", SpawnModel)
         self.spawn_urdf_model = rospy.ServiceProxy("/gazebo/spawn_urdf_model", SpawnModel)
         self.get_model_state = rospy.ServiceProxy("/gazebo/get_model_state", GetModelState)
         self.get_link_state = rospy.ServiceProxy("/gazebo/get_link_state", GetLinkState)
@@ -161,17 +153,9 @@ class GazeboInterface:
             return self.wait_until_reached_pose(mat_shell)
         return 1
 
-    def cmd_wrist_pose_incr(self, t_incr, q_incr, t_vel=0.01, q_vel=2, wait_until_reached_pose=False):
-        # rate = 1000
-        # q_vel = deg2rad(q_vel)
-        # time = 
-        
+    def cmd_wrist_pose_incr(self, t_incr, q_incr, wait_until_reached_pose=False):
         mat_homo = get_homo_matrix_from_tq(t_incr, q_incr)
-        self.last_wrist_pose = np.dot(self.last_wrist_pose, mat_homo)
-        self.send_transform(self.last_wrist_pose)
-        if wait_until_reached_pose:
-            return self.wait_until_reached_pose(self.last_wrist_pose)
-        return 1
+        return self.cmd_wrist_abs(np.dot(self.last_wrist_pose, mat_homo), wait_until_reached_pose)
 
     def wait_until_reached_pose(self, pose, t_tol=0.01, q_tol=0.02, time_out=10):
         r = rospy.Rate(5)
@@ -217,7 +201,7 @@ class GazeboInterface:
             self.finger_ctrl_launch.shutdown()
             self.wrist_ctrl_launch.shutdown()
         except AttributeError:
-            pass # when we reset the first time these vars don't exist yet, no need to worry
+            pass  # when we reset the first time these vars don't exist yet, no need to worry
 
     def launch_object(self, object):
         launch_file = self.description_path + "/launch/object.launch"
@@ -258,7 +242,6 @@ class GazeboInterface:
 
     def delete_all_models(self):
         # deletes all models except ground plane
-        # TODO make sure that we handle if res is false
         res = service_call_with_retries(self.get_world_properties)
         for model in res.model_names:
             if model != "ground_plane":
@@ -267,24 +250,25 @@ class GazeboInterface:
 
     def reset_world(self, state, test_case=None):
         try:
+            if test_case and self.resetting_attempts > 20:
+                rospy.logerr("We tried with this object-wrist-combination for 20 times, but something is wrong. Generating a new wrist pose on this object.")
+                test_case.wrist_error = gen_valid_wrist_error_from_l2(test_case.object, test_case.trans_l2_error, test_case.rot_l2_error, self.hparams)
+
             self.shutdown_controllers()
             self.delete_all_models()
-
-            if self.resetting_attempts > 20:
-                test_case = None
-                rospy.logerr("We tried with this wrist-combination for 20 times, but something is wrong. Moving on to next test case.")
 
             # generate own test case when training (this is technically a "train" case)
             if not test_case:
                 test_case = TestCaseFromRanges(self.hparams)
-
             state.cur_test_case = test_case
+
             self.spawn_object(test_case.object)
             rospy.sleep(2)  # required s.t. object can register with gazebo
 
             # reset reflex pose and spawn new reflex
             self.cmd_wrist_abs(tf.transformations.identity_matrix())
             res = self.spawn_reflex()
+
             if not res:
                 rospy.logwarn("Could not spawn reflex. Resetting again.")
                 self.resetting_attempts += 1
@@ -325,13 +309,11 @@ class GazeboInterface:
             self.wait_until_grasp_stabilizes()
             self.start_obj_t, _ = get_tq_from_homo_matrix(self.get_object_pose())
         except Exception as e:
-            # TODO delete this once we found the problem!
             rospy.logerr(f"Exception occurred while resetting: '{e}'. Resetting again")
             rospy.sleep(2)
             self.resetting_attempts += 1
             return self.reset_world(test_case)
 
-        # all good reset counter
         self.resetting_attempts = 0
 
     def launch_controllers(self):
