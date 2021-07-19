@@ -18,16 +18,16 @@ def get_experiment_data(
     sensor_framework=False,
     log_id=1,
     window_size=1,
-    cap_len=10000,
+    cap_len=20000,
     verbose=False,
     remove_200s=False,
-    use_episodes=True,
+    use_episodes=False,
 ):
 
     if sensor_framework:
-        experiment_path = os.path.join(log_path, f"{prefix}_f1_s{framework}_id{try_id}_algotd3_{log_id}")
+        experiment_path = os.path.join(log_path, f"{prefix}_f1_s{framework}_id{try_id}_algosac_{log_id}")
     else:
-        experiment_path = os.path.join(log_path, f"{prefix}_f{framework}_s1_id{try_id}_algotd3_{log_id}")
+        experiment_path = os.path.join(log_path, f"{prefix}_f{framework}_s1_id{try_id}_algosac_{log_id}")
 
     try:
         event_acc = EventAccumulator(experiment_path)
@@ -130,8 +130,8 @@ def plot(args, df, num_items=3, hue="framework"):
     ax.set_ylabel(args.scalar_name)
 
     plt.tight_layout(pad=0.5)
-    plt.ylim(0, 1.2)
-    plt.xlim(0, 140)
+    # plt.ylim(0, 1.2)
+    # plt.xlim(0, 140)
     plt.show()
 
 
@@ -171,7 +171,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--log_path",
         type=str,
-        default="/home/parallels/cluster_logs",
+        default="/home/parallels/cluster_logs_sd",
         help="Path to tensorboard log.",
     )
     parser.add_argument(
@@ -183,13 +183,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--scalar_name",
         type=str,
-        default="step/sustained_holding",
+        default="rollout/ep_rew_mean",
         help="Which metric to plot.",
     )
     parser.add_argument(
         "--max_num_trials",
         type=int,
-        default=51,
+        default=11,
         help="How many trials were in your experiment.",
     )
     args = parser.parse_args()
@@ -203,9 +203,9 @@ if __name__ == "__main__":
     # framework_list = [1,2,3,4]
 
     # this is for reward frameworks
-    args.prefix = "23Jun_SpheresAnd4thDOFSeedsWeight"    
-    framework_list = [1,2,3,4]
-    df = get_all_data(args, sensor_framework=False, framework_list=framework_list)
+    args.prefix = "17Jul_SaturdayNonDeterministicSACFixed"    
+    framework_list = [1,2,3,4,5]
+    df = get_all_data(args, sensor_framework=True, framework_list=framework_list)
     
     plot(args, df, len(framework_list))
 

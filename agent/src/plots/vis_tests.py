@@ -11,10 +11,10 @@ def get_csv_data(args, verbose=True, sensor_framework=True, framework_list=[1, 2
     for framework in framework_list:
         for try_id in range(1, args.max_num_trials + 1):
             if sensor_framework:
-                path = os.path.join(args.log_path, f"{args.prefix}_f1_s{framework}_id{try_id}_algotd3.csv")
+                path = os.path.join(args.log_path, f"{args.prefix}_f1_s{framework}_id{try_id}_algosac.csv")
             else:
 
-                path = os.path.join(args.log_path, f"{args.prefix}_f{framework}_s1_id{try_id}_algotd3.csv")
+                path = os.path.join(args.log_path, f"{args.prefix}_f{framework}_s1_id{try_id}_algosac.csv")
             try:
                 data = pd.read_csv(path)
                 print("Got data from path " + path)
@@ -22,8 +22,8 @@ def get_csv_data(args, verbose=True, sensor_framework=True, framework_list=[1, 2
                 data["try_id"] = try_id
                 data["trans_l2_error"] *= 100  # convert error to meters
                 df = df.append(data)
-            except Exception:
-                pass
+            except Exception as e:
+                print(e)
     if verbose:
         print(df)
     return df
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--log_path",
         type=str,
-        default="/home/parallels/cluster_logs_final",
+        default="/home/parallels/cluster_logs_sd",
         help="Path to tensorboard log.",
     )
     parser.add_argument(
@@ -66,27 +66,26 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # THIS IS FOR REWARD FRAMEWORKS
-    framework_list = [1, 2, 3, 4]
-    df = get_csv_data(args, framework_list=framework_list, sensor_framework=False)
+    # framework_list = [1, 2, 3, 4]
+    # df = get_csv_data(args, framework_list=framework_list, sensor_framework=False)
 
     # THIS IS FOR FORCE FRAMEWORK
-    # framework_list = [1]
-    # df = get_csv_data(args, framework_list=framework_list, sensor_framework=False)
-    # args.prefix ="23Jun_SpheresAnd4thDOFSeedsWeightForceFrameworks"
+    framework_list = [1, 2, 3, 4, 5]
+    args.prefix = "17Jul_SaturdayNonDeterministicSACFixed"
+    df = get_csv_data(args, framework_list=framework_list, sensor_framework=True)
     # framework_list = [2, 3, 4]
     # df = pd.concat([df, get_csv_data(args, framework_list=framework_list, sensor_framework=True)])
-    # framework_list = [1, 2, 3,4]
+    # framework_list = [1, 2, 3, 4]
 
-    df_sph = df.loc[df["object_type"] == "sphere"]
-    print("sph ", df_sph.shape[0])
-    df_cyl = df.loc[df["object_type"] == "cylinder"]
-    print("cyl ", df_cyl.shape[0])
-    df_box = df.loc[df["object_type"] == "box"]
-    print("box ", df_box.shape[0])
+    # df_sph = df.loc[df["object_type"] == "sphere"]
+    # print("sph ", df_sph.shape[0])
+    # df_cyl = df.loc[df["object_type"] == "cylinder"]
+    # print("cyl ", df_cyl.shape[0])
+    # df_box = df.loc[df["object_type"] == "box"]
+    # print("box ", df_box.shape[0])
 
+    plot(df.loc[df["object_type"] == "box"], len(framework_list))
 
-    plot(df_sph, len(framework_list))
+    # plot(df_cyl, len(framework_list))
 
-    plot(df_cyl, len(framework_list))
-
-    plot(df_box, len(framework_list))
+    # plot(df_box, len(framework_list))
