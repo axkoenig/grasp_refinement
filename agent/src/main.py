@@ -49,7 +49,6 @@ def make_model_train(env, hparams):
             ent_coef = "auto_0.01"
         elif hparams["framework"] == 4:
             ent_coef = "auto_3"
-        import pdb; pdb.set_trace()
         return SAC("MlpPolicy", env, verbose=1, tensorboard_log=hparams["log_path"], ent_coef=ent_coef, **ac_kwargs)
     elif hparams["algorithm"] == "ppo":
         return PPO("MlpPolicy", env, verbose=1, tensorboard_log=hparams["log_path"])
