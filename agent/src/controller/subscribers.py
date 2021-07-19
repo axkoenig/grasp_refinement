@@ -97,9 +97,18 @@ class Subscribers:
         elif self.hparams["force_sensing"] == 3:  # only binary contact signals
             force = to_list(cf_shell.contact_wrench.force)
             self.obs.set_cur_val_by_name(name, int(np.linalg.norm(force) > 0))
+        elif self.hparams["force_sensing"] == 4:  # no force info
+            return
+        else:
+            raise ValueError("force_sensing must be either 1, 2, 3 or 4")
 
     def set_torque_val(self, name, val):
-        if self.hparams["noisy_torque"]:  # provide noisy torque info (10% of max torque)
-            val += self.random_gen.gauss(0, 0.1 * self.obs.motor_torque_max)
-        if self.hparams["force_sensing"] != 5:  # in framework 5 we don't provide torque info
+        if self.hparams["torque_sensing"] == 1:  # perfect torque info
             self.obs.set_cur_val_by_name(name, val)
+        elif self.hparams["torque_sensing"] == 2:  # noisy torque info
+            val += self.random_gen.gauss(0, self.hparams["torque_noise"] * self.obs.motor_torque_max)
+            self.obs.set_cur_val_by_name(name, val)
+        elif self.hparams["torque_sensing"] == 3:  # no torque info
+            return
+        else:
+            raise ValueError("torque_sensing must be either 1, 2 or 3")
