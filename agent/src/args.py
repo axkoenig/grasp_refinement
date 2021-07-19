@@ -17,7 +17,6 @@ def parse_args():
 
     # reward framework and reward weights
     parser.add_argument("--framework", type=int, default=1, help="Which reward framework to train with.")
-    parser.add_argument("--w_binary_rew", type=float, default=10, help="Weight for binary reward")
     parser.add_argument("--w_eps_torque", type=float, default=5, help="Weight for epsilon torque")
     parser.add_argument("--w_delta", type=float, default=0.5, help="Weight for delta")
     parser.add_argument("--force_sensing", type=int, default=1, help="(1=full), (2=normal), (3=binary), (4=none).")
@@ -62,8 +61,11 @@ def parse_args():
     parser.add_argument("--test_model_path", type=str, help="The path to the model you would like to test.")
     parser.add_argument("--deterministic_eval", type=int, default=1, help="Whether model evaluation should be deterministic.")
 
-    # td3 hparams
-    parser.add_argument("--policy_delay", type=int, default=10, help="Q values will be updated policy_delay more often than policy.")
+    # td3 hparam
+    parser.add_argument("--policy_delay", type=int, default=10, help="Q values will be updated policy_delay more often than policy for TD3.")
+
+    # sac hparam
+    parser.add_argument("--ent_coef", type=float, default=0.01, help="Fixed entropy regularization coefficient for SAC.")
 
     # td3 and sac hparams
     parser.add_argument("--learning_starts", type=int, default=100, help="How many data points to collect before starting to train.")
