@@ -42,17 +42,17 @@ def make_model_train(env, hparams):
     elif hparams["algorithm"] == "sac":
         # TODO delete once found best ent_coef
         if hparams["framework"] == 1:
-            ent_coef = 5
+            ent_coef = "auto_5"
         elif hparams["framework"] == 2:
-            ent_coef = 1
+            ent_coef = "auto_1"
         elif hparams["framework"] == 3:
-            ent_coef = 0.5
+            ent_coef = "auto_0.5"
         elif hparams["framework"] == 4:
-            ent_coef = 0.1
+            ent_coef = "auto_0.1"
         elif hparams["framework"] == 5:
-            ent_coef = 0.01
+            ent_coef = "auto_0.01"
         elif hparams["framework"] == 6:
-            ent_coef = 0.005
+            ent_coef = "auto_0.005"
         return SAC("MlpPolicy", env, verbose=1, tensorboard_log=hparams["log_path"], ent_coef=ent_coef, **ac_kwargs)
     elif hparams["algorithm"] == "ppo":
         return PPO("MlpPolicy", env, verbose=1, tensorboard_log=hparams["log_path"])
