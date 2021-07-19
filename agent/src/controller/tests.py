@@ -290,17 +290,15 @@ def test(model, env, log_path, log_name, deterministic=False):
         writer.writeheader()
 
         for test_case in t.test_cases:
-            # run episode until end
-            if test_case.object.type =="sphere" and test_case.trans_l2_error == 0.05:
-                obs = env.reset(test_case)
-                while True:
-                    action, state = model.predict(obs, deterministic=deterministic)
-                    obs, reward, done, info = env.step(action)
-                    if done:
-                        # save experiment outcome
-                        data = test_case.get_csv_data()
-                        outcome = {metric: info[metric] for metric in metrics}
-                        data.update(outcome)
-                        writer.writerows([data])
-                        file.flush()
-                        break
+            obs = env.reset(test_case)
+            while True:
+                action, state = model.predict(obs, deterministic=deterministic)
+                obs, reward, done, info = env.step(action)
+                if done:
+                    # save experiment outcome
+                    data = test_case.get_csv_data()
+                    outcome = {metric: info[metric] for metric in metrics}
+                    data.update(outcome)
+                    writer.writerows([data])
+                    file.flush()
+                    break
