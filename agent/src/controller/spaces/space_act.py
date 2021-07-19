@@ -46,8 +46,5 @@ class ActionSpace(Space):
         if verbose:
             rospy.loginfo("--- Actions ---")
             for key, value in action_dict.items():
-                if key == "trigger_regrasp":
-                    rospy.loginfo(f"- {key:20}{value} sampled from: {self.map_vals_to_range(0, 1, action[0])}")
-                else:
-                    rospy.loginfo(f"- {key:20}{value}")
+                rospy.loginfo(f"- {key:20}{value}")
         return action_dict

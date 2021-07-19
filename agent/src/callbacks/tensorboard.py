@@ -28,7 +28,7 @@ class TensorboardCallback(BaseCallback):
 
         # log cumulative values at episode end and reset variable
         if get_done_or_dones(self):
-            exclude_cumulative_log = ["num_regrasps", "sustained_holding", "sustained_lifting", "terminal_observation"]
+            exclude_cumulative_log = ["sustained_holding", "sustained_lifting", "terminal_observation"]
             log_dict(self.episode_infos, self.logger, "episode/cum_", "sum", exclude_cumulative_log)
             self.episode_infos = {}
 

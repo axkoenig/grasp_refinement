@@ -371,13 +371,6 @@ class GazeboInterface:
         if self.verbose:
             rospy.loginfo("Backed off fingers: \n" + str(res))
 
-    def regrasp(self, wrist_p_incr, wrist_q_incr, prox_angles):
-
-        self.intelligent_reopen(prox_angles)
-        self.cmd_wrist_pose_incr(wrist_p_incr, wrist_q_incr)
-        self.close_until_contact_and_tighten()
-        self.wait_until_grasp_stabilizes()
-
     def object_lifted(self):
         msg = rospy.wait_for_message("/gazebo/object_sensor_bumper", ContactsState)
         collision_name = "ground_plane::link::collision"
