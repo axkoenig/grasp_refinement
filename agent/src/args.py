@@ -12,7 +12,7 @@ def parse_args():
     parser.add_argument("--output_dir", type=str, default="./", help="Path of output directory.")
     parser.add_argument("--chkpt_freq", type=int, default=300, help="Save model every n training steps.")
     parser.add_argument("--check_env", type=int, default=0, help="Whether to check environment using stable baselines checker.")
-    parser.add_argument("--algorithm", type=str, default="td3", help="Which algorithm to train with.")
+    parser.add_argument("--algorithm", type=str, default="sac", help="Which algorithm to train with.")
     parser.add_argument("--log_interval", type=int, default=1, help="After how many episodes to log.")
 
     # reward framework and reward weights
@@ -65,10 +65,10 @@ def parse_args():
     parser.add_argument("--policy_delay", type=int, default=10, help="Q values will be updated policy_delay more often than policy.")
 
     # td3 and sac hparams
-    parser.add_argument("--learning_starts", type=int, default=256, help="How many data points to collect before starting to train.")
+    parser.add_argument("--learning_starts", type=int, default=100, help="How many data points to collect before starting to train.")
     parser.add_argument("--batch_size", type=int, default=256, help="Minibatch size for each gradient update.")
-    parser.add_argument("--gradient_steps", type=int, default=5, help="How many gradient steps to do after each rollout.")
-    parser.add_argument("--train_freq", type=int, default=4, help="Update the model every train_freq episodes.")
+    parser.add_argument("--gradient_steps", type=int, default=1, help="How many gradient steps to do after each rollout.")
+    parser.add_argument("--train_freq", type=int, default=1, help="Update the model every train_freq time steps.")
 
     args, unknown = parser.parse_known_args()
     return args
