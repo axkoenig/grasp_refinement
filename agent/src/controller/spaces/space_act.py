@@ -28,12 +28,9 @@ class ActionSpace(Space):
         "Maps each value in a list of values in range [self.min_action, self.max_action] to [min, max]"
         if not min < max:
             raise ValueError("Your 'min' must be less than your 'max'.")
-        try:
-            for i in range(len(vals)):
-                vals[i] = np.interp(vals[i], (self.min_action, self.max_action), (min, max))
-            return vals
-        except TypeError:  # we only have one value
-            return np.interp(vals, (self.min_action, self.max_action), (min, max))
+        for i in range(len(vals)):
+            vals[i] = np.interp(vals[i], (self.min_action, self.max_action), (min, max))
+        return vals
 
     def get_action_dict(self, action, verbose=True):
         "Converts action array from gym environment to a more expressive dict with correct ranges"
