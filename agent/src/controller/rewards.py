@@ -40,8 +40,6 @@ class Rewards:
         with self.state.mutex:
             epsilons = self.combine_and_normalize(self.state.epsilon_force, self.state.epsilon_torque, self.hparams["w_eps_torque"])
             delta = self.state.delta_task if self.state.stage == Stage.REFINE else self.state.delta_cur
-            ## TODO delete 
-            return self.combine_and_normalize(epsilons, delta, self.hparams["w_delta"])
         if self.hparams["framework"] == 1:
             return self.combine_and_normalize(epsilons, delta, self.hparams["w_delta"])
         elif self.hparams["framework"] == 2:
