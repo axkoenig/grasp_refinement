@@ -72,9 +72,7 @@ for i in $(seq 1 $NUM_EXPERIMENTS); do
     submit_job "3" ${i} "sac" "1"
     submit_job "4" ${i} "sac" "1"
     submit_job "5" ${i} "sac" "1"
-    # submit_job "2" ${i} "td3" "1"
-    # submit_job "3" ${i} "td3" "1"
-    # submit_job "4" ${i} "td3" "1"
+    submit_job "6" ${i} "sac" "1"
 done
 
 echo "Done."
