@@ -18,10 +18,13 @@ def get_experiment_data(
     sensor_framework=False,
     log_id=1,
     window_size=1,
-    cap_len=20000,
+    cap_len=10000,
     verbose=False,
     remove_200s=False,
     use_episodes=False,
+    every_1k_step=True,
+    interpolate=False,
+    smooth=False,
 ):
 
     if sensor_framework:
@@ -63,7 +66,7 @@ def get_experiment_data(
         vals = final_vals
         time_steps = final_time_steps
 
-    if use_episodes: 
+    if use_episodes:
         episodes = np.arange(0, len(vals))
         # smoothing
         episodes = np.convolve(episodes, np.ones(window_size), "valid") / window_size
@@ -76,20 +79,35 @@ def get_experiment_data(
         df["try_id"] = try_id
         return df
 
+    # removes all data except multiples of 1k, for faster plotting
+    if every_1k_step:
+        new_time_steps = []
+        new_vals = []
+        for i in range(0, len(time_steps)):
+            if i % 10 == 0:
+                new_time_steps.append(i)
+                new_vals.append(vals[i])
+        time_steps = new_time_steps
+        vals = new_vals
+
     # smooth data with moving average filter
-    vals_smooth = np.convolve(vals, np.ones(window_size), "valid") / window_size
-    time_steps_smooth = np.convolve(time_steps, np.ones(window_size), "valid") / window_size
+    if smooth:
+        vals = np.convolve(vals, np.ones(window_size), "valid") / window_size
+        time_steps = np.convolve(time_steps, np.ones(window_size), "valid") / window_size
 
     # linearly interpolate the missing time steps
-    dense_time_steps = np.arange(int(time_steps_smooth[0]), int(time_steps_smooth[-1]) + 1)
-    dense_vals = np.interp(dense_time_steps, time_steps_smooth, vals_smooth)
+    if interpolate:
+        dense_time_steps = np.arange(int(vals[0]), int(time_steps[-1]) + 1)
+        dense_vals = np.interp(dense_time_steps, time_steps, vals)
 
-    if len(dense_vals) > cap_len:
-        dense_time_steps = dense_time_steps[:cap_len]
-        dense_vals = dense_vals[:cap_len]
+        if len(dense_vals) > cap_len:
+            dense_time_steps = dense_time_steps[:cap_len]
+            dense_vals = dense_vals[:cap_len]
+        time_steps = dense_time_steps
+        vals = dense_vals
 
     # create pd dataframe
-    data = {"steps": dense_time_steps, scalar_name: dense_vals}
+    data = {"steps": time_steps, scalar_name: vals}
     df = pd.DataFrame(data)
     df["prefix"] = prefix
     df["framework"] = framework
@@ -97,7 +115,7 @@ def get_experiment_data(
 
     if verbose:
         print("Tags in this tensorboard log are: \n", str(event_acc.Tags()))
-        print("Smoothed vals are: \n", vals_smooth)
+        print("Smoothed vals are: \n", vals)
         print(df)
     return df
 
@@ -177,7 +195,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--prefix",
         type=str,
-        default="23Jun_SpheresAnd4thDOFSeedsWeightForceFrameworks",
+        default="19Jul_FixedEntCoefFixed",
         help="Prefix comment of your experiment.",
     )
     parser.add_argument(
@@ -194,7 +212,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # this is for force frameworks 
+    # this is for force frameworks
     # framework_list = [2, 3, 4]
     # df = get_all_data(args, sensor_framework=True, framework_list=framework_list)
     # framework_list = [1]
@@ -203,10 +221,9 @@ if __name__ == "__main__":
     # framework_list = [1,2,3,4]
 
     # this is for reward frameworks
-    args.prefix = "17Jul_SaturdayNonDeterministicSACFixed"    
-    framework_list = [1,2,3,4,5]
-    df = get_all_data(args, sensor_framework=True, framework_list=framework_list)
-    
+    framework_list = [1, 2, 3, 4, 5, 6]
+    df = get_all_data(args, sensor_framework=False, framework_list=framework_list)
+
     plot(args, df, len(framework_list))
 
     # plot_percentiles(args, df)
