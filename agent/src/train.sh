@@ -17,7 +17,6 @@ yaw_error_max=10
 yaw_error_min=-$yaw_error_max
 
 # reward weights
-w_binary_rew=10
 w_eps_torque=1
 w_delta=1
 
@@ -30,7 +29,6 @@ rosclean purge -y
 read -r -d '' HPARAMS <<EOM
 --time_steps=$time_steps \ 
 --max_ep_len=15 \ 
---w_binary_rew ${w_binary_rew} \ 
 --w_eps_torque ${w_eps_torque} \ 
 --w_delta ${w_delta} \
 --x_error_min ${x_error_min} --x_error_max ${x_error_max} \
