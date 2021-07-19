@@ -31,7 +31,7 @@ def make_model_train(env, hparams):
     # td3 and sac have some arguments in common
     ac_args = ["learning_starts", "gradient_steps", "batch_size"]
     ac_kwargs = {key: value for (key, value) in hparams.items() if key in ac_args}
-    ac_kwargs.update({"train_freq": (hparams["train_freq"], "episode")})
+    ac_kwargs.update({"train_freq": (hparams["train_freq"], "step")})
 
     if hparams["algorithm"] == "td3":
         n_actions = env.action_space.shape[-1]
@@ -40,7 +40,17 @@ def make_model_train(env, hparams):
             "MlpPolicy", env, action_noise=action_noise, verbose=1, tensorboard_log=hparams["log_path"], policy_delay=hparams["policy_delay"], **ac_kwargs
         )
     elif hparams["algorithm"] == "sac":
-        return SAC("MlpPolicy", env, verbose=1, tensorboard_log=hparams["log_path"], **ac_kwargs)
+        # TODO delete once found best ent_coef
+        if hparams["framework"] == 1:
+            ent_coef = "auto_0.5"
+        elif hparams["framework"] == 2:
+            ent_coef = "auto_0.1"
+        elif hparams["framework"] == 3:
+            ent_coef = "auto_0.01"
+        elif hparams["framework"] == 4:
+            ent_coef = "auto_3"
+        import pdb; pdb.set_trace()
+        return SAC("MlpPolicy", env, verbose=1, tensorboard_log=hparams["log_path"], ent_coef=ent_coef, **ac_kwargs)
     elif hparams["algorithm"] == "ppo":
         return PPO("MlpPolicy", env, verbose=1, tensorboard_log=hparams["log_path"])
     elif hparams["algorithm"] == "a2c":
