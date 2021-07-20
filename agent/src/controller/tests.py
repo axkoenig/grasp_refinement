@@ -102,7 +102,9 @@ class Cylinder:
         self.type = "cylinder"
 
     def get_csv_data(self):
-        return dict({"dimension_1": self.radius, "dimension_2": self.length, "dimension_3": 0, "mass": self.mass, "inertia_scaling_factor": self.inertia_scaling_factor})
+        return dict(
+            {"dimension_1": self.radius, "dimension_2": self.length, "dimension_3": 0, "mass": self.mass, "inertia_scaling_factor": self.inertia_scaling_factor}
+        )
 
     def get_height(self):
         return self.length
@@ -119,7 +121,9 @@ class Box:
         self.type = "box"
 
     def get_csv_data(self):
-        return dict({"dimension_1": self.x, "dimension_2": self.y, "dimension_3": self.z, "mass": self.mass, "inertia_scaling_factor": self.inertia_scaling_factor})
+        return dict(
+            {"dimension_1": self.x, "dimension_2": self.y, "dimension_3": self.z, "mass": self.mass, "inertia_scaling_factor": self.inertia_scaling_factor}
+        )
 
     def get_height(self):
         return self.z
@@ -137,7 +141,9 @@ class RandomCylinder(Cylinder):
 
 class RandomBox(Box):
     def __init__(self, x_range=[0.04, 0.10], y_range=[0.04, 0.10], z_range=[0.13, 0.23], mass_range=[0.1, 0.3], inertia_scaling_factor=0.9):
-        super().__init__(sample_from_range(x_range), sample_from_range(y_range), sample_from_range(z_range), sample_from_range(mass_range), inertia_scaling_factor)
+        super().__init__(
+            sample_from_range(x_range), sample_from_range(y_range), sample_from_range(z_range), sample_from_range(mass_range), inertia_scaling_factor
+        )
 
 
 class RandomWristError:
@@ -267,7 +273,7 @@ def generate_test_cases(hparams):
             writer.writerows([case.get_csv_data()])
 
 
-def test(model, env, log_path, log_name, deterministic=False):
+def test(model, env, log_path, log_name, deterministic=False, all_test_cases=True, trans_l2_errors=[0.06, 0.07]):
     # load test cases from disk
     with open(TEST_CASES_PKL, "rb") as file:
         t = pickle.load(file)
@@ -282,6 +288,11 @@ def test(model, env, log_path, log_name, deterministic=False):
             fieldnames.append(metric)
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
+
+        # running on subset of test cases: remove the boring test cases and shuffle
+        if not all_test_cases:
+            t.test_cases = [x for x in t.test_cases if x.trans_l2_error in trans_l2_errors]
+            random.shuffle(t.test_cases)
 
         for test_case in t.test_cases:
             obs = env.reset(test_case)

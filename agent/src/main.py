@@ -129,13 +129,13 @@ def main(args):
 
         if args.eval_after_training:
             rospy.loginfo("Testing final model")
-            test(model, env, log_path, args.log_name, hparams["deterministic_eval"])
+            test(model, env, log_path, args.log_name, hparams["deterministic_eval"], hparams["all_test_cases"])
 
     else:
         rospy.loginfo("Loading model from: " + args.test_model_path)
         model = make_model_test(args.algorithm, args.test_model_path)
         rospy.loginfo("Testing model...")
-        test(model, env, log_path, "test_" + args.log_name, hparams["deterministic_eval"])
+        test(model, env, log_path, "test_" + args.log_name, hparams["deterministic_eval"], hparams["all_test_cases"])
 
     rospy.loginfo("Done! Have a nice day.")
 
