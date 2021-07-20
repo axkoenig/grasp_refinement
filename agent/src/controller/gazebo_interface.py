@@ -18,7 +18,7 @@ from .helpers.transforms import (
     get_homo_matrix_from_tq,
     get_homo_matrix_from_pose_msg,
 )
-from .helpers.services import StringServiceRequest, service_call_with_retries, GazeboServiceException
+from .helpers.services import StringServiceRequest, service_call_with_retries
 from .tests import TestCaseFromRanges, gen_valid_wrist_error_from_l2
 
 
@@ -65,6 +65,10 @@ class GazeboInterface:
         self.uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(self.uuid)
 
+    def finger_pos_incr(self, incr, from_measured_pos=False, blocking=False, tolerance=0, timeout=0):
+        req = StringServiceRequest((incr[0], incr[1], incr[2], incr[3], from_measured_pos, blocking, tolerance, timeout))
+        service_call_with_retries(self.pos_incr, req)
+
     def get_ros_param_with_retries(self, param_name, time_out=10):
         r = rospy.Rate(5)
         begin = rospy.get_rostime()
@@ -86,7 +90,7 @@ class GazeboInterface:
 
     def get_object_pose(self):
         object_name = self.get_cur_obj_name()
-        req = StringServiceRequest(object_name, "world")
+        req = StringServiceRequest((object_name, "world"))
         res = service_call_with_retries(self.get_model_state, req)
         if not res:  # sometimes we don't get a result (we handle this during resetting)
             rospy.logwarn("Could not get object pose! Returning identity")
@@ -94,7 +98,7 @@ class GazeboInterface:
         return get_homo_matrix_from_pose_msg(res.pose)
 
     def get_wrist_pose(self):
-        req = StringServiceRequest("shell", "world")
+        req = StringServiceRequest(("shell", "world"))
         res = service_call_with_retries(self.get_link_state, req)
         return get_homo_matrix_from_pose_msg(res.link_state.pose)
 
@@ -299,7 +303,7 @@ class GazeboInterface:
         if self.verbose:
             rospy.loginfo("Closed reflex fingers until contact: \n" + str(res))
         if tighten_incr:
-            res = self.pos_incr(tighten_incr, tighten_incr, tighten_incr, 0, False, False, 0, 0)
+            res = self.finger_pos_incr([tighten_incr, tighten_incr, tighten_incr, 0])
             if self.verbose:
                 rospy.loginfo("Tightened fingers by " + str(tighten_incr) + ": \n" + str(res))
 
@@ -314,7 +318,9 @@ class GazeboInterface:
 
     def get_wrist_init_pose(self, wrist_p, wrist_q, wrist_error):
 
-        rospy.loginfo(f"Random offset for init wrist pose is \n [x: {wrist_error.x}, y: {wrist_error.y}, z: {wrist_error.z}], [roll: {wrist_error.roll}, pitch: {wrist_error.pitch}, yaw: {wrist_error.yaw}].")
+        rospy.loginfo(
+            f"Random offset for init wrist pose is \n [x: {wrist_error.x}, y: {wrist_error.y}, z: {wrist_error.z}], [roll: {wrist_error.roll}, pitch: {wrist_error.pitch}, yaw: {wrist_error.yaw}]."
+        )
 
         # construct matrix that offsets from ground truth pose
         q = tf.transformations.quaternion_from_euler(wrist_error.roll, wrist_error.pitch, wrist_error.yaw)
@@ -339,13 +345,26 @@ class GazeboInterface:
     def spawn_object(self, object):
         if object.__class__.__name__ == "RandomSphere":
             self.spawn_sphere_mount()
-            p = os.popen("xacro " + self.description_path + f"/urdf/environment/sphere.urdf.xacro" + f" sphere_radius:={object.radius} sphere_mass:={object.mass} inertia_scaling_factor:={object.inertia_scaling_factor}")
+            p = os.popen(
+                "xacro "
+                + self.description_path
+                + f"/urdf/environment/sphere.urdf.xacro"
+                + f" sphere_radius:={object.radius} sphere_mass:={object.mass} inertia_scaling_factor:={object.inertia_scaling_factor}"
+            )
         elif object.__class__.__name__ == "RandomCylinder":
             p = os.popen(
-                "xacro " + self.description_path + f"/urdf/environment/cylinder.urdf.xacro" + f" cylinder_radius:={object.radius} cylinder_length:={object.length} cylinder_mass:={object.mass} inertia_scaling_factor:={object.inertia_scaling_factor}"
+                "xacro "
+                + self.description_path
+                + f"/urdf/environment/cylinder.urdf.xacro"
+                + f" cylinder_radius:={object.radius} cylinder_length:={object.length} cylinder_mass:={object.mass} inertia_scaling_factor:={object.inertia_scaling_factor}"
             )
         elif object.__class__.__name__ == "RandomBox":
-            p = os.popen("xacro " + self.description_path + f"/urdf/environment/box.urdf.xacro" + f" box_x:={object.x} box_y:={object.y} box_z:={object.z} box_mass:={object.mass} inertia_scaling_factor:={object.inertia_scaling_factor}")
+            p = os.popen(
+                "xacro "
+                + self.description_path
+                + f"/urdf/environment/box.urdf.xacro"
+                + f" box_x:={object.x} box_y:={object.y} box_z:={object.z} box_mass:={object.mass} inertia_scaling_factor:={object.inertia_scaling_factor}"
+            )
         else:
             rospy.logerr("Unsupported object type!")
             return
@@ -374,7 +393,9 @@ class GazeboInterface:
     def spawn_reflex(self):
         # read xacro file
         urdf_location = self.description_path + f"/robots/reflex.robot.xacro"
-        p = os.popen("xacro " + urdf_location + f" base_link_name:=shell reflex_pub_rate:={self.reflex_pub_rate} simplify_collisions:={self.simplify_collisions}")
+        p = os.popen(
+            "xacro " + urdf_location + f" base_link_name:=shell reflex_pub_rate:={self.reflex_pub_rate} simplify_collisions:={self.simplify_collisions}"
+        )
         xml_string = p.read()
         p.close()
 

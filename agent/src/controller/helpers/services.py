@@ -2,9 +2,8 @@ import rospy
 
 # some Gazebo services take strings as requests instead of request objects (hence creating an request object to make compatible with other code)
 class StringServiceRequest:
-    def __init__(self, part_name, reference_frame):
-        self.part_name = part_name
-        self.reference_frame = reference_frame
+    def __init__(self, args):
+        self.args = args
 
 
 class GazeboServiceException(Exception):
@@ -15,12 +14,12 @@ def service_call(service, request, service_name):
     rospy.wait_for_service(service_name)
     try:
         if request.__class__.__name__ == "StringServiceRequest":
-            res = service(request.part_name, request.reference_frame)
+            res = service(*request.args)
             return True, res
         else:
             res = service(request) if request else service()
             return True, res
-    except rospy.ServiceException as e:
+    except Exception as e:
         rospy.logwarn(f"Service call to {service_name} failed with exception: {str(e)}")
         return False, None
 
