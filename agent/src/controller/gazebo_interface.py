@@ -203,43 +203,6 @@ class GazeboInterface:
         except AttributeError:
             pass  # when we reset the first time these vars don't exist yet, no need to worry
 
-    def launch_object(self, object):
-        launch_file = self.description_path + "/launch/object.launch"
-        if object.__class__.__name__ == "RandomSphere":
-            cli_args = [
-                launch_file,
-                "object_type:=sphere",
-                f"object_spawn_name:={object.name}",
-                f"sphere_radius:={object.radius}",
-                f"inertia_scaling_factor:={object.inertia_scaling_factor}",
-            ]
-        elif object.__class__.__name__ == "RandomCylinder":
-            cli_args = [
-                launch_file,
-                "object_type:=cylinder",
-                f"object_spawn_name:={object.name}",
-                f"cylinder_radius:={object.radius}",
-                f"cylinder_length:={object.length}",
-                f"inertia_scaling_factor:={object.inertia_scaling_factor}",
-            ]
-        elif object.__class__.__name__ == "RandomBox":
-            cli_args = [
-                launch_file,
-                "object_type:=box",
-                f"object_spawn_name:={object.name}",
-                f"box_x:={object.x}",
-                f"box_y:={object.y}",
-                f"box_z:={object.z}",
-                f"inertia_scaling_factor:={object.inertia_scaling_factor}",
-            ]
-        else:
-            rospy.logerr("Unsupported object type!")
-            return
-        roslaunch_file = [(roslaunch.rlutil.resolve_launch_arguments(cli_args)[0], cli_args[1:])]
-        parent = roslaunch.parent.ROSLaunchParent(self.uuid, roslaunch_file)
-        parent.start()
-        rospy.set_param("object_name", object.name)
-
     def delete_all_models(self):
         # deletes all models except ground plane
         res = service_call_with_retries(self.get_world_properties)
@@ -339,20 +302,6 @@ class GazeboInterface:
             res = self.pos_incr(tighten_incr, tighten_incr, tighten_incr, 0, False, False, 0, 0)
             if self.verbose:
                 rospy.loginfo("Tightened fingers by " + str(tighten_incr) + ": \n" + str(res))
-
-    def intelligent_reopen(self, prox_angles, back_off=-0.3, min_angle=1):
-        # calc back off to guarantee a minimum reopening angle (otherwise a finger may get stuck in a closed position)
-        back_offs = [0, 0, 0]
-        for i in range(3):
-            if prox_angles[i] + back_off > min_angle:
-                back_offs[i] = min_angle - prox_angles[i]
-            else:
-                back_offs[i] = back_off
-        if self.verbose:
-            rospy.loginfo("Backing fingers off by: \t" + str(back_offs))
-        res = self.pos_incr(back_offs[0], back_offs[1], back_offs[2], 0, True, True, self.srv_tolerance, 1)
-        if self.verbose:
-            rospy.loginfo("Backed off fingers: \n" + str(res))
 
     def object_lifted(self):
         msg = rospy.wait_for_message("/gazebo/object_sensor_bumper", ContactsState)
