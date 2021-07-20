@@ -282,14 +282,14 @@ class GazeboInterface:
     def launch_controllers(self):
         rospy.loginfo("Launching finger controllers ...")
         launch_file = roslib.packages.get_pkg_dir("finger_controller") + "/launch/finger_controller.launch"
-        cli_args = [launch_file, "only_spawn:=true"]
+        cli_args = [launch_file, "only_spawn:=true", "output:=log"]
         roslaunch_file = [(roslaunch.rlutil.resolve_launch_arguments(cli_args)[0], cli_args[1:])]
         self.finger_ctrl_launch = roslaunch.parent.ROSLaunchParent(self.uuid, roslaunch_file)
         self.finger_ctrl_launch.start()
 
         rospy.loginfo("Launching wrist controllers ...")
         launch_file = roslib.packages.get_pkg_dir("wrist_controller") + "/launch/wrist_controller.launch"
-        cli_args = [launch_file, "only_spawn:=true"]
+        cli_args = [launch_file, "only_spawn:=true", "output:=log"]
         roslaunch_file = [(roslaunch.rlutil.resolve_launch_arguments(cli_args)[0], cli_args[1:])]
         self.wrist_ctrl_launch = roslaunch.parent.ROSLaunchParent(self.uuid, roslaunch_file)
         self.wrist_ctrl_launch.start()
