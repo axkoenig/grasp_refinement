@@ -59,7 +59,7 @@ class Controller(gym.Env):
         infos_dict = get_infos(self.state)
         self.state.store_io_in_buffer(obs_dict, action_dict, reward, infos_dict)
 
-        return list(obs_dict.values()), reward, self.done, infos_dict
+        return np.array(list(obs_dict.values())), reward, self.done, infos_dict
 
     def reset(self, test_case=None):
         self.gi.sim_unpause()
@@ -68,4 +68,4 @@ class Controller(gym.Env):
         self.gi.reset_world(self.state, test_case)
         self.state.reset()
         self.gi.sim_pause()  # when NN is updating after resetting, we pause simulation
-        return list(self.obs.get_cur_vals().values())
+        return np.array(list(self.obs.get_cur_vals().values()))
