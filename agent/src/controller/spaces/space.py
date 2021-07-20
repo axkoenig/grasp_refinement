@@ -58,8 +58,9 @@ class Space:
 
     def clip_and_normalize(self, val, min, max, name, to_min=0, to_max=1):
         if np.less(val, min) or np.greater(val, max):
+            rospy.logwarn(f"Oops name {name} with value {val} is out of bounds [{min},{max}]!")
             val = np.clip(val, min, max)
-            rospy.logwarn(f"Oops value {val} with name {name} is out of bounds [{min},{max}]! Clipped {name} value is {val}.")
+            rospy.logwarn(f"Clipped {name} value is {val}.")
         return np.interp(val, [min, max], [to_min, to_max])
 
     def get_cur_vals(self, default_val=0, verbose=False):
