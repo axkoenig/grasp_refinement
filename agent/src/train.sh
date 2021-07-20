@@ -40,13 +40,13 @@ read -r -d '' HPARAMS <<EOM
 EOM
 
 # evaluate model
-# python main.py --framework=1 --train=0 $HPARAMS --test_model_path=/home/parallels/cluster_logs/final_model.zip
+# python main.py --reward_framework=1 --train=0 $HPARAMS --test_model_path=/home/parallels/cluster_logs/final_model.zip
 
 trap "exit" INT
 for i in 1 2 3 4 5 6 7 8 9 10; do
-    python main.py --framework=1 --seed=${i} --log_name=${prefix}_f1_id${i} $HPARAMS
-    python main.py --framework=2 --seed=${i} --log_name=${prefix}_f2_id${i} $HPARAMS
-    python main.py --framework=3 --seed=${i} --log_name=${prefix}_f3_id${i} $HPARAMS
+    python main.py --reward_framework=1 --seed=${i} --log_name=${prefix}_f1_id${i} $HPARAMS
+    python main.py --reward_framework=2 --seed=${i} --log_name=${prefix}_f2_id${i} $HPARAMS
+    python main.py --reward_framework=3 --seed=${i} --log_name=${prefix}_f3_id${i} $HPARAMS
 done
 
 echo "Done! Have a nice day."

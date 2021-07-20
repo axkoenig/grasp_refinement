@@ -11,12 +11,12 @@ from tensorboard.backend.event_processing.event_accumulator import EventAccumula
 def get_experiment_data(
     tb_log,
     scalar_name,
-    window_size=10,
+    window_size=1,
     cap_len=10000,
     verbose=False,
     every_10_step=True,
     interpolate=False,
-    smooth=True,
+    smooth=False,
 ):
 
     event_acc = EventAccumulator(tb_log)
@@ -31,6 +31,9 @@ def get_experiment_data(
     # we want episode outcomes in this case
     if "sustained" in scalar_name:
         time_steps = np.arange(1, len(time_steps) + 1)
+        window_size = 10
+        smooth = True
+        every_10_step = False
 
     # removes all data except multiples of 1k, for faster plotting
     if every_10_step:
@@ -64,15 +67,17 @@ def get_experiment_data(
     df = pd.DataFrame(data)
 
     # get some interesting hyperparameters
-    des_hparams = ["framework", "force_sensing", "w_eps_torque", "w_delta"]
+    des_hparams = ["reward_framework", "force_framework", "w_eps_torque", "w_delta"]
     for hparam in des_hparams:
         _, _, x = zip(*event_acc.Scalars("hparams/" + hparam))
         df[hparam] = x[0]
 
-    _, _, x = zip(*event_acc.Scalars("hparams/w_eps_torque"))
+    # the variable that you want to keep fixed
+    _, _, x = zip(*event_acc.Scalars("hparams/reward_framework"))
+    keep_fixed = 1
 
     # TODO delete 
-    if int(x[0]) != 8:
+    if int(x[0]) != keep_fixed:
         print("none")
         return None
 
@@ -84,11 +89,10 @@ def get_experiment_data(
 
 
 def get_all_data(args, verbose=True):
-    # loads data from tensorboard logfiles
-    df = pd.DataFrame()
+    # get any directories that match the starting string
     dirs = [os.path.join(args.log_path, dir) for dir in os.listdir(args.log_path) if dir.startswith(args.prefix)]
 
-    # get any directories that match the starting string
+    df = pd.DataFrame()
     for tb_log in dirs:
         df = df.append(get_experiment_data(tb_log, args.scalar_name))
     if verbose:
@@ -122,19 +126,19 @@ if __name__ == "__main__":
     parser.add_argument(
         "--prefix",
         type=str,
-        default="19Jul_RewWeightSearch",
+        default="19Jul_Tuned",
         help="Prefix comment of your experiment.",
     )
     parser.add_argument(
         "--scalar_name",
         type=str,
-        default="rollout/ep_rew_mean",
+        default="step/sustained_holding",
         help="Which metric to plot.",
     )
     parser.add_argument(
         "--compare",
         type=str,
-        default="w_delta",
+        default="force_framework",
         help="Which metric to compare.",
     )
 

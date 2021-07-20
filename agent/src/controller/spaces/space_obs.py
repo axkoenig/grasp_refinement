@@ -45,14 +45,14 @@ class ObservationSpace(Space):
             id_str = "_f" + str(i + 1)
             self.add_variable("prox_angle" + id_str, self.joint_angle_min, self.prox_angle_max)
             self.add_variable("dist_angle" + id_str, self.joint_angle_min, 0.2 * self.prox_angle_max)
-            if self.hparams["torque_sensing"] != 3:
+            if self.hparams["torque_framework"] != 3:
                 self.add_variable("motor_torque" + id_str, self.motor_torque_min, self.motor_torque_max)
         self.add_variable("preshape_angle", self.preshape_angle_min, self.preshape_angle_max)
-        if self.hparams["torque_sensing"] != 3:
+        if self.hparams["torque_framework"] != 3:
             self.add_variable("preshape_motor_torque", self.motor_torque_min, self.motor_torque_max)
 
         # if no contact sensing, we're done
-        if self.hparams["force_sensing"] == 4:
+        if self.hparams["force_framework"] == 4:
             self.print_num_dimensions()
             return
 
@@ -74,15 +74,15 @@ class ObservationSpace(Space):
         self.print_num_dimensions()
 
     def add_force_sensing(self, var_name):
-        if self.hparams["force_sensing"] == 1:  # full force vector
+        if self.hparams["force_framework"] == 1:  # full force vector
             self.contact_force_min = [-15, -15, -15]
             self.contact_force_max = [15, 15, 15]
             self.add_variable_from_vector(var_name, self.contact_force_min, self.contact_force_max)
-        elif self.hparams["force_sensing"] == 2:  # only normal force
+        elif self.hparams["force_framework"] == 2:  # only normal force
             self.contact_force_min = 0
             self.contact_force_max = 15
             self.add_variable(var_name, self.contact_force_min, self.contact_force_max)
-        elif self.hparams["force_sensing"] == 3:  # only binary contact signals
+        elif self.hparams["force_framework"] == 3:  # only binary contact signals
             self.contact_force_min = 0
             self.contact_force_max = 1
             self.add_variable(var_name, self.contact_force_min, self.contact_force_max)
@@ -94,7 +94,7 @@ class ObservationSpace(Space):
             if i == 0:
                 self.set_variable_from_vector("contact_normal" + id_str, self.nan_array)
                 self.set_variable_from_vector("contact_pos" + id_str, self.nan_array)
-                if self.hparams["force_sensing"] == 1:
+                if self.hparams["force_framework"] == 1:
                     self.set_variable_from_vector("contact_force" + id_str, self.nan_array)
                 else:
                     self.set_variable("contact_force" + id_str, np.nan)
@@ -103,7 +103,7 @@ class ObservationSpace(Space):
             for link in ["_prox", "_dist"]:
                 self.set_variable_from_vector("contact_normal" + id_str + link, self.nan_array)
                 self.set_variable_from_vector("contact_pos" + id_str + link, self.nan_array)
-                if self.hparams["force_sensing"] == 1:
+                if self.hparams["force_framework"] == 1:
                     self.set_variable_from_vector("contact_force" + id_str + link, self.nan_array)
                 else:
                     self.set_variable("contact_force" + id_str + link, np.nan)

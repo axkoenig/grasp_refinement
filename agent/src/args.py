@@ -15,12 +15,12 @@ def parse_args():
     parser.add_argument("--algorithm", type=str, default="sac", help="Which algorithm to train with.")
     parser.add_argument("--log_interval", type=int, default=1, help="After how many episodes to log.")
 
-    # reward framework and reward weights
-    parser.add_argument("--framework", type=int, default=1, help="Which reward framework to train with.")
+    # frameworks and weights
+    parser.add_argument("--reward_framework", type=int, default=1, help="(1=epsilon+delta), (2=delta), (3=epsilon), (4=binary).")
+    parser.add_argument("--force_framework", type=int, default=1, help="(1=full), (2=normal), (3=binary), (4=none).")
+    parser.add_argument("--torque_framework", type=int, default=3, help="(1=perfect), (2=noisy), (3=none).")
     parser.add_argument("--w_eps_torque", type=float, default=5, help="Weight for epsilon torque")
     parser.add_argument("--w_delta", type=float, default=0.5, help="Weight for delta")
-    parser.add_argument("--force_sensing", type=int, default=1, help="(1=full), (2=normal), (3=binary), (4=none).")
-    parser.add_argument("--torque_sensing", type=int, default=3, help="(1=perfect), (2=noisy), (3=none).")
     parser.add_argument("--torque_noise", type=float, default=0.5, help="Noise added to torque measurement as a percentage of max torque.")
 
     # length and update rates of stages

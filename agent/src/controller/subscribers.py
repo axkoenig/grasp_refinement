@@ -30,7 +30,7 @@ class Subscribers:
         rospy.Subscriber("reflex_takktile/hand_state", Hand, self.reflex_callback, queue_size=1)
 
         # only allow contact sensing in force framework 1,2,3
-        if self.hparams["force_sensing"] in [1, 2, 3]:
+        if self.hparams["force_framework"] in [1, 2, 3]:
             rospy.Subscriber("reflex_takktile/sim_contact_frames", ContactFrames, self.contacts_callback, queue_size=1)
 
     def object_bumper_callback(self, msg):
@@ -86,27 +86,27 @@ class Subscribers:
                 self.set_force_val("contact_force" + id_str + link, msg.contact_frames_shell[i])
 
     def set_force_val(self, name, cf_shell):
-        if self.hparams["force_sensing"] == 1:  # full force vector
+        if self.hparams["force_framework"] == 1:  # full force vector
             self.obs.set_variable_from_vector(name, to_list(cf_shell.contact_wrench.force))
-        elif self.hparams["force_sensing"] == 2:  # only normal force
+        elif self.hparams["force_framework"] == 2:  # only normal force
             force = to_list(cf_shell.contact_wrench.force)
             normal = to_list(cf_shell.contact_normal)
             self.obs.set_variable(name, abs(np.dot(force, normal))) # remember: normal is a unit vector, so we can take dot product directly
-        elif self.hparams["force_sensing"] == 3:  # only binary contact signals
+        elif self.hparams["force_framework"] == 3:  # only binary contact signals
             force = to_list(cf_shell.contact_wrench.force)
             self.obs.set_variable(name, int(np.linalg.norm(force) > 0))
-        elif self.hparams["force_sensing"] == 4:  # no force info
+        elif self.hparams["force_framework"] == 4:  # no force info
             return
         else:
-            raise ValueError("force_sensing must be either 1, 2, 3 or 4")
+            raise ValueError("force_framework must be either 1, 2, 3 or 4")
 
     def set_torque_val(self, name, val):
-        if self.hparams["torque_sensing"] == 1:  # perfect torque info
+        if self.hparams["torque_framework"] == 1:  # perfect torque info
             self.obs.set_variable(name, val)
-        elif self.hparams["torque_sensing"] == 2:  # noisy torque info
+        elif self.hparams["torque_framework"] == 2:  # noisy torque info
             val += self.random_gen.gauss(0, self.hparams["torque_noise"] * self.obs.motor_torque_max)
             self.obs.set_variable(name, val)
-        elif self.hparams["torque_sensing"] == 3:  # no torque info
+        elif self.hparams["torque_framework"] == 3:  # no torque info
             return
         else:
-            raise ValueError("torque_sensing must be either 1, 2 or 3")
+            raise ValueError("torque_framework must be either 1, 2 or 3")
