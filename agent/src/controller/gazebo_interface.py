@@ -221,8 +221,8 @@ class GazeboInterface:
                 rospy.logerr("We tried with this object-wrist-combination for 20 times, but something is wrong. Generating a new wrist pose on this object.")
                 test_case.wrist_error = gen_valid_wrist_error_from_l2(test_case.object, test_case.trans_l2_error, test_case.rot_l2_error, self.hparams)
 
-            self.shutdown_controllers()
             self.delete_all_models()
+            self.shutdown_controllers()
 
             # generate own test case when training (this is technically a "train" case)
             if not test_case:
