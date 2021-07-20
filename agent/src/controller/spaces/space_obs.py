@@ -81,11 +81,11 @@ class ObservationSpace(Space):
         elif self.hparams["force_sensing"] == 2:  # only normal force
             self.contact_force_min = 0
             self.contact_force_max = 15
-            self.add_variable_from_vector(var_name, self.contact_force_min, self.contact_force_max)
+            self.add_variable(var_name, self.contact_force_min, self.contact_force_max)
         elif self.hparams["force_sensing"] == 3:  # only binary contact signals
             self.contact_force_min = 0
             self.contact_force_max = 1
-            self.add_variable_from_vector(var_name, self.contact_force_min, self.contact_force_max)
+            self.add_variable(var_name, self.contact_force_min, self.contact_force_max)
 
     def reset_contact_obs(self):
         for i in range(self.num_parts):
