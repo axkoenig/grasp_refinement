@@ -1,5 +1,3 @@
-from multiprocessing import Lock
-
 import numpy as np
 
 from .space import Space
@@ -22,11 +20,13 @@ class ObservationSpace(Space):
         self.num_sensors = 9
         self.nan_array = [np.nan, np.nan, np.nan]
 
+        # finger joint limits
         self.prox_angle_max = 3
         self.joint_angle_min = -0.01
+        self.preshape_angle_max = np.pi / 2
+        self.preshape_angle_min = 0
         self.motor_torque_max = 10
         self.motor_torque_min = -3
-        self.preshape_angle_max = np.pi / 2
 
         # finger contact limits
         self.f_contact_pos_min = [-0.2, -0.3, 0.05]
@@ -43,13 +43,13 @@ class ObservationSpace(Space):
         # information obtainable from real hand
         for i in range(self.num_fingers):
             id_str = "_f" + str(i + 1)
-            self.add_variable(1, "prox_angle" + id_str, 0, self.joint_angle_min, self.prox_angle_max)
-            self.add_variable(1, "dist_angle" + id_str, 0, self.joint_angle_min, 0.2 * self.prox_angle_max)
+            self.add_variable("prox_angle" + id_str, self.joint_angle_min, self.prox_angle_max)
+            self.add_variable("dist_angle" + id_str, self.joint_angle_min, 0.2 * self.prox_angle_max)
             if self.hparams["torque_sensing"] != 3:
-                self.add_variable(1, "motor_torque" + id_str, 0, self.motor_torque_min, self.motor_torque_max)
-        self.add_variable(1, "preshape_angle", 0, 0, self.preshape_angle_max)
+                self.add_variable("motor_torque" + id_str, self.motor_torque_min, self.motor_torque_max)
+        self.add_variable("preshape_angle", self.preshape_angle_min, self.preshape_angle_max)
         if self.hparams["torque_sensing"] != 3:
-            self.add_variable(1, "preshape_motor_torque", 0, self.motor_torque_min, self.motor_torque_max)
+            self.add_variable("preshape_motor_torque", self.motor_torque_min, self.motor_torque_max)
 
         # if no contact sensing, we're done
         if self.hparams["force_sensing"] == 4:
@@ -61,14 +61,14 @@ class ObservationSpace(Space):
             id_str = "_p" + str(i)
             # palm
             if i == 0:
-                self.add_variable(1, "contact_normal" + id_str, self.nan_array, self.p_contact_normal_min, self.p_contact_normal_max)
-                self.add_variable(1, "contact_pos" + id_str, self.nan_array, self.p_contact_pos_min, self.p_contact_pos_max)
+                self.add_variable_from_vector("contact_normal" + id_str, self.p_contact_normal_min, self.p_contact_normal_max)
+                self.add_variable_from_vector("contact_pos" + id_str, self.p_contact_pos_min, self.p_contact_pos_max)
                 self.add_force_sensing("contact_force" + id_str)
                 continue
             # fingers
             for link in ["_prox", "_dist"]:
-                self.add_variable(1, "contact_normal" + id_str + link, self.nan_array, self.f_contact_normal_min, self.f_contact_normal_max)
-                self.add_variable(1, "contact_pos" + id_str + link, self.nan_array, self.f_contact_pos_min, self.f_contact_pos_max)
+                self.add_variable_from_vector("contact_normal" + id_str + link, self.f_contact_normal_min, self.f_contact_normal_max)
+                self.add_variable_from_vector("contact_pos" + id_str + link, self.f_contact_pos_min, self.f_contact_pos_max)
                 self.add_force_sensing("contact_force" + id_str + link)
 
         self.print_num_dimensions()
@@ -77,33 +77,33 @@ class ObservationSpace(Space):
         if self.hparams["force_sensing"] == 1:  # full force vector
             self.contact_force_min = [-15, -15, -15]
             self.contact_force_max = [15, 15, 15]
-            self.contact_force_default = [0, 0, 0]
-            self.add_variable(1, var_name, self.contact_force_default, self.contact_force_min, self.contact_force_max)
+            self.add_variable_from_vector(var_name, self.contact_force_min, self.contact_force_max)
         elif self.hparams["force_sensing"] == 2:  # only normal force
             self.contact_force_min = 0
             self.contact_force_max = 15
-            self.contact_force_default = 0
-            self.add_variable(1, var_name, self.contact_force_default, self.contact_force_min, self.contact_force_max)
+            self.add_variable_from_vector(var_name, self.contact_force_min, self.contact_force_max)
         elif self.hparams["force_sensing"] == 3:  # only binary contact signals
             self.contact_force_min = 0
             self.contact_force_max = 1
-            self.contact_force_default = 0
-            self.add_variable(1, var_name, self.contact_force_default, self.contact_force_min, self.contact_force_max)
+            self.add_variable_from_vector(var_name, self.contact_force_min, self.contact_force_max)
 
     def reset_contact_obs(self):
-        # we only have an array if in full force vector framework
-        cf_default = self.nan_array if self.hparams["force_sensing"] == 1 else np.nan
-
         for i in range(self.num_parts):
             id_str = "_p" + str(i)
             # palm
             if i == 0:
-                self.set_cur_val_by_name("contact_normal" + id_str, self.nan_array)
-                self.set_cur_val_by_name("contact_pos" + id_str, self.nan_array)
-                self.set_cur_val_by_name("contact_force" + id_str, cf_default)
+                self.set_variable_from_vector("contact_normal" + id_str, self.nan_array)
+                self.set_variable_from_vector("contact_pos" + id_str, self.nan_array)
+                if self.hparams["force_sensing"] == 1:
+                    self.set_variable_from_vector("contact_force" + id_str, self.nan_array)
+                else:
+                    self.set_variable("contact_force" + id_str, np.nan)
                 continue
             # fingers
             for link in ["_prox", "_dist"]:
-                self.set_cur_val_by_name("contact_normal" + id_str + link, self.nan_array)
-                self.set_cur_val_by_name("contact_pos" + id_str + link, self.nan_array)
-                self.set_cur_val_by_name("contact_force" + id_str + link, cf_default)
+                self.set_variable_from_vector("contact_normal" + id_str + link, self.nan_array)
+                self.set_variable_from_vector("contact_pos" + id_str + link, self.nan_array)
+                if self.hparams["force_sensing"] == 1:
+                    self.set_variable_from_vector("contact_force" + id_str + link, self.nan_array)
+                else:
+                    self.set_variable("contact_force" + id_str + link, np.nan)

@@ -20,8 +20,11 @@ class ActionSpace(Space):
 
         self.max_action = 1
         self.min_action = -self.max_action
+        self.num_outputs = 9
+        
+        for i in range(self.num_outputs):
+            self.add_variable(f"action_{i}", self.min_action, self.max_action)
 
-        self.add_variable(9, "actions", 0, self.min_action, self.max_action)
         self.print_num_dimensions()
 
     def map_vals_to_range(self, min, max, vals):
