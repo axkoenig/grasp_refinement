@@ -143,9 +143,7 @@ class EvalCallbackWithInfo(EvalCallback):
         eval_at_init=False,
         eval_after_episode=True,
     ):
-        super(EvalCallbackWithInfo, self).__init__(
-            eval_env, callback_on_new_best, n_eval_episodes, eval_freq, log_path, best_model_save_path, deterministic, render, verbose, warn
-        )
+        super(EvalCallbackWithInfo, self).__init__(eval_env, callback_on_new_best, n_eval_episodes, eval_freq, log_path, best_model_save_path, deterministic, render, verbose, warn)
         self.exclude_infos_from_logging = exclude_infos_from_logging
         self.eval_at_init = eval_at_init
         self.eval_after_episode = eval_after_episode
@@ -235,7 +233,7 @@ class EvalCallbackWithInfo(EvalCallback):
                 return self._on_event()
 
     def _on_step(self) -> bool:
-        if get_done_or_dones(self): 
+        if get_done_or_dones(self):
             self.epside_counter += 1
         eval_after_step = self.n_calls % self.eval_freq == 0 and not self.eval_after_episode
         eval_after_episode = self.epside_counter % self.eval_freq == 0 and self.eval_after_episode

@@ -6,8 +6,10 @@ class StringServiceRequest:
         self.part_name = part_name
         self.reference_frame = reference_frame
 
+
 class GazeboServiceException(Exception):
     pass
+
 
 def service_call(service, request, service_name):
     rospy.wait_for_service(service_name)
@@ -32,7 +34,7 @@ def service_call_with_retries(service, request=None, max_retries=100, wait_secs=
             success = res.success
         except AttributeError:
             # result did not have attribute "success", we assume everything's ok (e.g. it may be of type EmptyResponse)
-            success = True 
+            success = True
         if no_exception and success:
             return res
         rospy.loginfo(f"Service call to {service_name} failed. Trying again in {wait_secs} secs...")

@@ -36,9 +36,7 @@ def make_model_train(env, hparams):
     if hparams["algorithm"] == "td3":
         n_actions = env.action_space.shape[-1]
         action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
-        return TD3(
-            "MlpPolicy", env, action_noise=action_noise, verbose=1, tensorboard_log=hparams["log_path"], policy_delay=hparams["policy_delay"], **ac_kwargs
-        )
+        return TD3("MlpPolicy", env, action_noise=action_noise, verbose=1, tensorboard_log=hparams["log_path"], policy_delay=hparams["policy_delay"], **ac_kwargs)
     elif hparams["algorithm"] == "sac":
         return SAC("MlpPolicy", env, verbose=1, tensorboard_log=hparams["log_path"], ent_coef=hparams["ent_coef"], **ac_kwargs)
     elif hparams["algorithm"] == "ppo":

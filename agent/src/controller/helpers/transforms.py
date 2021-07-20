@@ -7,8 +7,8 @@ def normalize(val, low_bound, high_bound):
 
 
 def normalize_list_items(list_val, list_low_bound, list_high_bound):
-    is_float = type(list_val) is float or type(list_low_bound) is float or type(list_high_bound) is float 
-    is_int = type(list_val) is int or type(list_low_bound) is int or type(list_high_bound) is int 
+    is_float = type(list_val) is float or type(list_low_bound) is float or type(list_high_bound) is float
+    is_int = type(list_val) is int or type(list_low_bound) is int or type(list_high_bound) is int
     if is_int or is_float:
         return normalize(list_val, list_low_bound, list_high_bound)
     for i in range(len(list_val)):

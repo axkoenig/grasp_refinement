@@ -102,9 +102,7 @@ class Cylinder:
         self.type = "cylinder"
 
     def get_csv_data(self):
-        return dict(
-            {"dimension_1": self.radius, "dimension_2": self.length, "dimension_3": 0, "mass": self.mass, "inertia_scaling_factor": self.inertia_scaling_factor}
-        )
+        return dict({"dimension_1": self.radius, "dimension_2": self.length, "dimension_3": 0, "mass": self.mass, "inertia_scaling_factor": self.inertia_scaling_factor})
 
     def get_height(self):
         return self.length
@@ -121,9 +119,7 @@ class Box:
         self.type = "box"
 
     def get_csv_data(self):
-        return dict(
-            {"dimension_1": self.x, "dimension_2": self.y, "dimension_3": self.z, "mass": self.mass, "inertia_scaling_factor": self.inertia_scaling_factor}
-        )
+        return dict({"dimension_1": self.x, "dimension_2": self.y, "dimension_3": self.z, "mass": self.mass, "inertia_scaling_factor": self.inertia_scaling_factor})
 
     def get_height(self):
         return self.z
@@ -141,9 +137,7 @@ class RandomCylinder(Cylinder):
 
 class RandomBox(Box):
     def __init__(self, x_range=[0.04, 0.10], y_range=[0.04, 0.10], z_range=[0.13, 0.23], mass_range=[0.1, 0.3], inertia_scaling_factor=0.9):
-        super().__init__(
-            sample_from_range(x_range), sample_from_range(y_range), sample_from_range(z_range), sample_from_range(mass_range), inertia_scaling_factor
-        )
+        super().__init__(sample_from_range(x_range), sample_from_range(y_range), sample_from_range(z_range), sample_from_range(mass_range), inertia_scaling_factor)
 
 
 class RandomWristError:

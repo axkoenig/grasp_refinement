@@ -21,7 +21,7 @@ class ActionSpace(Space):
         self.max_action = 1
         self.min_action = -self.max_action
         self.num_outputs = 9
-        
+
         for i in range(self.num_outputs):
             self.add_variable(f"action_{i}", self.min_action, self.max_action)
 

@@ -314,9 +314,7 @@ class GazeboInterface:
 
     def get_wrist_init_pose(self, wrist_p, wrist_q, wrist_error):
 
-        rospy.loginfo(
-            f"Random offset for init wrist pose is \n [x: {wrist_error.x}, y: {wrist_error.y}, z: {wrist_error.z}], [roll: {wrist_error.roll}, pitch: {wrist_error.pitch}, yaw: {wrist_error.yaw}]."
-        )
+        rospy.loginfo(f"Random offset for init wrist pose is \n [x: {wrist_error.x}, y: {wrist_error.y}, z: {wrist_error.z}], [roll: {wrist_error.roll}, pitch: {wrist_error.pitch}, yaw: {wrist_error.yaw}].")
 
         # construct matrix that offsets from ground truth pose
         q = tf.transformations.quaternion_from_euler(wrist_error.roll, wrist_error.pitch, wrist_error.yaw)
@@ -341,26 +339,13 @@ class GazeboInterface:
     def spawn_object(self, object):
         if object.__class__.__name__ == "RandomSphere":
             self.spawn_sphere_mount()
-            p = os.popen(
-                "xacro "
-                + self.description_path
-                + f"/urdf/environment/sphere.urdf.xacro"
-                + f" sphere_radius:={object.radius} sphere_mass:={object.mass} inertia_scaling_factor:={object.inertia_scaling_factor}"
-            )
+            p = os.popen("xacro " + self.description_path + f"/urdf/environment/sphere.urdf.xacro" + f" sphere_radius:={object.radius} sphere_mass:={object.mass} inertia_scaling_factor:={object.inertia_scaling_factor}")
         elif object.__class__.__name__ == "RandomCylinder":
             p = os.popen(
-                "xacro "
-                + self.description_path
-                + f"/urdf/environment/cylinder.urdf.xacro"
-                + f" cylinder_radius:={object.radius} cylinder_length:={object.length} cylinder_mass:={object.mass} inertia_scaling_factor:={object.inertia_scaling_factor}"
+                "xacro " + self.description_path + f"/urdf/environment/cylinder.urdf.xacro" + f" cylinder_radius:={object.radius} cylinder_length:={object.length} cylinder_mass:={object.mass} inertia_scaling_factor:={object.inertia_scaling_factor}"
             )
         elif object.__class__.__name__ == "RandomBox":
-            p = os.popen(
-                "xacro "
-                + self.description_path
-                + f"/urdf/environment/box.urdf.xacro"
-                + f" box_x:={object.x} box_y:={object.y} box_z:={object.z} box_mass:={object.mass} inertia_scaling_factor:={object.inertia_scaling_factor}"
-            )
+            p = os.popen("xacro " + self.description_path + f"/urdf/environment/box.urdf.xacro" + f" box_x:={object.x} box_y:={object.y} box_z:={object.z} box_mass:={object.mass} inertia_scaling_factor:={object.inertia_scaling_factor}")
         else:
             rospy.logerr("Unsupported object type!")
             return
@@ -389,9 +374,7 @@ class GazeboInterface:
     def spawn_reflex(self):
         # read xacro file
         urdf_location = self.description_path + f"/robots/reflex.robot.xacro"
-        p = os.popen(
-            "xacro " + urdf_location + f" base_link_name:=shell reflex_pub_rate:={self.reflex_pub_rate} simplify_collisions:={self.simplify_collisions}"
-        )
+        p = os.popen("xacro " + urdf_location + f" base_link_name:=shell reflex_pub_rate:={self.reflex_pub_rate} simplify_collisions:={self.simplify_collisions}")
         xml_string = p.read()
         p.close()
 
