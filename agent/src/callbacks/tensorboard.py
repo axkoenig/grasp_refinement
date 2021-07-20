@@ -14,7 +14,7 @@ class TensorboardCallback(BaseCallback):
         # access local variable of training environment
         return self.locals[name][0]
 
-    def _on_training_begin(self):
+    def _on_training_start(self):
         log_dict(self.hparams, self.logger, "hparams/")
 
     def _on_step(self) -> bool:
