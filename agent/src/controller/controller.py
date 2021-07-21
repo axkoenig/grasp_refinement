@@ -28,7 +28,7 @@ class Controller(gym.Env):
         self.rewards = Rewards(self.hparams, self.state)
         self.stage_controller = StageController(self.hparams, self.state, self.gi)
         self.actions = Actions(self.hparams, self.state, self.gi)
-        self.writer = Writer(self.hparams, self.name)
+        self.writer = Writer(self.hparams)
 
         self.action_space = gym.spaces.Box(low=self.acts.get_min_vals(), high=self.acts.get_max_vals())
         self.observation_space = gym.spaces.Box(low=np.zeros(self.obs.get_min_vals().shape), high=np.ones(self.obs.get_max_vals().shape))
@@ -63,9 +63,13 @@ class Controller(gym.Env):
 
     def reset(self, test_case=None):
         self.gi.sim_unpause()
-        self.writer.write(self.state.io_buffer)
+        self.writer.write(self.state.io_buffer, self.name)
         rospy.loginfo(f"==={self.name}-RESETTING===")
         self.gi.reset_world(self.state, test_case)
         self.state.reset()
         self.gi.sim_pause()  # when NN is updating after resetting, we pause simulation
         return np.array(list(self.obs.get_cur_vals().values()))
+
+    def close(self):
+        self.writer.write(self.state.io_buffer, self.name)
+        self.state.reset()

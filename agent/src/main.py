@@ -129,6 +129,7 @@ def main(args):
 
         if args.eval_after_training:
             rospy.loginfo("Testing final model")
+            env.name = "TEST_AFTER_TRAIN"
             test(model, env, log_path, args.log_name, hparams["deterministic_eval"], hparams["all_test_cases"])
 
     else:
