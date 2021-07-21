@@ -26,7 +26,7 @@ LOG_PATH=$HOME_DIR/output/slurm_logs
 echo "Submitting ${NUM_EXPERIMENTS} experiments for each framework..."
 
 # hyper-params for training
-TIME_STEPS=20000
+TIME_STEPS=5000
 
 # translational error
 X_ERROR_MAX=0.05
@@ -46,6 +46,8 @@ YAW_ERROR_MIN=-$YAW_ERROR_MAX
 
 W_DELTA=0.5
 W_EPS_TORQUE=5
+GRADIENT_STEPS=32
+TRAIN_FREQ=32
 
 # ports
 NUM_FRAMEWORKS=8
@@ -57,20 +59,22 @@ EXPERIMENT_COUNTER=0
 submit_job() {
     ROS_PORT=$(($BASE_ROS_PORT + $EXPERIMENT_COUNTER))
     GAZEBO_PORT=$(($BASE_GAZEBO_PORT + $EXPERIMENT_COUNTER))
-    LOG_NAME=${COMMENT}_f${1}_s${4}_id${2}_algo${3}_g${5}
+    LOG_NAME=${COMMENT}_f${1}_s${4}_id${2}_algo${3}
     echo "Submitting job with LOG_NAME $LOG_NAME, ROS_PORT $ROS_PORT, GAZEBO_PORT $GAZEBO_PORT"
-    sbatch --output=$LOG_PATH/$LOG_NAME.out --error=$LOG_PATH/$LOG_NAME.err --export=REWARD_FRAMEWORK=${1},SEED=${2},ALGORITHM=${3},FORCE_FRAMEWORK=${4},GRADIENT_STEPS=${5},TRAIN_FREQ=${5},TIME_STEPS=${TIME_STEPS},W_EPS_TORQUE=${W_EPS_TORQUE},W_DELTA=${W_DELTA},ROS_PORT=${ROS_PORT},GAZEBO_PORT=${GAZEBO_PORT},LOG_NAME=${LOG_NAME},CLUSTER_PATH=$CLUSTER_PATH,HOME_DIR=$HOME_DIR,X_ERROR_MAX=$X_ERROR_MAX,X_ERROR_MIN=$X_ERROR_MIN,Y_ERROR_MAX=$Y_ERROR_MAX,Y_ERROR_MIN=$Y_ERROR_MIN,Z_ERROR_MAX=$Z_ERROR_MAX,Z_ERROR_MIN=$Z_ERROR_MIN,ROLL_ERROR_MAX=$ROLL_ERROR_MAX,ROLL_ERROR_MIN=$ROLL_ERROR_MIN,PITCH_ERROR_MAX=$PITCH_ERROR_MAX,PITCH_ERROR_MIN=$PITCH_ERROR_MIN,YAW_ERROR_MAX=$YAW_ERROR_MAX,YAW_ERROR_MIN=$YAW_ERROR_MIN ${CLUSTER_PATH}/experiment.slurm
+    sbatch --output=$LOG_PATH/$LOG_NAME.out --error=$LOG_PATH/$LOG_NAME.err --export=REWARD_FRAMEWORK=${1},SEED=${2},ALGORITHM=${3},FORCE_FRAMEWORK=${4},GRADIENT_STEPS=${GRADIENT_STEPS},TRAIN_FREQ=${TRAIN_FREQ},TIME_STEPS=${TIME_STEPS},W_EPS_TORQUE=${W_EPS_TORQUE},W_DELTA=${W_DELTA},ROS_PORT=${ROS_PORT},GAZEBO_PORT=${GAZEBO_PORT},LOG_NAME=${LOG_NAME},CLUSTER_PATH=$CLUSTER_PATH,HOME_DIR=$HOME_DIR,X_ERROR_MAX=$X_ERROR_MAX,X_ERROR_MIN=$X_ERROR_MIN,Y_ERROR_MAX=$Y_ERROR_MAX,Y_ERROR_MIN=$Y_ERROR_MIN,Z_ERROR_MAX=$Z_ERROR_MAX,Z_ERROR_MIN=$Z_ERROR_MIN,ROLL_ERROR_MAX=$ROLL_ERROR_MAX,ROLL_ERROR_MIN=$ROLL_ERROR_MIN,PITCH_ERROR_MAX=$PITCH_ERROR_MAX,PITCH_ERROR_MIN=$PITCH_ERROR_MIN,YAW_ERROR_MAX=$YAW_ERROR_MAX,YAW_ERROR_MIN=$YAW_ERROR_MIN ${CLUSTER_PATH}/experiment.slurm
     EXPERIMENT_COUNTER=$(($EXPERIMENT_COUNTER + 1))
 }
 
 for i in $(seq 1 $NUM_EXPERIMENTS); do
-    # params: reward_framewok, seed, algorithm, force_framework, gradient_steps
-    submit_job "1" ${i} "sac" "1" "2"
-    submit_job "1" ${i} "sac" "1" "4"
-    submit_job "1" ${i} "sac" "1" "8"
-    submit_job "1" ${i} "sac" "1" "16"
-    submit_job "1" ${i} "sac" "1" "32"
-    submit_job "1" ${i} "sac" "1" "64"
+    # params: reward_framewok, seed, algorithm, force_framework
+    submit_job "1" ${i} "sac" "1" 
+    submit_job "2" ${i} "sac" "1" 
+    submit_job "3" ${i} "sac" "1" 
+    submit_job "4" ${i} "sac" "1" 
+
+    submit_job "1" ${i} "sac" "2" 
+    submit_job "1" ${i} "sac" "3" 
+    submit_job "1" ${i} "sac" "4" 
 done
 
 echo "Done."

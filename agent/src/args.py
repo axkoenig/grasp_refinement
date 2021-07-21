@@ -72,8 +72,8 @@ def parse_args():
     # td3 and sac hparams
     parser.add_argument("--learning_starts", type=int, default=100, help="How many data points to collect before starting to train.")
     parser.add_argument("--batch_size", type=int, default=256, help="Minibatch size for each gradient update.")
-    parser.add_argument("--gradient_steps", type=int, default=1, help="How many gradient steps to do after each rollout.")
-    parser.add_argument("--train_freq", type=int, default=1, help="Update the model every train_freq time steps.")
+    parser.add_argument("--gradient_steps", type=int, default=32, help="How many gradient steps to do after each rollout.")
+    parser.add_argument("--train_freq", type=int, default=32, help="Update the model every train_freq time steps.")
 
     args, unknown = parser.parse_known_args()
     return args
