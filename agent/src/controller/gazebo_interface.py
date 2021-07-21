@@ -283,10 +283,14 @@ class GazeboInterface:
             # check if we knocked object over
             start_obj_q_euler = np.array(tf.transformations.euler_from_quaternion(start_obj_q))
             obj_q_euler = np.array(tf.transformations.euler_from_quaternion(obj_q))
-            large_translation = np.linalg.norm((np.array(self.start_obj_t) - np.array(obj_t))) > test_case.trans_l2_error * 1.5
-            large_rot = np.linalg.norm((start_obj_q_euler - obj_q_euler), ord=1) > deg2rad(80)
+            trans = np.linalg.norm((np.array(self.start_obj_t) - np.array(obj_t)))
+            rot = np.linalg.norm((start_obj_q_euler - obj_q_euler), ord=1)
+            large_translation = trans > self.hparams["z_error_max"] * 1.5
+            large_rot = rot > deg2rad(80)
             if large_translation or large_rot:
-                rospy.logerr(f"Object knocked over or rolled away while resetting. Reason: large_translation: {large_translation}, large_rot: {large_rot}. Resetting again!")
+                rospy.logerr(
+                    f"Object knocked over or rolled away while resetting. Translation: {trans}-{large_translation}, Rotation: {rot}-{large_rot}. Resetting again!"
+                )
                 self.knocked_obj_over = True
                 return self.reset_world(state, test_case)
 
