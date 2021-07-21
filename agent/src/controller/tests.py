@@ -130,17 +130,17 @@ class Box:
 
 
 class RandomSphere(Sphere):
-    def __init__(self, radius_range=[0.065, 0.08], mass_range=[0.1, 0.3], inertia_scaling_factor=0.9):
+    def __init__(self, radius_range=[0.065, 0.08], mass_range=[0.1, 0.4], inertia_scaling_factor=0.9):
         super().__init__(sample_from_range(radius_range), sample_from_range(mass_range), inertia_scaling_factor)
 
 
 class RandomCylinder(Cylinder):
-    def __init__(self, radius_range=[0.03, 0.05], length_range=[0.13, 0.23], mass_range=[0.1, 0.3], inertia_scaling_factor=0.9):
+    def __init__(self, radius_range=[0.03, 0.05], length_range=[0.13, 0.23], mass_range=[0.1, 0.4], inertia_scaling_factor=0.9):
         super().__init__(sample_from_range(radius_range), sample_from_range(length_range), sample_from_range(mass_range), inertia_scaling_factor)
 
 
 class RandomBox(Box):
-    def __init__(self, x_range=[0.04, 0.10], y_range=[0.04, 0.10], z_range=[0.13, 0.23], mass_range=[0.1, 0.3], inertia_scaling_factor=0.9):
+    def __init__(self, x_range=[0.04, 0.10], y_range=[0.04, 0.10], z_range=[0.13, 0.23], mass_range=[0.1, 0.4], inertia_scaling_factor=0.9):
         super().__init__(
             sample_from_range(x_range), sample_from_range(y_range), sample_from_range(z_range), sample_from_range(mass_range), inertia_scaling_factor
         )
