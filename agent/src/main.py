@@ -29,20 +29,24 @@ def make_env(hparams, name):
 
 def make_model_train(env, hparams):
     # td3 and sac have some arguments in common
-    ac_args = ["learning_starts", "gradient_steps", "batch_size"]
+    ac_args = ["learning_starts", "gradient_steps", "batch_size", "learning_rate"]
     ac_kwargs = {key: value for (key, value) in hparams.items() if key in ac_args}
     ac_kwargs.update({"train_freq": (hparams["train_freq"], "step")})
 
     if hparams["algorithm"] == "td3":
         n_actions = env.action_space.shape[-1]
         action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
-        return TD3("MlpPolicy", env, action_noise=action_noise, verbose=1, tensorboard_log=hparams["log_path"], policy_delay=hparams["policy_delay"], **ac_kwargs)
+        return TD3(
+            "MlpPolicy",
+            env,
+            action_noise=action_noise,
+            verbose=1,
+            tensorboard_log=hparams["log_path"],
+            policy_delay=hparams["policy_delay"],
+            **ac_kwargs,
+        )
     elif hparams["algorithm"] == "sac":
         return SAC("MlpPolicy", env, verbose=1, tensorboard_log=hparams["log_path"], ent_coef=hparams["ent_coef"], **ac_kwargs)
-    elif hparams["algorithm"] == "ppo":
-        return PPO("MlpPolicy", env, verbose=1, tensorboard_log=hparams["log_path"])
-    elif hparams["algorithm"] == "a2c":
-        return A2C("MlpPolicy", env, verbose=1, tensorboard_log=hparams["log_path"])
     else:
         rospy.logerr("Unrecognized algorithm: " + hparams["algorithm"])
         return

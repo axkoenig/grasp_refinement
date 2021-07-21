@@ -74,6 +74,7 @@ def parse_args():
     parser.add_argument("--batch_size", type=int, default=256, help="Minibatch size for each gradient update.")
     parser.add_argument("--gradient_steps", type=int, default=32, help="How many gradient steps to do after each rollout.")
     parser.add_argument("--train_freq", type=int, default=32, help="Update the model every train_freq time steps.")
+    parser.add_argument("--learning_rate", type=float, default=0.0003, help="Learning rate for ADAM optimizer.")
 
     args, unknown = parser.parse_known_args()
     return args

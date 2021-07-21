@@ -41,7 +41,7 @@ def get_experiment_data(
         new_vals = []
         for i in range(0, len(time_steps)):
             if i % 10 == 0:
-                new_time_steps.append(i)
+                new_time_steps.append(time_steps[i])
                 new_vals.append(vals[i])
         time_steps = new_time_steps
         vals = new_vals
@@ -67,19 +67,20 @@ def get_experiment_data(
     df = pd.DataFrame(data)
 
     # get some interesting hyperparameters
-    des_hparams = ["reward_framework", "force_framework", "w_eps_torque", "w_delta"]
+    # des_hparams = ["reward_framework", "force_framework", "w_eps_torque", "w_delta", "gradient_steps"]
+    des_hparams = [ "w_eps_torque", "w_delta", "gradient_steps"]
     for hparam in des_hparams:
         _, _, x = zip(*event_acc.Scalars("hparams/" + hparam))
         df[hparam] = x[0]
 
-    # the variable that you want to keep fixed
-    _, _, x = zip(*event_acc.Scalars("hparams/reward_framework"))
-    keep_fixed = 1
+    # # the variable that you want to keep fixed
+    # _, _, x = zip(*event_acc.Scalars("hparams/reward_framework"))
+    # keep_fixed = 1
 
-    # TODO delete 
-    if int(x[0]) != keep_fixed:
-        print("none")
-        return None
+    # # TODO delete 
+    # if int(x[0]) != keep_fixed:
+    #     print("none")
+    #     return None
 
     if verbose:
         print("Tags in this tensorboard log are: \n", str(event_acc.Tags()))
@@ -120,25 +121,25 @@ if __name__ == "__main__":
     parser.add_argument(
         "--log_path",
         type=str,
-        default="/home/parallels/cluster_logs_sd2",
+        default="/home/parallels/cluster_logs_sd3",
         help="Path to tensorboard log.",
     )
     parser.add_argument(
         "--prefix",
         type=str,
-        default="19Jul_Tuned",
+        default="20Ju",
         help="Prefix comment of your experiment.",
     )
     parser.add_argument(
         "--scalar_name",
         type=str,
-        default="step/sustained_holding",
+        default="train/critic_loss",
         help="Which metric to plot.",
     )
     parser.add_argument(
         "--compare",
         type=str,
-        default="force_framework",
+        default="gradient_steps",
         help="Which metric to compare.",
     )
 
