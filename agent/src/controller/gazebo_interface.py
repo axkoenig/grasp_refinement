@@ -13,11 +13,7 @@ from gazebo_msgs.srv import GetModelState, GetLinkState, SetModelState, DeleteMo
 from gazebo_msgs.msg import ModelState, ContactsState
 
 from reflex_interface.srv import PosIncrement, GraspPrimitive
-from .helpers.transforms import (
-    get_tq_from_homo_matrix,
-    get_homo_matrix_from_tq,
-    get_homo_matrix_from_pose_msg,
-)
+from .helpers.transforms import get_tq_from_homo_matrix, get_homo_matrix_from_tq, get_homo_matrix_from_pose_msg, deg2rad
 from .helpers.services import StringServiceRequest, service_call_with_retries
 from .tests import TestCaseFromRanges, gen_valid_wrist_error_from_l2
 
@@ -50,6 +46,7 @@ class GazeboInterface:
         self.srv_time_out = 5
         self.srv_tolerance = 0.01
         self.resetting_attempts = 0
+        self.knocked_obj_over = False
 
         # get some info on reflex setup
         self.simplify_collisions = rospy.get_param("simplify_collisions")
@@ -180,7 +177,7 @@ class GazeboInterface:
         return 0
 
     def wait_until_grasp_stabilizes(self):
-        rospy.sleep(0.2)
+        rospy.sleep(0.5)
 
     def delete_model(self, name="object"):
         req = DeleteModelRequest()
@@ -217,18 +214,25 @@ class GazeboInterface:
 
     def reset_world(self, state, test_case=None):
         try:
-            if test_case and self.resetting_attempts > 20:
-                rospy.logerr("We tried with this object-wrist-combination for 20 times, but something is wrong. Generating a new wrist pose on this object.")
+            if test_case and (self.resetting_attempts > 20 or self.knocked_obj_over):
+                rospy.logerr(
+                    f"resetting_attempts {self.resetting_attempts}, knocked_obj_over {self.knocked_obj_over}. Generating a new wrist pose on this object."
+                )
                 test_case.wrist_error = gen_valid_wrist_error_from_l2(test_case.object, test_case.trans_l2_error, test_case.rot_l2_error, self.hparams)
+                # reset vars for this new wrist error
+                self.knocked_obj_over = False
+                self.resetting_attempts = 0
 
             self.delete_all_models()
             self.shutdown_controllers()
 
             # generate own test case when training (this is technically a "train" case)
             if not test_case:
+                rospy.loginfo("Generating new test case")
                 test_case = TestCaseFromRanges(self.hparams)
-            state.cur_test_case = test_case
+                rospy.loginfo("Object is " + test_case.object.type)
 
+            state.cur_test_case = test_case
             self.spawn_object(test_case.object)
             rospy.sleep(2)  # required s.t. object can register with gazebo
 
@@ -239,7 +243,7 @@ class GazeboInterface:
             if not res:
                 rospy.logwarn("Could not spawn reflex. Resetting again.")
                 self.resetting_attempts += 1
-                return self.reset_world(test_case)
+                return self.reset_world(state, test_case)
             rospy.sleep(2)
             self.launch_controllers()
 
@@ -247,10 +251,10 @@ class GazeboInterface:
             if (obj_pose == tf.transformations.identity_matrix()).all():
                 rospy.logwarn("Could not get object pose. Resetting again.")
                 self.resetting_attempts += 1
-                return self.reset_world(test_case)
+                return self.reset_world(state, test_case)
 
-            # get ground truth pose of reflex (which is offset from object frame)
-            obj_t, _ = get_tq_from_homo_matrix(obj_pose)
+            # calc ground truth pose of reflex (which is offset from object frame)
+            obj_t, obj_q = get_tq_from_homo_matrix(obj_pose)
             truth_wrist_t = obj_t - [0, 0.05, 0]  # 5cm offset
             truth_wrist_q = tf.transformations.quaternion_from_euler(-np.pi / 2, 0, 0)
 
@@ -260,7 +264,7 @@ class GazeboInterface:
             if not res:
                 rospy.logwarn("Could not reach waypoint wrist pose. Resetting again.")
                 self.resetting_attempts += 1
-                return self.reset_world(test_case)
+                return self.reset_world(state, test_case)
             self.open_hand(True, self.srv_tolerance, self.srv_time_out)
 
             # move to erroneous wrist pose
@@ -269,17 +273,28 @@ class GazeboInterface:
             if not res:
                 rospy.logwarn("Could not reach erroneous wrist pose. Resetting again.")
                 self.resetting_attempts += 1
-                return self.reset_world(test_case)
+                return self.reset_world(state, test_case)
 
             # close fingers
             self.close_until_contact_and_tighten()
             self.wait_until_grasp_stabilizes()
-            self.start_obj_t, _ = get_tq_from_homo_matrix(self.get_object_pose())
+            self.start_obj_t, start_obj_q = get_tq_from_homo_matrix(self.get_object_pose())
+
+            # check if we knocked object over
+            start_obj_q_euler = np.array(tf.transformations.euler_from_quaternion(start_obj_q))
+            obj_q_euler = np.array(tf.transformations.euler_from_quaternion(obj_q))
+            large_translation = np.linalg.norm((np.array(self.start_obj_t) - np.array(obj_t))) > test_case.trans_l2_error * 1.5
+            large_rot = np.linalg.norm((start_obj_q_euler - obj_q_euler), ord=1) > deg2rad(80)
+            if large_translation or large_rot:
+                rospy.logerr(f"Object knocked over or rolled away while resetting. Reason: large_translation: {large_translation}, large_rot: {large_rot}. Resetting again!")
+                self.knocked_obj_over = True
+                return self.reset_world(state, test_case)
+
         except Exception as e:
             rospy.logerr(f"Exception occurred while resetting: '{e}'. Resetting again")
             rospy.sleep(2)
             self.resetting_attempts += 1
-            return self.reset_world(test_case)
+            return self.reset_world(state, test_case)
 
         self.resetting_attempts = 0
 
