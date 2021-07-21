@@ -21,6 +21,17 @@ class StageController:
         self.state = state
         self.gi = gazebo_interface
 
+    def safe_thread_start(self, thread, tries_left=100, wait=0.1):
+        # sometimes we have problems starting a new thread, so wrapping in try, catch
+        if not tries_left:
+            return 
+        try:
+            thread.start()
+        except Exception as e:
+            rospy.warn(f"Failed to start thread: {e}. Trying again. Tries left: {tries_left}")
+            rospy.sleep(wait)
+            self.safe_thread_start(thread, tries_left=tries_left - 1)
+
     def update_stage(self):
         # check if we're done early
         if self.state.stage == Stage.REFINE and self.end_refinement_early():
@@ -36,7 +47,7 @@ class StageController:
             self.state.cur_time_step = 0
             self.state.stage = Stage.LIFT
             self.lift_thread = threading.Thread(target=self.lift_object)
-            self.lift_thread.start()
+            self.safe_thread_start(self.lift_thread)
         elif self.state.cur_time_step == self.hparams["lift_steps"] and self.state.stage == Stage.LIFT:
             self.lift_thread.join()  # wait for lifting to be done
             self.state.sustained_lifting = self.is_object_lifted()
@@ -49,7 +60,7 @@ class StageController:
                 rospy.loginfo("Object lifted! New stage is HOLD. :-)")
                 self.state.stage = Stage.HOLD
                 self.hold_thread = threading.Thread(target=self.hold_object)
-                self.hold_thread.start()
+                self.safe_thread_start(self.hold_thread)
         elif self.state.cur_time_step == self.hparams["hold_steps"] and self.state.stage == Stage.HOLD:
             self.hold_thread.join()  # wait for holding to be done (to get holding outcome)
             self.state.sustained_holding = self.is_object_lifted()
