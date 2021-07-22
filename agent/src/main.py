@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+from typing import Callable
 
 import numpy as np
 import rospy
@@ -20,6 +21,13 @@ from controller.tests import test, generate_test_cases
 from args import parse_args
 
 
+def linear_schedule(initial_value: float) -> Callable[[float], float]:
+    def func(progress_remaining: float) -> float:
+        return progress_remaining * initial_value
+
+    return func
+
+
 def make_env(hparams, name):
     env = Controller(hparams, name)
     env.seed(hparams["seed"])
@@ -29,9 +37,14 @@ def make_env(hparams, name):
 
 def make_model_train(env, hparams):
     # td3 and sac have some arguments in common
-    ac_args = ["learning_starts", "gradient_steps", "batch_size", "learning_rate"]
+    ac_args = [
+        "learning_starts",
+        "gradient_steps",
+        "batch_size",
+    ]
     ac_kwargs = {key: value for (key, value) in hparams.items() if key in ac_args}
     ac_kwargs.update({"train_freq": (hparams["train_freq"], "step")})
+    ac_kwargs.update({"learning_rate": linear_schedule(hparams["learning_rate"]) if hparams["use_lr_schedule"] else hparams["learning_rate"]})
 
     if hparams["algorithm"] == "td3":
         n_actions = env.action_space.shape[-1]

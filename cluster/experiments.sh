@@ -25,7 +25,6 @@ CLUSTER_PATH=$HOME_DIR/overlay/work/catkin_ws/src/grasp_refinement/cluster
 LOG_PATH=$HOME_DIR/output/slurm_logs
 echo "Submitting ${NUM_EXPERIMENTS} experiments for each framework..."
 
-
 # translational error
 X_ERROR_MAX=0.05
 X_ERROR_MIN=-$X_ERROR_MAX
@@ -64,23 +63,15 @@ submit_job() {
 }
 
 for i in $(seq 1 $NUM_EXPERIMENTS); do
-    # params: reward_framewok, seed, algorithm, force_framework
-    submit_job "1" ${i} "sac" "1" "5000" "0.0003" "256"
-    submit_job "2" ${i} "sac" "1" "5000" "0.0003" "256"
-    submit_job "3" ${i} "sac" "1" "5000" "0.0003" "256"
-    submit_job "4" ${i} "sac" "1" "5000" "0.0003" "256"
-
-    submit_job "1" ${i} "sac" "2" "5000" "0.0003" "256"
-    submit_job "1" ${i} "sac" "3" "5000" "0.0003" "256"
-    submit_job "1" ${i} "sac" "4" "5000" "0.0003" "256"
-
-
-    submit_job "1" ${i} "sac" "1" "15000" "0.0001" "256"
+    # params: reward_framewok, seed, algorithm, time_steps, learning_rate, batch_size
+    submit_job "1" ${i} "sac" "1" "15000" "0.001" "256"
+    submit_job "1" ${i} "sac" "1" "15000" "0.0007" "256"
+    submit_job "1" ${i} "sac" "1" "15000" "0.0003" "256"
     submit_job "1" ${i} "sac" "1" "15000" "0.0002" "256"
-    submit_job "1" ${i} "sac" "1" "15000" "0.0001" "512"
-    submit_job "1" ${i} "sac" "1" "15000" "0.0003" "1024"
 
-
+    submit_job "1" ${i} "sac" "1" "15000" "0.0002" "32"
+    submit_job "1" ${i} "sac" "1" "15000" "0.0002" "64"
+    submit_job "1" ${i} "sac" "1" "15000" "0.0002" "128"
 done
 
 echo "Done."
