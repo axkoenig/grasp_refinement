@@ -37,11 +37,7 @@ def make_env(hparams, name):
 
 def make_model_train(env, hparams):
     # td3 and sac have some arguments in common
-    ac_args = [
-        "learning_starts",
-        "gradient_steps",
-        "batch_size",
-    ]
+    ac_args = ["learning_starts", "gradient_steps", "batch_size", "tau"]
     ac_kwargs = {key: value for (key, value) in hparams.items() if key in ac_args}
     ac_kwargs.update({"train_freq": (hparams["train_freq"], "step")})
     ac_kwargs.update({"learning_rate": linear_schedule(hparams["learning_rate"]) if hparams["use_lr_schedule"] else hparams["learning_rate"]})
