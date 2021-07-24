@@ -48,12 +48,14 @@ def get_joint_difference(prox_angles):
     return abs(prox_angles[0] - prox_angles[1]) + abs(prox_angles[1] - prox_angles[2]) + abs(prox_angles[0] - prox_angles[2])
 
 
-def get_quality_metrics_dict(state, prefix=""):
+def get_quality_metrics_dict(state, prefix="", suffix=""):
+    if suffix:
+        suffix = "_" + suffix
     return {
-        f"{prefix}_epsilon_force": state.epsilon_force,
-        f"{prefix}_epsilon_torque": state.epsilon_torque,
-        f"{prefix}_delta_task": state.delta_task,
-        f"{prefix}_delta_cur": state.delta_cur,
+        f"{prefix}_epsilon_force{suffix}": state.epsilon_force,
+        f"{prefix}_epsilon_torque{suffix}": state.epsilon_torque,
+        f"{prefix}_delta_task{suffix}": state.delta_task,
+        f"{prefix}_delta_cur{suffix}": state.delta_cur,
     }
 
 
@@ -65,7 +67,10 @@ def get_infos(state, verbose=True):
             "sum_contact_forces": state.sum_contact_forces,
             "joint_diff": get_joint_difference(state.prox_angles),
         }
+
         infos.update(get_quality_metrics_dict(state, "a"))
+        # log again but this time specify object type
+        infos.update(get_quality_metrics_dict(state, "a", state.cur_test_case.object.type))
 
         # log data that is stage-specific
         if state.stage == Stage.REFINE:
