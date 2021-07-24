@@ -4,6 +4,7 @@ brain/experiments/figures/*
 
 # ignore saved RL models
 /agent/src/models
+/agent/src/plots/output
 
 # ignore singularity images 
 *.img
