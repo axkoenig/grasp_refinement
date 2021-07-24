@@ -87,11 +87,9 @@ class Subscribers:
 
     def set_force_val(self, name, cf_shell):
         if self.hparams["force_framework"] == 1:  # full force vector
-            self.obs.set_variable_from_vector(name, to_list(cf_shell.contact_wrench.force))
+            self.obs.set_variable_from_vector(name, [cf_shell.normal_force, cf_shell.tang_force_y, cf_shell.tang_force_z])
         elif self.hparams["force_framework"] == 2:  # only normal force
-            force = to_list(cf_shell.contact_wrench.force)
-            normal = to_list(cf_shell.contact_normal)
-            self.obs.set_variable(name, abs(np.dot(force, normal))) # remember: normal is a unit vector, so we can take dot product directly
+            self.obs.set_variable(name, cf_shell.normal_force) # remember: normal is a unit vector, so we can take dot product directly
         elif self.hparams["force_framework"] == 3:  # only binary contact signals
             force = to_list(cf_shell.contact_wrench.force)
             self.obs.set_variable(name, int(np.linalg.norm(force) > 0))
