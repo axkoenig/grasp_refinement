@@ -28,7 +28,7 @@ class StageController:
         try:
             thread.start()
         except Exception as e:
-            rospy.warn(f"Failed to start thread: {e}. Trying again. Tries left: {tries_left}")
+            rospy.logwarn(f"Failed to start thread: {e}. Trying again. Tries left: {tries_left}")
             rospy.sleep(wait)
             self.safe_thread_start(thread, tries_left=tries_left - 1)
 
