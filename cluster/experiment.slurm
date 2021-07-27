@@ -44,6 +44,7 @@ echo "================================="
 echo "Starting simulation in background"
 echo "================================="
 read -r -d '' SIM_EXEC << EOM
+. /usr/share/gazebo/setup.sh
 . /opt/ros/noetic/setup.sh
 . $HOME_DIR/overlay/work/catkin_ws/devel/setup.sh
 export ROS_MASTER_URI=http://localhost:$ROS_PORT
