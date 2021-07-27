@@ -49,7 +49,7 @@ read -r -d '' SIM_EXEC << EOM
 . $HOME_DIR/overlay/work/catkin_ws/devel/setup.sh
 export ROS_MASTER_URI=http://localhost:$ROS_PORT
 export GAZEBO_MASTER_URI=http://localhost:$GAZEBO_PORT
-script -c "roslaunch description reflex.launch gui:=false simplify_collisions:=false" $LOG_FILE_SIM
+script -c "roslaunch description reflex.launch gui:=false simplify_collisions:=true" $LOG_FILE_SIM
 EOM
 echo -e "Executing the following script ...\n$SIM_EXEC"
 screen -S simulation -d -m singularity exec -e --bind $HOME_DIR/output/:/output $HOME_DIR/gazebo_ros.img /bin/sh -c "$SIM_EXEC"
