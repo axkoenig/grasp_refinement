@@ -36,7 +36,6 @@ class GazeboInterface:
         self.get_world_properties = rospy.ServiceProxy("/gazebo/get_world_properties", GetWorldProperties)
 
         # reflex services
-        rospy.wait_for_service("/reflex_interface/open")
         self.open_hand = rospy.ServiceProxy("/reflex_interface/open", GraspPrimitive)
         self.close_until_contact = rospy.ServiceProxy("/reflex_interface/close_until_contact", Trigger)
         self.pos_incr = rospy.ServiceProxy("/reflex_interface/position_increment", PosIncrement)
@@ -196,9 +195,10 @@ class GazeboInterface:
             return ""
         return models[0]
 
-    def shutdown_controllers(self):
-        rospy.loginfo("Shutting down reflex controller nodes")
+    def shutdown_launch_files(self):
+        rospy.loginfo("Shutting down launch files")
         try:
+            self.ri_launch.shutdown()
             self.finger_ctrl_launch.shutdown()
             self.wrist_ctrl_launch.shutdown()
         except AttributeError:
@@ -224,7 +224,7 @@ class GazeboInterface:
                 self.resetting_attempts = 0
 
             self.delete_all_models()
-            self.shutdown_controllers()
+            self.shutdown_launch_files()
 
             # generate own test case when training (this is technically a "train" case)
             if not test_case:
@@ -246,6 +246,7 @@ class GazeboInterface:
                 return self.reset_world(state, test_case)
             rospy.sleep(2)
             self.launch_controllers()
+            self.launch_reflex_interface()
 
             obj_pose = self.get_object_pose()
             if (obj_pose == tf.transformations.identity_matrix()).all():
@@ -301,6 +302,14 @@ class GazeboInterface:
             return self.reset_world(state, test_case)
 
         self.resetting_attempts = 0
+
+    def launch_reflex_interface(self):
+        rospy.loginfo("Launching reflex interface ...")
+        launch_file = roslib.packages.get_pkg_dir("reflex_interface") + "/launch/reflex_interface.launch"
+        cli_args = [launch_file, "use_sim_data_hand:=true", "use_sim_data_obj:=true", "output:=log"]
+        roslaunch_file = [(roslaunch.rlutil.resolve_launch_arguments(cli_args)[0], cli_args[1:])]
+        self.ri_launch = roslaunch.parent.ROSLaunchParent(self.uuid, roslaunch_file)
+        self.ri_launch.start()
 
     def launch_controllers(self):
         rospy.loginfo("Launching finger controllers ...")
