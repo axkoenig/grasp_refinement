@@ -65,10 +65,10 @@ submit_job() {
 
 for i in $(seq 1 $NUM_EXPERIMENTS); do
     # params: reward_framewok, seed, algorithm, time_steps
-    submit_job "1" ${i} "sac" "1" "15000" "0.0001" "0.0001"
-    submit_job "1" ${i} "sac" "1" "15000" "0.0001" "0.0005"
-    submit_job "1" ${i} "sac" "1" "15000" "0.0001" "0.001"
-    submit_job "1" ${i} "sac" "1" "15000" "0.0001" "0.005"
+    submit_job "1" ${i} "sac" "1" "20000" "0.0001" "0.0001"
+    submit_job "1" ${i} "sac" "1" "20000" "0.0001" "0.0005"
+    submit_job "1" ${i} "sac" "1" "20000" "0.0001" "0.001"
+    submit_job "1" ${i} "sac" "1" "20000" "0.0001" "0.005"
 done
 
 echo "Done."
