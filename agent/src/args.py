@@ -71,12 +71,12 @@ def parse_args():
 
     # td3 and sac hparams
     parser.add_argument("--learning_starts", type=int, default=100, help="How many data points to collect before starting to train.")
-    parser.add_argument("--batch_size", type=int, default=256, help="Minibatch size for each gradient update.")
+    parser.add_argument("--batch_size", type=int, default=64, help="Minibatch size for each gradient update.")
     parser.add_argument("--gradient_steps", type=int, default=32, help="How many gradient steps to do after each rollout.")
     parser.add_argument("--train_freq", type=int, default=32, help="Update the model every train_freq time steps.")
-    parser.add_argument("--learning_rate", type=float, default=0.0002, help="Learning rate for ADAM optimizer.")
+    parser.add_argument("--learning_rate", type=float, default=0.0001, help="Learning rate for ADAM optimizer.")
     parser.add_argument("--use_lr_schedule", type=int, default=0, help="Whether to use a learning rate scheduler or not.")
-    parser.add_argument("--tau", type=float, default=0.005, help="Soft update coefficient (between 0 and 1).")
+    parser.add_argument("--tau", type=float, default=0.001, help="Soft update coefficient (between 0 and 1).")
 
     args, unknown = parser.parse_known_args()
     return args
