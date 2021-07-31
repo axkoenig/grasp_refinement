@@ -7,7 +7,7 @@
 #SBATCH -n 1                          
 #SBATCH -c 4
 #SBATCH --mem=16000       
-#SBATCH -t 3-00:00              
+#SBATCH -t 2-00:00              
 # ====
 # you must set the following variables using the --export flag when running this slurm script. view experiments.sh for an example.
 # ====
