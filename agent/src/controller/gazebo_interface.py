@@ -9,7 +9,7 @@ import tf2_ros
 import roslaunch
 import tf
 
-from geometry_msgs.msg import Pose, Point, Quaternion, TransformStamped
+from geometry_msgs.msg import TransformStamped
 from std_srvs.srv import Empty, Trigger, TriggerRequest
 from gazebo_msgs.srv import GetModelState, GetLinkState, SetModelState, DeleteModel, SpawnModel, DeleteModelRequest, SpawnModelRequest, GetWorldProperties
 from gazebo_msgs.msg import ModelState, ContactsState
@@ -36,6 +36,7 @@ class GazeboInterface:
         self.get_model_state = rospy.ServiceProxy("/gazebo/get_model_state", GetModelState)
         self.get_link_state = rospy.ServiceProxy("/gazebo/get_link_state", GetLinkState)
         self.get_world_properties = rospy.ServiceProxy("/gazebo/get_world_properties", GetWorldProperties)
+        self.reset_simulation = rospy.ServiceProxy("/gazebo/reset_simulation", Empty)
 
         # reflex services
         self.open_hand = rospy.ServiceProxy("/reflex_interface/open", GraspPrimitive)
@@ -271,6 +272,7 @@ class GazeboInterface:
 
             self.delete_all_models()
             self.shutdown_launch_files()
+            service_call_with_retries(self.reset_simulation)
             self.cmd_wrist_abs(tf.transformations.identity_matrix())
 
             # generate own test case when training (this is technically a "train" case)
