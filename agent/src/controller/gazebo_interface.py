@@ -283,6 +283,7 @@ class GazeboInterface:
             self.launch_scene(test_case.object)
             self.wait_until_reflex_spawned()
             self.wait_until_nodes_spawned()
+            rospy.sleep(2)
 
             obj_pose = self.get_object_pose()
             if (obj_pose == tf.transformations.identity_matrix()).all():
