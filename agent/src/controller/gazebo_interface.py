@@ -1,7 +1,9 @@
 import os
+import time
 
 import numpy as np
 import rospy
+import rosnode
 import roslib
 import tf2_ros
 import roslaunch
@@ -46,11 +48,6 @@ class GazeboInterface:
         self.srv_tolerance = 0.01
         self.resetting_attempts = 0
         self.knocked_obj_over = False
-
-        # get some info on reflex setup
-        self.simplify_collisions = rospy.get_param("simplify_collisions")
-        self.simplify_collisions = "true" if self.simplify_collisions else "false"
-        self.reflex_pub_rate = rospy.get_param("reflex_pub_rate")
 
         # setup broadcaster for desired wrist pose
         self.ts_wrist = TransformStamped()
@@ -198,9 +195,7 @@ class GazeboInterface:
     def shutdown_launch_files(self):
         rospy.loginfo("Shutting down launch files")
         try:
-            self.ri_launch.shutdown()
-            self.finger_ctrl_launch.shutdown()
-            self.wrist_ctrl_launch.shutdown()
+            self.scene_launch.shutdown()
         except AttributeError:
             pass  # when we reset the first time these vars don't exist yet, no need to worry
 
@@ -211,6 +206,57 @@ class GazeboInterface:
             if model != "ground_plane":
                 self.delete_model(model)
                 rospy.sleep(0.5)
+
+    def launch_scene(self, object):
+        rospy.loginfo("Launching reflex launch file ...")
+        launch_file = roslib.packages.get_pkg_dir("description") + "/launch/reflex.launch"
+        simplify_collisions = "true" if self.hparams["simplify_collisions"] else "false"
+        cli_args = [
+            launch_file,
+            "spawn_new_world:=false",
+            "output:=log",
+            f"object_mass:={object.mass}",
+            f"inertia_scaling_factor:={object.inertia_scaling_factor}",
+            "origin_x:=0",
+            "origin_y:=0.2",
+            f"origin_z:={object.get_height() / 2 + 0.01}",
+            f"object_name:={object.name}",
+            f"simplify_collisions:={simplify_collisions}",
+        ]
+
+        if object.__class__.__name__ == "RandomSphere":
+            cli_args += ["object_type:=sphere", f"sphere_radius:={object.radius}"]
+        elif object.__class__.__name__ == "RandomCylinder":
+            cli_args += ["object_type:=cylinder", f"cylinder_radius:={object.radius}", f"cylinder_length:={object.length}"]
+        elif object.__class__.__name__ == "RandomBox":
+            cli_args += ["object_type:=box", f"box_x:={object.x}", f"box_y:={object.y}", f"box_z:={object.z}"]
+
+        roslaunch_file = [(roslaunch.rlutil.resolve_launch_arguments(cli_args)[0], cli_args[1:])]
+        self.scene_launch = roslaunch.parent.ROSLaunchParent(self.uuid, roslaunch_file)
+        self.scene_launch.start()
+
+    def wait_until_reflex_spawned(self, time_out=20):
+        begin = time.time()
+        while int(time.time() - begin) < time_out:
+            res = service_call_with_retries(self.get_world_properties)
+            if "reflex" in res.model_names:
+                rospy.loginfo("Found reflex in world. All good!")
+                return
+            else:
+                time.sleep(1)
+        raise Exception("Reflex not found in world, something is wrong.")
+
+    def wait_until_nodes_spawned(self, time_out=20):
+        begin = time.time()
+        while int(time.time() - begin) < time_out:
+            res = rosnode.get_node_names()
+            print(res)
+            if "/finger_controller_node" in res and "/reflex_interface_node" in res and "/sensor_listener_node" in res and "/wrist_controller_node" in res:
+                rospy.loginfo("All nodes are up!")
+                return
+            else:
+                time.sleep(1)
+        raise Exception("Not all nodes are up, something is wrong.")
 
     def reset_world(self, state, test_case=None):
         try:
@@ -225,6 +271,7 @@ class GazeboInterface:
 
             self.delete_all_models()
             self.shutdown_launch_files()
+            self.cmd_wrist_abs(tf.transformations.identity_matrix())
 
             # generate own test case when training (this is technically a "train" case)
             if not test_case:
@@ -233,20 +280,9 @@ class GazeboInterface:
                 rospy.loginfo("Object is " + test_case.object.type)
 
             state.cur_test_case = test_case
-            self.spawn_object(test_case.object)
-            rospy.sleep(2)  # required s.t. object can register with gazebo
-
-            # reset reflex pose and spawn new reflex
-            self.cmd_wrist_abs(tf.transformations.identity_matrix())
-            res = self.spawn_reflex()
-
-            if not res:
-                rospy.logwarn("Could not spawn reflex. Resetting again.")
-                self.resetting_attempts += 1
-                return self.reset_world(state, test_case)
-            rospy.sleep(2)
-            self.launch_controllers()
-            self.launch_reflex_interface()
+            self.launch_scene(test_case.object)
+            self.wait_until_reflex_spawned()
+            self.wait_until_nodes_spawned()
 
             obj_pose = self.get_object_pose()
             if (obj_pose == tf.transformations.identity_matrix()).all():
@@ -303,29 +339,6 @@ class GazeboInterface:
 
         self.resetting_attempts = 0
 
-    def launch_reflex_interface(self):
-        rospy.loginfo("Launching reflex interface ...")
-        launch_file = roslib.packages.get_pkg_dir("reflex_interface") + "/launch/reflex_interface.launch"
-        cli_args = [launch_file, "use_sim_data_hand:=true", "use_sim_data_obj:=true", "output:=log"]
-        roslaunch_file = [(roslaunch.rlutil.resolve_launch_arguments(cli_args)[0], cli_args[1:])]
-        self.ri_launch = roslaunch.parent.ROSLaunchParent(self.uuid, roslaunch_file)
-        self.ri_launch.start()
-
-    def launch_controllers(self):
-        rospy.loginfo("Launching finger controllers ...")
-        launch_file = roslib.packages.get_pkg_dir("finger_controller") + "/launch/finger_controller.launch"
-        cli_args = [launch_file, "only_spawn:=true", "output:=log"]
-        roslaunch_file = [(roslaunch.rlutil.resolve_launch_arguments(cli_args)[0], cli_args[1:])]
-        self.finger_ctrl_launch = roslaunch.parent.ROSLaunchParent(self.uuid, roslaunch_file)
-        self.finger_ctrl_launch.start()
-
-        rospy.loginfo("Launching wrist controllers ...")
-        launch_file = roslib.packages.get_pkg_dir("wrist_controller") + "/launch/wrist_controller.launch"
-        cli_args = [launch_file, "only_spawn:=true", "output:=log"]
-        roslaunch_file = [(roslaunch.rlutil.resolve_launch_arguments(cli_args)[0], cli_args[1:])]
-        self.wrist_ctrl_launch = roslaunch.parent.ROSLaunchParent(self.uuid, roslaunch_file)
-        self.wrist_ctrl_launch.start()
-
     def close_until_contact_and_tighten(self, tighten_incr=0):
         res = self.close_until_contact(TriggerRequest())
         if self.verbose:
@@ -358,86 +371,3 @@ class GazeboInterface:
 
         truth_wrist_init_pose = get_homo_matrix_from_tq(wrist_p, wrist_q)
         return np.dot(truth_wrist_init_pose, mat_offset)
-
-    def spawn_sphere_mount(self):
-        p = os.popen("xacro " + self.description_path + f"/urdf/environment/sphere_mount.xacro")
-        xml_string = p.read()
-        p.close()
-        req = SpawnModelRequest()
-        req.model_name = "sphere_mount"
-        req.model_xml = xml_string
-        req.reference_frame = "world"
-        req.initial_pose = Pose(Point(0, 0.2, 0), Quaternion(0, 0, 0, 1))
-        service_call_with_retries(self.spawn_urdf_model, req)
-
-    def spawn_object(self, object):
-        if object.__class__.__name__ == "RandomSphere":
-            self.spawn_sphere_mount()
-            p = os.popen(
-                "xacro "
-                + self.description_path
-                + f"/urdf/environment/sphere.urdf.xacro"
-                + f" sphere_radius:={object.radius} sphere_mass:={object.mass} inertia_scaling_factor:={object.inertia_scaling_factor}"
-            )
-        elif object.__class__.__name__ == "RandomCylinder":
-            p = os.popen(
-                "xacro "
-                + self.description_path
-                + f"/urdf/environment/cylinder.urdf.xacro"
-                + f" cylinder_radius:={object.radius} cylinder_length:={object.length} cylinder_mass:={object.mass} inertia_scaling_factor:={object.inertia_scaling_factor}"
-            )
-        elif object.__class__.__name__ == "RandomBox":
-            p = os.popen(
-                "xacro "
-                + self.description_path
-                + f"/urdf/environment/box.urdf.xacro"
-                + f" box_x:={object.x} box_y:={object.y} box_z:={object.z} box_mass:={object.mass} inertia_scaling_factor:={object.inertia_scaling_factor}"
-            )
-        else:
-            rospy.logerr("Unsupported object type!")
-            return
-
-        xml_string = p.read()
-        p.close()
-
-        req = SpawnModelRequest()
-        req.model_name = object.name
-        req.model_xml = xml_string
-        req.reference_frame = "world"
-        req.initial_pose = Pose(Point(0, 0.2, object.get_height() / 2 + 0.01), Quaternion(0, 0, 0, 1))
-        res = service_call_with_retries(self.spawn_urdf_model, req)
-
-        if res is None:
-            rospy.logerr("Failed to spawn object. Did not get result from service.")
-            return 0
-        if not res.success:
-            rospy.logerr("Failed to spawn object. Result of service is false.")
-            return 0
-
-        rospy.set_param("object_name", object.name)
-        rospy.set_param("object_mass", object.mass)
-        return 1
-
-    def spawn_reflex(self):
-        # read xacro file
-        urdf_location = self.description_path + f"/robots/reflex.robot.xacro"
-        p = os.popen(
-            "xacro " + urdf_location + f" base_link_name:=shell reflex_pub_rate:={self.reflex_pub_rate} simplify_collisions:={self.simplify_collisions}"
-        )
-        xml_string = p.read()
-        p.close()
-
-        req = SpawnModelRequest()
-        req.model_name = "reflex"
-        req.model_xml = xml_string
-        req.reference_frame = "world"
-        res = service_call_with_retries(self.spawn_urdf_model, req)
-
-        if res is None:
-            rospy.logerr("Failed to spawn reflex. Did not get result from service.")
-            return 0
-        if not res.success:
-            rospy.logerr("Failed to spawn reflex. Result of service is false.")
-            return 0
-
-        return 1
