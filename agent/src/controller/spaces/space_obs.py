@@ -75,12 +75,12 @@ class ObservationSpace(Space):
 
     def add_force_sensing(self, var_name):
         if self.hparams["force_framework"] == 1:  # full force vector
-            self.contact_force_min = [-15, -15, -15]
-            self.contact_force_max = [15, 15, 15]
+            self.contact_force_min = [-20, -20, -20]
+            self.contact_force_max = [20, 20, 20]
             self.add_variable_from_vector(var_name, self.contact_force_min, self.contact_force_max)
         elif self.hparams["force_framework"] == 2:  # only normal force
-            self.contact_force_min = -15 # in reality normal force can only be positive, but DART sometimes also outputs negative normal forces
-            self.contact_force_max = 15
+            self.contact_force_min = -20 # in reality normal force can only be positive, but DART sometimes also outputs negative normal forces
+            self.contact_force_max = 20
             self.add_variable(var_name, self.contact_force_min, self.contact_force_max)
         elif self.hparams["force_framework"] == 3:  # only binary contact signals
             self.contact_force_min = 0
