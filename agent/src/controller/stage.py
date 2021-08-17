@@ -43,6 +43,9 @@ class StageController:
 
         # check which stage we're in based on cur_time_step
         elif self.state.cur_time_step == self.hparams["refine_steps"] and self.state.stage == Stage.REFINE:
+            if not self.hparams["lift_steps"] and not self.hparams["hold_steps"]:
+                self.perform_drop_test_without_control()
+                return 
             rospy.loginfo("Done with %i refine steps. New stage is LIFT.", self.hparams["refine_steps"])
             self.state.cur_time_step = 0
             self.state.stage = Stage.LIFT
@@ -68,6 +71,20 @@ class StageController:
             self.state.stage = Stage.END
 
         self.state.cur_time_step += 1
+
+    def perform_drop_test_without_control(self):
+        rospy.loginfo(f"Starting to lift.")
+        self.lift_thread = threading.Thread(target=self.lift_object)
+        self.safe_thread_start(self.lift_thread)            
+        self.lift_thread.join()
+        self.state.sustained_lifting = self.is_object_lifted()
+        if self.state.sustained_lifting: 
+            rospy.loginfo(f"Yes, you didn't drop it! Starting to hold.")
+            self.hold_thread = threading.Thread(target=self.hold_object)
+            self.safe_thread_start(self.hold_thread)
+            self.hold_thread.join()
+            self.state.sustained_holding = self.is_object_lifted()
+        self.state.stage = Stage.END
 
     def end_refinement_early(self):
         # get object shift and distance to object

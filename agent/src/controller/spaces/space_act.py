@@ -11,11 +11,11 @@ class ActionSpace(Space):
     def __init__(self):
         super().__init__()
 
-        self.max_wrist_trans = 0.005
+        self.max_wrist_trans = 0.004
         self.min_wrist_trans = -self.max_wrist_trans
         self.max_wrist_rot = deg2rad(0.5)
         self.min_wrist_rot = -self.max_wrist_rot
-        self.max_finger_incr = deg2rad(8)
+        self.max_finger_incr = deg2rad(6)
         self.min_finger_incr = -self.max_finger_incr
 
         self.max_action = 1

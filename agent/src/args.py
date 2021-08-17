@@ -26,10 +26,10 @@ def parse_args():
     parser.add_argument("--torque_noise", type=float, default=0.5, help="Noise added to torque measurement as a percentage of max torque.")
 
     # length and update rates of stages
-    parser.add_argument("--refine_steps", type=float, default=15, help="Time steps to refine grasp.")
-    parser.add_argument("--max_refine_rate", type=float, default=3, help="Max rate of refinment control.")
-    parser.add_argument("--lift_steps", type=float, default=6, help="Time steps to lift object.")
-    parser.add_argument("--hold_steps", type=float, default=6, help="Time steps to hold object.")
+    parser.add_argument("--refine_steps", type=float, default=25, help="Time steps to refine grasp.")
+    parser.add_argument("--max_refine_rate", type=float, default=3, help="Max rate of refinement control.")
+    parser.add_argument("--lift_steps", type=float, default=0, help="Time steps to lift object.")
+    parser.add_argument("--hold_steps", type=float, default=0, help="Time steps to hold object.")
     parser.add_argument("--secs_to_lift", type=float, default=2, help="For how many seconds to lift object.")
     parser.add_argument("--secs_to_hold", type=float, default=2, help="For how many seconds to hold object.")
     parser.add_argument("--lift_dist", type=float, default=0.15, help="How far to lift object.")
