@@ -60,7 +60,7 @@ echo "========================="
 echo "Starting training session"
 echo "========================="
 read -r -d '' AGENT_EXEC <<EOM
-pip install stable-baselines3 --upgrade
+pip3 install stable-baselines3 --upgrade
 . /opt/ros/noetic/setup.sh
 . $HOME_DIR/overlay/work/catkin_ws/devel/setup.sh
 export ROS_MASTER_URI=http://localhost:$ROS_PORT
@@ -74,7 +74,7 @@ echo "Starting testing session"
 echo "========================="
 LOG_FILE_AGENT=$HOME_DIR/output/slurm_logs/agent_${LOG_NAME}_testing.txt
 read -r -d '' AGENT_EXEC <<EOM
-pip install stable-baselines3 --upgrade
+pip3 install stable-baselines3 --upgrade
 . /opt/ros/noetic/setup.sh
 . $HOME_DIR/overlay/work/catkin_ws/devel/setup.sh
 export ROS_MASTER_URI=http://localhost:$ROS_PORT
