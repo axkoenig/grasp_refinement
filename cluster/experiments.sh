@@ -22,8 +22,10 @@ done
 # runs multiple experiments in parallel
 HOME_DIR=$SCRATCH/howe_lab_seas/Users/akoenig
 CLUSTER_PATH=$HOME_DIR/overlay/work/catkin_ws/src/grasp_refinement/cluster
-LOG_PATH=$HOME_DIR/output/slurm_logs
+LOG_PATH=$HOME_DIR/new_output/slurm_logs
 echo "Submitting ${NUM_EXPERIMENTS} experiments for each framework..."
+
+####REMEMBER TO CHANGE THE RANDOM SEED!
 
 # translational error
 X_ERROR_MAX=0.05
