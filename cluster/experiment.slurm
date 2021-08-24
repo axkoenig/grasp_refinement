@@ -56,12 +56,12 @@ screen -S simulation_${LOG_NAME} -d -m singularity exec -e --bind $HOME_DIR/new_
 echo "========================="
 echo "Starting training session"
 echo "========================="
-read -r -d '' AGENT_EXEC <<EOM
 dt=$(date '+%d/%m/%Y %H:%M:%S');
 echo "$dt"
 sleep 300
 dt=$(date '+%d/%m/%Y %H:%M:%S');
 echo "$dt"
+read -r -d '' AGENT_EXEC <<EOM
 pip3 install stable-baselines3 --upgrade
 . /opt/ros/noetic/setup.sh
 . $HOME_DIR/overlay/work/catkin_ws/devel/setup.sh
