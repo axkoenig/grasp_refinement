@@ -3,6 +3,7 @@
 
 import os
 from typing import Callable
+import subprocess
 
 import numpy as np
 import rospy
@@ -76,6 +77,9 @@ def make_model_test(algorithm, test_model_path):
 
 
 def main(args):
+    gui = "false" if not args.gui else "true"
+    sim = subprocess.Popen(["roslaunch", "description", "gazebo_world.launch", f"gui:={gui}"])
+
     rospy.init_node("agent")
 
     log_path = os.path.join(args.output_dir, "logs", args.environment)
@@ -151,7 +155,8 @@ def main(args):
         rospy.loginfo("Testing model...")
         test(model, env, log_path, "test_" + args.log_name, hparams["deterministic_eval"], hparams["all_test_cases"])
 
-    rospy.loginfo("Done! Have a nice day.")
+    rospy.loginfo("Done! Killing simulation. Have a nice day.")
+    sim.terminate()
 
 
 if __name__ == "__main__":

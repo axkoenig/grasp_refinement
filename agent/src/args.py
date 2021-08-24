@@ -16,6 +16,7 @@ def parse_args():
     parser.add_argument("--log_interval", type=int, default=1, help="After how many episodes to log.")
     parser.add_argument("--all_test_cases", type=int, default=1, help="Whether or not to run on subset of test cases with larger wrist errors.")
     parser.add_argument("--simplify_collisions", type=int, default=1, help="Whether or not to use simplified collision meshes of robotic hand.")
+    parser.add_argument("--gui", type=int, default=1, help="Whether or not to use Gazebo GUI.")
 
     # frameworks and weights
     parser.add_argument("--reward_framework", type=int, default=1, help="(1=epsilon+delta), (2=delta), (3=epsilon), (4=binary).")
