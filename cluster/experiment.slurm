@@ -53,13 +53,15 @@ script -c "roslaunch description gazebo_world.launch gui:=false" $LOG_FILE_SIM
 EOM
 echo -e "Executing the following script ...\n$SIM_EXEC"
 screen -S simulation_${LOG_NAME} -d -m singularity exec -e --bind $HOME_DIR/new_output/:/output $HOME_DIR/gazebo_ros.img /bin/sh -c "$SIM_EXEC"
-echo "Sleeping 10s to give simulation time to start"
-sleep 10
-echo "Sleeping done."
 echo "========================="
 echo "Starting training session"
 echo "========================="
 read -r -d '' AGENT_EXEC <<EOM
+dt=$(date '+%d/%m/%Y %H:%M:%S');
+echo "$dt"
+sleep 300
+dt=$(date '+%d/%m/%Y %H:%M:%S');
+echo "$dt"
 pip3 install stable-baselines3 --upgrade
 . /opt/ros/noetic/setup.sh
 . $HOME_DIR/overlay/work/catkin_ws/devel/setup.sh
