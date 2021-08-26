@@ -1,103 +1,143 @@
 import os
 from argparse import ArgumentParser
 
+import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 
 
-palette = sns.color_palette("tab10", 4)    
+palette = sns.color_palette("tab10", 4)
 sns.set(style="darkgrid", font_scale=1.5)
 OUTPUT_DIR = "./output"
+
+
+def get_framework_title(framework):
+    if framework == "force_framework":
+        return "Contact Sensing"
+    elif framework == "reward_framework":
+        return "Reward Function"
+
 
 def get_framework_name(force_framework, framework):
     if force_framework:
         if framework == 1:
-            return "full"
+            return "Full"
         elif framework == 2:
-            return "normal"
+            return "Normal"
         elif framework == 3:
-            return "binary"
+            return "Binary"
         elif framework == 4:
-            return "none"
+            return "None"
     else:
         if framework == 1:
-            return "epsilon + delta"
+            return r"$\epsilon + \delta$"
         elif framework == 2:
-            return "delta"
+            return r"\delta$"
         elif framework == 3:
-            return "epsilon"
+            return r"$\epsilon$"
         elif framework == 4:
-            return "binary"
+            return r"$\beta$"
 
 
-def get_csv_data(args, verbose=True, force_framework=True, framework_list=[1, 2, 3, 4]):
+def get_csv_data(args, verbose=True):
     df = pd.DataFrame()
-    for framework in framework_list:
-        for try_id in range(1, args.max_num_trials + 1):
-            if force_framework:
-                path = os.path.join(args.log_path, f"{args.prefix}_f1_s{framework}_id{try_id}_algosac_lr0.0003_bs256.csv")
-            else:
 
-                path = os.path.join(args.log_path, f"{args.prefix}_f{framework}_s1_id{try_id}_algosac_lr0.0003_bs256.csv")
-            try:
-                data = pd.read_csv(path)
-                print("Got data from path " + path)
-                framework_type = "force_framework" if force_framework else "reward_framework"
-                data[framework_type] = get_framework_name(force_framework, framework)
-                data["try_id"] = try_id
-                data["trans_l2_error"] *= 100  # convert error to cm
-                data["trans_l2_error"] = data["trans_l2_error"].astype(int)
-                df = df.append(data)
-            except Exception as e:
-                print(e)
+    dirs = [os.path.join(args.log_path, dir) for dir in os.listdir(args.log_path) if dir.startswith(args.prefix) and dir.endswith("_wdelta0.5.csv")]
+
+    for dir in dirs:
+        data = pd.read_csv(dir)
+
+        # check if valid num experiments
+        num_exp_per_obj = 10
+        num_objs = 3
+        num_wrist_errors = 8
+        num_finished = num_exp_per_obj * num_objs * num_wrist_errors
+        num_rows = data.shape[0]
+        if num_finished != num_rows:
+            print(f"Num rows is {num_rows} but should be {num_finished}. Name: {dir}")
+
+        data["try_id"] = dir.split("_id")[1].split("_")[0]
+        data["force_framework"] = get_framework_name(True, int(dir.split("_s")[2].split("_")[0]))
+        data["reward_framework"] = get_framework_name(False, int(dir.split("_f")[1].split("_")[0]))
+        data["tb_log"] = dir
+        wrist_error_names = ["A", "B", "C", "D", "E", "F", "G", "H"]
+        for i in range(len(wrist_error_names)):
+            data.loc[data["trans_l2_error"]==i/100, "trans_l2_error"] = wrist_error_names[i]
+            
+        df = df.append(data)
+
     if verbose:
         print(df)
     return df
 
 
-def plot(df, hue="framework", prefix="", object_types=["box", "cylinder", "sphere"]):
-    num_object_types = len(object_types)
-    fig, ax = plt.subplots(1, num_object_types, figsize=(15, 5), sharey=True)
+def plot(args, df, object_types=["cylinder", "box", "sphere"]):
+    hue_order = ["Full", "Normal", "Binary", "None"] if args.compare == "force_framework" else [r"$\epsilon + \delta$", r"\delta$", r"$\epsilon$", r"$\beta$"]
+    fig = plt.figure(figsize=(12, 17))
+    num_frameworks = len(df[args.compare].unique())
+    num_tries_per_exp = len(np.unique(df["tb_log"].values)) / num_frameworks
+    fig.suptitle(f"Test results of {int(num_tries_per_exp)} models per framework. {df.shape[0]} data points in total.")
 
-    for i in range(num_object_types):
-        sns.barplot(data=df.loc[df["object_type"] == object_types[i]], palette=palette, x="trans_l2_error", y="sustained_holding", hue=hue, ax=ax[i])
-        ax[i].set_xlabel("L2 Wrist Error")
-        ax[i].set_ylabel(None)
-        if not i:
-            ax[i].set_ylabel("Success Rate")
-        ax[i].set_title(object_types[i].capitalize())
-        ax[i].set_ylim((0, 1))
+    # one plot for each object, success over wrist error
+    for i in range(len(object_types)):
+        ax = fig.add_subplot(4, 3, i + 1)
+        sns.barplot(data=df.loc[df["object_type"] == object_types[i]], palette=palette, x="trans_l2_error", y="sustained_holding", hue=args.compare,  hue_order=hue_order,ax=ax)
+        ax.set_xlabel("L2 Wrist Error")
+        ax.set_ylabel("Holding Success")
+        ax.set_title(object_types[i].capitalize())
+        ax.set_ylim((0, 1))
+        ax.get_legend().remove()
 
-    # fig.set_title("One bar includes results of 10 different objects")
-    fig.tight_layout(pad=0.5)
-    fig.show()
-    fig.savefig(f"{OUTPUT_DIR}/{hue}_object_{prefix}.png")
+    for i in range(len(object_types)):
+        ax = fig.add_subplot(4, 3, i + 4)
+        cur_df = df.loc[df["object_type"] == object_types[i]]
+        for j in range(len(hue_order)):
+            sns.regplot(data=cur_df[cur_df[args.compare] ==  hue_order[j]], x="mass", y="sustained_holding", ax=ax, marker="", label=hue_order[j])
+        ax.set_xlabel("Object Mass")
+        ax.set_ylabel("Holding Success")
+        ax.set_title(object_types[i].capitalize())
+        ax.set_ylim((0, 1))
 
-def plot_all_objects(df, hue="framework", prefix=""):
-    fig = plt.figure()
-    ax = sns.barplot(data=df, x="trans_l2_error", y="sustained_holding", palette=palette, hue=hue)
+    ax = fig.add_subplot(4, 3, 7)
+
+    for j in range(len(hue_order)):
+        sns.regplot(data=df[df[args.compare] == hue_order[j]], x="mass", y="sustained_holding", ax=ax, marker="", label=hue_order[j])
+    ax.set_xlabel("Object Mass")
+    ax.set_ylabel("Holding Success")
     ax.set_title("All Objects")
+
+    ax.set_ylim((0, 1))
+
+    ax = fig.add_subplot(4, 3, 8)
+    sns.barplot(data=df, palette=palette, x="trans_l2_error", y="sustained_holding", hue=args.compare, hue_order=hue_order, ax=ax)
     ax.set_xlabel("L2 Wrist Error")
-    ax.set_ylabel("Success Rate")
+    ax.set_ylabel("Holding Success")
+    ax.set_title("All Objects")
+    ax.set_ylim((0, 1))
+    lines, labels = ax.get_legend_handles_labels()
+    ax.get_legend().remove()
+
+    ax = fig.add_subplot(4, 3, 9)
+    sns.barplot(data=df, palette=palette, x=args.compare, order=hue_order, y="sustained_holding", ax=ax)
+    ax.set_xlabel(get_framework_title(args.compare))
+    ax.set_ylabel("Holding Success")
+    ax.set_title("All Objects")
     ax.set_ylim((0, 1))
 
-    # fig.set_title("One bar includes results of 10 different objects")
-    fig.tight_layout(pad=0.5)
-    fig.show()
-    fig.savefig(f"{OUTPUT_DIR}/{hue}_objects_{prefix}.png")
-
-def plot_all_objects_all_errors(df, hue="framework", prefix=""):
-    fig = plt.figure()
-    ax = sns.barplot(data=df, x=hue, y="sustained_holding", palette=palette)
-    ax.set_title("All Objects, All Wrist Errors")
-    ax.set_xlabel(hue)
-    ax.set_ylabel("Success Rate")
+    ax = fig.add_subplot(4, 3, 10)
+    sns.barplot(data=df, palette=palette, x="object_type", hue=args.compare, hue_order=hue_order, y="sustained_holding", ax=ax)
+    ax.set_xlabel(get_framework_title(args.compare))
+    ax.set_ylabel("Holding Success")
+    ax.set_title("All Objects")
     ax.set_ylim((0, 1))
+    ax.get_legend().remove()
 
-    fig.tight_layout(pad=0.5)
+    fig.tight_layout(rect=[0, 0.06, 1, 0.95], pad=0.5)
+    fig.legend(lines, labels, loc="lower center", ncol=4)
     fig.show()
-    fig.savefig(f"{OUTPUT_DIR}/{hue}_objects_errors_{prefix}.png")
+    fig.savefig(f"{OUTPUT_DIR}/test_{args.prefix}_{args.compare}.png")
+    fig.savefig(f"{OUTPUT_DIR}/test_{args.prefix}_{args.compare}.pdf")
 
 
 if __name__ == "__main__":
@@ -105,28 +145,21 @@ if __name__ == "__main__":
     parser.add_argument(
         "--log_path",
         type=str,
-        default="/home/parallels/cluster_logs_sd3",
+        default="/home/parallels/cluster_logs_sd6",
         help="Path to tensorboard log.",
     )
     parser.add_argument(
         "--prefix",
         type=str,
-        default="20Jul_FinalAndLearnRate",
+        default="test_23Aug_SmallTau25k",
         help="Prefix comment of your experiment.",
     )
     parser.add_argument(
-        "--max_num_trials",
-        type=int,
-        default=11,
-        help="How many trials were in your experiment.",
+        "--compare",
+        type=str,
+        default="force_framework",
     )
 
     args = parser.parse_args()
-    force_framework = False
-    framework_list = [1, 2, 3, 4]
-    df = get_csv_data(args, framework_list=framework_list, force_framework=force_framework)
-
-    framework_name = "force_framework" if force_framework else "reward_framework"
-    plot(df, framework_name, prefix=args.prefix)
-    plot_all_objects(df, framework_name, prefix=args.prefix)
-    plot_all_objects_all_errors(df, framework_name, prefix=args.prefix)
+    df = get_csv_data(args)
+    plot(args, df)

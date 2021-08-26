@@ -16,8 +16,7 @@ OUTPUT_DIR = "./output"
 def get_scalars(
     tb_log,
     scalar_names,
-    window_size=25,
-    smooth=False,
+    window_size=30,
 ):
 
     event_acc = EventAccumulator(tb_log)
@@ -33,9 +32,8 @@ def get_scalars(
     episodes = np.arange(1, len(time_steps) + 1)
 
     # smooth data with moving average filter
-    if smooth or "sustained" in scalar_names:
-        vals = np.convolve(vals, np.ones(window_size), "valid") / window_size
-        episodes = np.convolve(episodes, np.ones(window_size), "valid") / window_size
+    vals = np.convolve(vals, np.ones(window_size), "valid") / window_size
+    episodes = np.convolve(episodes, np.ones(window_size), "valid") / window_size
 
     # create pd dataframe
     data = {"episodes": episodes, scalar_names: vals}
@@ -90,26 +88,30 @@ def get_experiment_data(tb_log, scalar_names):
 def get_all_data(args):
     print("Getting all data...")
     # get any directories that match the starting string
-    dirs = [os.path.join(args.log_path, dir) for dir in os.listdir(args.log_path) if dir.startswith(args.prefix)]
+    dirs = [os.path.join(args.log_path, dir) for dir in os.listdir(args.log_path) if dir.startswith(args.prefix) and dir.endswith("_1")]
 
     df = pd.DataFrame()
 
     for tb_log in dirs:
         print("Getting " + tb_log)
         df = df.append(get_experiment_data(tb_log, args.scalar_names))
-
+    
     # for each experiment (via unique id) get maximum episode number and from those select the min
-    # results = []
-    # experiments = np.unique(df["tb_log"].values)
-    # for exp in experiments:
-    #     max_ep = df.loc[df["tb_log"] == exp, "episodes"].max()
-    #     results.append((exp, max_ep))
-    # sorted_results = sorted(results, key=lambda t: t[1])
-    # print(sorted_results)
-    # min_ep_over_all_exp = sorted_results[0][1]
-    # print("cutting all experiments at " + str(min_ep_over_all_exp))
+    results = []
+    experiments = np.unique(df["tb_log"].values)
+    for exp in experiments:
+        max_ep = df.loc[df["tb_log"] == exp, "episodes"].max()
+        results.append((exp, max_ep))
+    sorted_results = sorted(results, key=lambda t: t[1])
+    print(sorted_results)
+    min_ep_over_all_exp = sorted_results[0][1]
+    print("cutting all experiments at " + str(min_ep_over_all_exp))
     # df = df[df.episodes <= min_ep_over_all_exp]
 
+    # very infrequently we get data points with very high forces values, we treat them as outliers and remove them
+    df_sum = df[df["step/sum_contact_forces"] <= 200]
+    df = df[np.isnan(df["step/sum_contact_forces"])]
+    df = df.append(df_sum)
     print(df)
     return df
 
@@ -125,7 +127,7 @@ def plot(args, df):
     # if num_tries_per_exp % 1 != 0:
     #     print("Num tries per exp should be an integer. it is " + str(num_tries_per_exp))
     #     import pdb; pdb.set_trace()
-    fig.suptitle(f"Results averaged over {int(num_tries_per_exp)} seeds.")
+    fig.suptitle(f"Training results averaged over {int(num_tries_per_exp)} seeds.")
 
     for i in range(num_plots):
         ax = fig.add_subplot(4, 3, i + 1)
@@ -144,11 +146,11 @@ def plot(args, df):
         if "sustained" in args.scalar_names[i][0]:
             ax.set_ylim((0, 1))
 
-    fig.tight_layout(rect=[0, 0, 1, 0.95], pad=0.5)
-    fig.legend(lines, labels, loc="upper right", ncol=2)
+    fig.tight_layout(rect=[0, 0.06, 1, 0.95], pad=0.5)
+    fig.legend(lines, labels, loc="lower center", ncol=4)
     fig.show()
-    fig.savefig(f"{OUTPUT_DIR}/final_{args.prefix}_{args.compare}.png")
-    fig.savefig(f"{OUTPUT_DIR}/final_{args.prefix}_{args.compare}.pdf")
+    fig.savefig(f"{OUTPUT_DIR}/train_{args.prefix}_{args.compare}.png")
+    fig.savefig(f"{OUTPUT_DIR}/train_{args.prefix}_{args.compare}.pdf")
 
 
 if __name__ == "__main__":
@@ -162,7 +164,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--prefix",
         type=str,
-        default="16Aug_Final",
+        default="23Aug_SmallTau25kRewards25Aug",
         help="Prefix comment of your experiment.",
     )
     parser.add_argument(
@@ -174,7 +176,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--compare",
         type=str,
-        default="force_framework",
+        default="reward_framework",
         help="Which metric to compare.",
     )
     args = parser.parse_args()
@@ -182,15 +184,15 @@ if __name__ == "__main__":
     args.scalar_names = [
         ("step/sustained_holding", "Holding Success"),
         ("step/sustained_lifting", "Lifting Success"),
-        ("rollout/ep_rew_mean", "Mean Episonde Reward"),
+        ("rollout/ep_rew_mean", "Mean Episode Reward"),
         ("step/sustained_holding_box", "Holding Success Box"),
         ("step/sustained_holding_cylinder", "Holding Success Cylinder"),
         ("step/sustained_holding_sphere", "Holding Success Sphere"),
-        ("step/a_delta_cur", r"$\delta_{cur}$"),
-        ("step/a_delta_task", r"$\delta_{task}$"),
+        ("episode/cum_a_delta_cur", r"Cumulative $\delta_{cur}$"),
+        ("episode/cum_a_delta_task", r"Cumulative $\delta_{task}$"),
         ("step/sum_contact_forces", "Sum of Contact Force Magn."),
-        ("step/a_epsilon_force", r"$\epsilon_{f}$"),
-        ("step/a_epsilon_torque", r"$\epsilon_{\tau}$"),
+        ("episode/cum_a_epsilon_force", r"Cumulative $\epsilon_{f}$"),
+        ("episode/cum_a_epsilon_torque", r"Cumulative $\epsilon_{\tau}$"),
         ("step/num_contacts", "Num. of Contacts"),
     ]
     df = get_all_data(args)
