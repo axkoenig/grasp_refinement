@@ -48,7 +48,7 @@ TRAIN_FREQ=32
 BATCH_SIZE=64
 
 # starting seed is to make sure we dont run on the same seeds again
-STARTING_ID=10
+STARTING_ID=0
 
 # ports
 NUM_FRAMEWORKS=8
