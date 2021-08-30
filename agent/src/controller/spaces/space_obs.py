@@ -73,8 +73,7 @@ class ObservationSpace(Space):
 
         self.print_num_dimensions()
 
-    def add_force_sensing(self, var_name):
-        force_max = 80
+    def add_force_sensing(self, var_name, force_max=20):
         if self.hparams["force_framework"] == 1:  # full force vector
             self.contact_force_min = [-force_max, -force_max, -force_max]
             self.contact_force_max = [force_max, force_max, force_max]
