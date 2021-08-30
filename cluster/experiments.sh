@@ -48,7 +48,7 @@ TRAIN_FREQ=32
 BATCH_SIZE=64
 
 # starting seed is to make sure we dont run on the same seeds again
-STARTING_ID=0
+STARTING_ID=100
 
 # ports
 NUM_FRAMEWORKS=8
@@ -72,6 +72,10 @@ for i in $(seq 1 $NUM_EXPERIMENTS); do
     submit_job "1" $(($STARTING_ID + $i)) "sac" "2" "25000" "0.0001" "0.0001" "0.5"
     submit_job "1" $(($STARTING_ID + $i)) "sac" "3" "25000" "0.0001" "0.0001" "0.5"
     submit_job "1" $(($STARTING_ID + $i)) "sac" "4" "25000" "0.0001" "0.0001" "0.5"
+
+    submit_job "2" $(($STARTING_ID + $i)) "sac" "1" "25000" "0.0001" "0.0001" "0.5"
+    submit_job "3" $(($STARTING_ID + $i)) "sac" "1" "25000" "0.0001" "0.0001" "0.5"
+    submit_job "4" $(($STARTING_ID + $i)) "sac" "1" "25000" "0.0001" "0.0001" "0.5"
 done
 
 echo "Done."
