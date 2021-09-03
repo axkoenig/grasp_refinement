@@ -47,12 +47,9 @@ GRADIENT_STEPS=32
 TRAIN_FREQ=32
 BATCH_SIZE=64
 
-# starting seed is to make sure we dont run on the same seeds again
-STARTING_ID=100
-
 # ports
 NUM_FRAMEWORKS=8
-BASE_ROS_PORT=11311
+BASE_ROS_PORT=11811
 BASE_GAZEBO_PORT=$(($BASE_ROS_PORT + $NUM_EXPERIMENTS * $NUM_FRAMEWORKS))
 
 EXPERIMENT_COUNTER=0
@@ -66,6 +63,11 @@ submit_job() {
     EXPERIMENT_COUNTER=$(($EXPERIMENT_COUNTER + 1))
 }
 
+
+# starting seed is to make sure we dont run on the same seeds again
+STARTING_ID=400
+NUM_EXPERIMENTS=4
+
 for i in $(seq 1 $NUM_EXPERIMENTS); do
     # params: reward_framewok, seed, algorithm, time_steps
     submit_job "1" $(($STARTING_ID + $i)) "sac" "1" "25000" "0.0001" "0.0001" "0.5"
@@ -77,5 +79,25 @@ for i in $(seq 1 $NUM_EXPERIMENTS); do
     submit_job "3" $(($STARTING_ID + $i)) "sac" "1" "25000" "0.0001" "0.0001" "0.5"
     submit_job "4" $(($STARTING_ID + $i)) "sac" "1" "25000" "0.0001" "0.0001" "0.5"
 done
+
+STARTING_ID=500
+NUM_EXPERIMENTS=12
+for i in $(seq 1 $NUM_EXPERIMENTS); do
+    # params: reward_framewok, seed, algorithm, time_steps
+    submit_job "1" $(($STARTING_ID + $i)) "sac" "1" "25000" "0.0001" "0.0001" "0.5"
+done
+
+NUM_EXPERIMENTS=7
+for i in $(seq 1 $NUM_EXPERIMENTS); do
+    # params: reward_framewok, seed, algorithm, time_steps
+    submit_job "1" $(($STARTING_ID + $i)) "sac" "2" "25000" "0.0001" "0.0001" "0.5"
+done
+
+NUM_EXPERIMENTS=8
+for i in $(seq 1 $NUM_EXPERIMENTS); do
+    # params: reward_framewok, seed, algorithm, time_steps
+    submit_job "1" $(($STARTING_ID + $i)) "sac" "4" "25000" "0.0001" "0.0001" "0.5"
+done
+
 
 echo "Done."
