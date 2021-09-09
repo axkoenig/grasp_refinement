@@ -49,7 +49,7 @@ BATCH_SIZE=64
 
 # ports
 NUM_FRAMEWORKS=8
-BASE_ROS_PORT=11811
+BASE_ROS_PORT=11311
 BASE_GAZEBO_PORT=$(($BASE_ROS_PORT + $NUM_EXPERIMENTS * $NUM_FRAMEWORKS))
 
 EXPERIMENT_COUNTER=0
@@ -64,51 +64,27 @@ submit_job() {
 }
 
 # starting seed is to make sure we dont run on the same seeds again
-STARTING_ID=800
+STARTING_ID=900
 
-NUM_EXPERIMENTS=1
-for i in $(seq 1 $NUM_EXPERIMENTS); do
-    # params: reward_framewok, seed, algorithm, time_steps
-    submit_job "2" $(($STARTING_ID + $i)) "sac" "1" "25000" "0.0001" "0.0001" "0.5"
-done
-
-NUM_EXPERIMENTS=7
+NUM_EXPERIMENTS=6
 for i in $(seq 1 $NUM_EXPERIMENTS); do
     # params: reward_framewok, seed, algorithm, time_steps
     submit_job "1" $(($STARTING_ID + $i)) "sac" "1" "25000" "0.0001" "0.0001" "0.5"
 done
 
+STARTING_ID=1000
 NUM_EXPERIMENTS=5
+
 for i in $(seq 1 $NUM_EXPERIMENTS); do
     # params: reward_framewok, seed, algorithm, time_steps
+    submit_job "1" $(($STARTING_ID + $i)) "sac" "1" "25000" "0.0001" "0.0001" "0.5"
     submit_job "1" $(($STARTING_ID + $i)) "sac" "2" "25000" "0.0001" "0.0001" "0.5"
-done
-
-NUM_EXPERIMENTS=11
-for i in $(seq 1 $NUM_EXPERIMENTS); do
-    # params: reward_framewok, seed, algorithm, time_steps
     submit_job "1" $(($STARTING_ID + $i)) "sac" "3" "25000" "0.0001" "0.0001" "0.5"
+    # submit_job "1" $(($STARTING_ID + $i)) "sac" "4" "25000" "0.0001" "0.0001" "0.5"
+
+    submit_job "2" $(($STARTING_ID + $i)) "sac" "1" "25000" "0.0001" "0.0001" "0.5"
+    submit_job "3" $(($STARTING_ID + $i)) "sac" "1" "25000" "0.0001" "0.0001" "0.5"
+    submit_job "4" $(($STARTING_ID + $i)) "sac" "1" "25000" "0.0001" "0.0001" "0.5"
 done
-
-NUM_EXPERIMENTS=11
-for i in $(seq 1 $NUM_EXPERIMENTS); do
-    # params: reward_framewok, seed, algorithm, time_steps
-    submit_job "1" $(($STARTING_ID + $i)) "sac" "4" "25000" "0.0001" "0.0001" "0.5"
-done
-
-# STARTING_ID=900
-# NUM_EXPERIMENTS=7
-
-# for i in $(seq 1 $NUM_EXPERIMENTS); do
-#     # params: reward_framewok, seed, algorithm, time_steps
-#     submit_job "1" $(($STARTING_ID + $i)) "sac" "1" "25000" "0.0001" "0.0001" "0.5"
-#     submit_job "1" $(($STARTING_ID + $i)) "sac" "2" "25000" "0.0001" "0.0001" "0.5"
-#     submit_job "1" $(($STARTING_ID + $i)) "sac" "3" "25000" "0.0001" "0.0001" "0.5"
-#     submit_job "1" $(($STARTING_ID + $i)) "sac" "4" "25000" "0.0001" "0.0001" "0.5"
-
-#     submit_job "2" $(($STARTING_ID + $i)) "sac" "1" "25000" "0.0001" "0.0001" "0.5"
-#     submit_job "3" $(($STARTING_ID + $i)) "sac" "1" "25000" "0.0001" "0.0001" "0.5"
-#     submit_job "4" $(($STARTING_ID + $i)) "sac" "1" "25000" "0.0001" "0.0001" "0.5"
-# done
 
 echo "Done."
