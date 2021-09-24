@@ -273,7 +273,7 @@ def generate_test_cases(hparams):
             writer.writerows([case.get_csv_data()])
 
 
-def test(model, env, log_path, log_name, deterministic=False, all_test_cases=True, trans_l2_errors=[0.06, 0.07]):
+def test(model, env, log_path, log_name, deterministic=False, all_test_cases=True, trans_l2_errors=[0.07]):
     # load test cases from disk
     with open(TEST_CASES_PKL, "rb") as file:
         t = pickle.load(file)
@@ -289,10 +289,10 @@ def test(model, env, log_path, log_name, deterministic=False, all_test_cases=Tru
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
 
-        # running on subset of test cases: remove the boring test cases and shuffle
+        # running on subset of test cases: select only the interesting test cases with large wirst errors
         if not all_test_cases:
             t.test_cases = [x for x in t.test_cases if x.trans_l2_error in trans_l2_errors]
-            random.shuffle(t.test_cases)
+            t.test_cases = [t.test_cases[4], t.test_cases[10], t.test_cases[21]]
 
         for test_case in t.test_cases:
             obs = env.reset(test_case)
