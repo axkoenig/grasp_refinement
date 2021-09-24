@@ -38,7 +38,7 @@ def parse_args():
     # episode / training end critera
     parser.add_argument("--joint_lim", type=float, default=3, help="End episode if joint limit reached.")
     parser.add_argument("--obj_shift_tol", type=float, default=0.1, help="How far object is allowed to shift.")
-    parser.add_argument("--time_steps", type=float, default=2000, help="How many time steps to train.")
+    parser.add_argument("--time_steps", type=float, default=25000, help="How many time steps to train.")
 
     # error added to ground truth wrist pose
     parser.add_argument("--x_error_min", type=float, default=-0.05, help="Positional error along x direction [m]")
@@ -78,7 +78,7 @@ def parse_args():
     parser.add_argument("--train_freq", type=int, default=32, help="Update the model every train_freq time steps.")
     parser.add_argument("--learning_rate", type=float, default=0.0001, help="Learning rate for ADAM optimizer.")
     parser.add_argument("--use_lr_schedule", type=int, default=0, help="Whether to use a learning rate scheduler or not.")
-    parser.add_argument("--tau", type=float, default=0.001, help="Soft update coefficient (between 0 and 1).")
+    parser.add_argument("--tau", type=float, default=0.0001, help="Soft update coefficient (between 0 and 1).")
 
     args, unknown = parser.parse_known_args()
     return args
