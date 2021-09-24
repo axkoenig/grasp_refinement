@@ -8,8 +8,7 @@ import numpy as np
 import pickle
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
-from vis_thesis_tests import get_framework_name
-
+from vis_tests import get_framework_name
 
 
 seven_tab10_colors = [
@@ -32,14 +31,14 @@ if plots == 2:
     seven_tab10_colors = first_col + seven_tab10_colors[-3:]
     palette = sns.color_palette(seven_tab10_colors)
 
-sns.set(style="darkgrid", font_scale=1.1)
+sns.set(style="darkgrid", font_scale=1)
 OUTPUT_DIR = "./output"
 
 
 def get_scalars(
     tb_log,
     scalar_names,
-    window_size=50,
+    window_size=30,
 ):
 
     event_acc = EventAccumulator(tb_log)
@@ -124,7 +123,7 @@ def get_all_data(args, valid_tb_logs):
     for tb_log in dirs:
         print("Getting " + tb_log)
         df = df.append(get_experiment_data(tb_log, args))
-        # break 
+        # break
 
     # for each experiment (via unique id) get maximum episode number and from those select the min
     results = []
@@ -154,44 +153,57 @@ def plot(args, df, title):
     )
     num_frameworks = 4
 
+    # all data should start at 15.5 episodes
+    df = df[df["episodes"] >= 15.5]
+
     num_plots = len(args.scalar_names)
-    fig = plt.figure(figsize=(10, 6))
+    fig = plt.figure(figsize=(6, 6))
     num_tries_per_exp = len(np.unique(df["tb_log"].values)) / num_frameworks
     print("Num tries per exp " + str(num_tries_per_exp))
     # if num_tries_per_exp % 1 != 0:
     #     print("Num tries per exp should be an integer. it is " + str(num_tries_per_exp))
     #     import pdb; pdb.set_trace()
-    fig.suptitle(f"Training Results.")
+    # fig.suptitle(f"Training Results.")
 
     for i in range(num_plots):
-        ax = fig.add_subplot(2, 3, i + 1)
+        ax = fig.add_subplot(3, 2, i + 1)
         sns.lineplot(data=df, x="episodes", y=args.scalar_names[i][0], palette=palette, hue=args.compare, hue_order=hue_order, ax=ax)
 
         lines, labels = ax.get_legend_handles_labels()
         ax.get_legend().remove()
-        ax.set_xlabel("Num. of Episodes")
+        ax.set_xlabel("Episodes")
         ax.set_xlim((0, 900))
+        ax.xaxis.set_ticks(np.arange(0, 900, 250))
+        ax.set_title("All Objects")
+        if "ep_rew_mean" not in args.scalar_names[i][0]:
+            ax.yaxis.set_ticks(np.arange(0, 1.1, 0.5))
         if "box" in args.scalar_names[i][0]:
-            ax.set_xlabel("Num. of Box-Episodes")
+            ax.set_title("Cuboids")
+            ax.set_xlabel("Cuboid-Episodes")
             # todo remove
             ax.set_xlim((0, 300))
+            ax.xaxis.set_ticks(np.arange(0, 290, 100))
         elif "cylinder" in args.scalar_names[i][0]:
-            ax.set_xlabel("Num. of Cylinder-Episodes")
+            ax.set_title("Cylinders")
+            ax.set_xlabel("Cylinder-Episodes")
             # todo remove
             ax.set_xlim((0, 300))
+            ax.xaxis.set_ticks(np.arange(0, 290, 100))
         elif "sphere" in args.scalar_names[i][0]:
-            ax.set_xlabel("Num. of Sphere-Episodes")
+            ax.set_title("Spheres")
+            ax.set_xlabel("Sphere-Episodes")
             # todo remove
             ax.set_xlim((0, 300))
+            ax.xaxis.set_ticks(np.arange(0, 290, 100))
         ax.set_ylabel(args.scalar_names[i][1])
         if "sustained" in args.scalar_names[i][0]:
             ax.set_ylim((0, 1))
 
-    fig.tight_layout(rect=[0, 0.06, 1, 0.95], pad=0.5)
-    fig.legend(lines, labels, loc="lower center", ncol=4)
+    fig.tight_layout(rect=[0, 0, 1, 0.92], pad=0.05, h_pad=1, w_pad=0.7)
+    fig.legend(lines, labels, loc="upper center", ncol=4)
     fig.show()
-    fig.savefig(f"{OUTPUT_DIR}/paper_train_{args.prefix}_{args.compare}.png")
-    fig.savefig(f"{OUTPUT_DIR}/paper_train_{args.prefix}_{args.compare}.pdf")
+    fig.savefig(f"{OUTPUT_DIR}/paper_final_train_{args.prefix}_{args.compare}.png")
+    fig.savefig(f"{OUTPUT_DIR}/paper_final_train_{args.prefix}_{args.compare}.pdf")
 
 
 if __name__ == "__main__":
@@ -223,12 +235,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     args.scalar_names = [
-        ("step/sustained_holding", "Holding Success"),
-        ("step/sustained_lifting", "Lifting Success"),
-        ("rollout/ep_rew_mean", "Mean Episode Reward"),
-        ("step/sustained_holding_box", "Holding Success Box"),
-        ("step/sustained_holding_cylinder", "Holding Success Cylinder"),
-        ("step/sustained_holding_sphere", "Holding Success Sphere"),
+        ("step/sustained_holding", "Hold Success"),
+        ("step/sustained_lifting", "Lift Success"),
+        ("step/sustained_holding_box", "Hold Success"),
+        ("step/sustained_holding_cylinder", "Hold Success"),
+        ("step/sustained_holding_sphere", "Hold Success"),
+        ("rollout/ep_rew_mean", "Episode Reward"),
     ]
 
     if plots == 1:
@@ -251,3 +263,8 @@ if __name__ == "__main__":
     df = get_all_data(args, valid_tb_logs)
 
     plot(args, df, title)
+
+    print("done!")
+    import pdb
+
+    pdb.set_trace()

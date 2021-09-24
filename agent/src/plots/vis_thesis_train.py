@@ -8,7 +8,7 @@ import numpy as np
 import pickle
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
-from vis_thesis_tests import get_framework_name
+from vis_tests import get_framework_name
 
 
 
