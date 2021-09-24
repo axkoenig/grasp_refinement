@@ -24,7 +24,7 @@ class StageController:
     def safe_thread_start(self, thread, tries_left=100, wait=0.1):
         # sometimes we have problems starting a new thread, so wrapping in try, catch
         if not tries_left:
-            return 
+            return
         try:
             thread.start()
         except Exception as e:

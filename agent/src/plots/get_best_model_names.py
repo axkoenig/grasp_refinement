@@ -91,7 +91,7 @@ def get_csv_data(args, prefixes, num_seeds, verbose=True):
 
             data["try_id"] = dir.split("_id")[1].split("_")[0]
 
-            # TODO 
+            # TODO
             if int(dir.split("_id")[1].split("_")[0]) < 800:
                 continue
 
@@ -197,10 +197,12 @@ if __name__ == "__main__":
     num_seeds = 41
 
     df = get_csv_data(args, prefixes, num_seeds)
-    
+
     print(df.sort_values(by=["sustained_holding_mean"]).to_string())
 
-    import pdb; pdb.set_trace()
+    import pdb
+
+    pdb.set_trace()
 
     title = "Num seeds for "
 

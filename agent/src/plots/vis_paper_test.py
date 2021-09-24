@@ -131,7 +131,9 @@ def get_csv_data(args, prefixes, num_seeds, verbose=True):
 
 def plot(args, df, title, object_types=["Cuboid", "Cylinder", "Sphere"]):
     hue_order = (
-        ["Full", "Normal", "Binary", "None"] if args.compare == "force_framework" else [r"$\epsilon$ and $\delta$", r"$\delta$", r"$\epsilon$", r"$\beta$"]
+        ["Full", "Normal", "Binary", "None"]
+        if args.compare == "force_framework"
+        else [r"$\epsilon$ and $\delta$", r"$\delta$", r"$\epsilon$", r"$\beta$"]
     )
     fig = plt.figure(figsize=(6, 6))
     num_frameworks = len(df[args.compare].unique())
@@ -139,7 +141,9 @@ def plot(args, df, title, object_types=["Cuboid", "Cylinder", "Sphere"]):
     # fig.suptitle(f"Test Results. {df.shape[0]} grasps in total.")
 
     ax = fig.add_subplot(3, 2, 1)
-    s = sns.barplot(data=df, palette=palette, x="object_type", order=object_types, hue=args.compare, hue_order=hue_order, y="sustained_holding", ax=ax)
+    s = sns.barplot(
+        data=df, palette=palette, x="object_type", order=object_types, hue=args.compare, hue_order=hue_order, y="sustained_holding", ax=ax
+    )
     for p in s.patches:
 
         height = p.get_height() - 0.34
@@ -169,7 +173,7 @@ def plot(args, df, title, object_types=["Cuboid", "Cylinder", "Sphere"]):
     for p in s.patches:
         s.annotate(
             format(p.get_height(), ".3f"),
-            (p.get_x() + p.get_width() / 2.0, p.get_height()- 0.265),
+            (p.get_x() + p.get_width() / 2.0, p.get_height() - 0.265),
             ha="center",
             va="center",
             xytext=(0, 9),

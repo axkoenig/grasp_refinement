@@ -73,7 +73,7 @@ def get_csv_data(args, prefixes, num_seeds, verbose=True):
         dirs = [os.path.join(args.log_path, dir) for dir in os.listdir(args.log_path) if dir.startswith(prefix) and dir.endswith("_wdelta0.5.csv")]
 
         for dir in dirs:
-            ### NEW ADDIITON 
+            ### NEW ADDIITON
             # not_converged = [
             #     "28Aug_SmallTau25kMore02Sep_f1_s1_id303_algosac_lr0.0001_tau0.0001_wdelta0.5",
             #     "28Aug_SmallTau25kMore02Sep_f1_s1_id303_algosac_lr0.0001_tau0.0001_wdelta0.5",
@@ -85,7 +85,7 @@ def get_csv_data(args, prefixes, num_seeds, verbose=True):
             # if skip:
             #     print("skipping this data, it didnt converge")
             #     continue
-            ### NEW ADDIITON 
+            ### NEW ADDIITON
 
             data = pd.read_csv(dir)
 
@@ -143,7 +143,9 @@ def get_csv_data(args, prefixes, num_seeds, verbose=True):
 
 def plot(args, df, title, object_types=["Box", "Cylinder", "Sphere"]):
     hue_order = (
-        ["Full", "Normal", "Binary", "None"] if args.compare == "force_framework" else [r"$\epsilon$ and $\delta$", r"$\delta$", r"$\epsilon$", r"$\beta$"]
+        ["Full", "Normal", "Binary", "None"]
+        if args.compare == "force_framework"
+        else [r"$\epsilon$ and $\delta$", r"$\delta$", r"$\epsilon$", r"$\beta$"]
     )
     fig = plt.figure(figsize=(10, 6))
     num_frameworks = len(df[args.compare].unique())
@@ -178,7 +180,9 @@ def plot(args, df, title, object_types=["Box", "Cylinder", "Sphere"]):
     ax.get_legend().remove()
 
     ax = fig.add_subplot(2, 3, 5)
-    s = sns.barplot(data=df, palette=palette, x="object_type", order=object_types, hue=args.compare, hue_order=hue_order, y="sustained_holding", ax=ax)
+    s = sns.barplot(
+        data=df, palette=palette, x="object_type", order=object_types, hue=args.compare, hue_order=hue_order, y="sustained_holding", ax=ax
+    )
     for p in s.patches:
 
         height = p.get_height() - 0.21
@@ -186,7 +190,7 @@ def plot(args, df, title, object_types=["Box", "Cylinder", "Sphere"]):
             height = p.get_height() + 0.07
         text = s.annotate(
             format(p.get_height(), ".3f"),
-            (p.get_x() + p.get_width() / 2.0+ p.get_width()*0.07, height),
+            (p.get_x() + p.get_width() / 2.0 + p.get_width() * 0.07, height),
             ha="center",
             va="center",
             xytext=(0, 9),

@@ -86,7 +86,9 @@ class Sphere:
         self.type = "sphere"
 
     def get_csv_data(self):
-        return dict({"dimension_1": self.radius, "dimension_2": 0, "dimension_3": 0, "mass": self.mass, "inertia_scaling_factor": self.inertia_scaling_factor})
+        return dict(
+            {"dimension_1": self.radius, "dimension_2": 0, "dimension_3": 0, "mass": self.mass, "inertia_scaling_factor": self.inertia_scaling_factor}
+        )
 
     def get_height(self):
         return self.radius * 2
@@ -103,7 +105,13 @@ class Cylinder:
 
     def get_csv_data(self):
         return dict(
-            {"dimension_1": self.radius, "dimension_2": self.length, "dimension_3": 0, "mass": self.mass, "inertia_scaling_factor": self.inertia_scaling_factor}
+            {
+                "dimension_1": self.radius,
+                "dimension_2": self.length,
+                "dimension_3": 0,
+                "mass": self.mass,
+                "inertia_scaling_factor": self.inertia_scaling_factor,
+            }
         )
 
     def get_height(self):
@@ -122,7 +130,13 @@ class Box:
 
     def get_csv_data(self):
         return dict(
-            {"dimension_1": self.x, "dimension_2": self.y, "dimension_3": self.z, "mass": self.mass, "inertia_scaling_factor": self.inertia_scaling_factor}
+            {
+                "dimension_1": self.x,
+                "dimension_2": self.y,
+                "dimension_3": self.z,
+                "mass": self.mass,
+                "inertia_scaling_factor": self.inertia_scaling_factor,
+            }
         )
 
     def get_height(self):

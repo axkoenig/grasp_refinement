@@ -22,7 +22,7 @@ class Actions:
         wrist_q = tf.transformations.quaternion_from_euler(rot[0], rot[1], rot[2])
         self.gi.cmd_wrist_pose_incr(action_dict["wrist_trans"], wrist_q)
         f = action_dict["fingers_incr"]
-        f = np.append(f, 0) # don't move preshape joint
+        f = np.append(f, 0)  # don't move preshape joint
         self.gi.finger_pos_incr(f)
         self.wait_if_necessary()
 
@@ -42,6 +42,8 @@ class Actions:
         step_size = 1 / self.get_rate_of_cur_stage()
         d = rospy.Time.now() - self.state.last_time_stamp
         while rospy.Time.now() - self.state.last_time_stamp < rospy.Duration(step_size):
-            rospy.loginfo_throttle(step_size, "Your last %s step only took %f seconds. Waiting to keep min step size of %f", self.state.stage.name, d.to_sec(), step_size)
+            rospy.loginfo_throttle(
+                step_size, "Your last %s step only took %f seconds. Waiting to keep min step size of %f", self.state.stage.name, d.to_sec(), step_size
+            )
             rospy.sleep(0.001)
         self.state.last_time_stamp = rospy.Time.now()

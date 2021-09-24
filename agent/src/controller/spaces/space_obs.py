@@ -79,7 +79,9 @@ class ObservationSpace(Space):
             self.contact_force_max = [force_max, force_max, force_max]
             self.add_variable_from_vector(var_name, self.contact_force_min, self.contact_force_max)
         elif self.hparams["force_framework"] == 2:  # only normal force
-            self.contact_force_min = -force_max  # in reality normal force can only be positive, but DART sometimes also outputs negative normal forces
+            self.contact_force_min = (
+                -force_max
+            )  # in reality normal force can only be positive, but DART sometimes also outputs negative normal forces
             self.contact_force_max = force_max
             self.add_variable(var_name, self.contact_force_min, self.contact_force_max)
         elif self.hparams["force_framework"] == 3:  # only binary contact signals

@@ -11,7 +11,6 @@ from tensorboard.backend.event_processing.event_accumulator import EventAccumula
 from vis_tests import get_framework_name
 
 
-
 seven_tab10_colors = [
     (0.12156862745098039, 0.4666666666666667, 0.7058823529411765),
     (1.0, 0.4980392156862745, 0.054901960784313725),
@@ -124,7 +123,7 @@ def get_all_data(args, valid_tb_logs):
     for tb_log in dirs:
         print("Getting " + tb_log)
         df = df.append(get_experiment_data(tb_log, args))
-        # break 
+        # break
 
     # for each experiment (via unique id) get maximum episode number and from those select the min
     results = []
@@ -150,7 +149,9 @@ def get_all_data(args, valid_tb_logs):
 
 def plot(args, df, title):
     hue_order = (
-        ["Full", "Normal", "Binary", "None"] if args.compare == "force_framework" else [r"$\epsilon$ and $\delta$", r"$\delta$", r"$\epsilon$", r"$\beta$"]
+        ["Full", "Normal", "Binary", "None"]
+        if args.compare == "force_framework"
+        else [r"$\epsilon$ and $\delta$", r"$\delta$", r"$\epsilon$", r"$\beta$"]
     )
     num_frameworks = 4
 

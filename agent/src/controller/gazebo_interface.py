@@ -11,7 +11,16 @@ import tf
 
 from geometry_msgs.msg import TransformStamped
 from std_srvs.srv import Empty, Trigger, TriggerRequest
-from gazebo_msgs.srv import GetModelState, GetLinkState, SetModelState, DeleteModel, SpawnModel, DeleteModelRequest, SpawnModelRequest, GetWorldProperties
+from gazebo_msgs.srv import (
+    GetModelState,
+    GetLinkState,
+    SetModelState,
+    DeleteModel,
+    SpawnModel,
+    DeleteModelRequest,
+    SpawnModelRequest,
+    GetWorldProperties,
+)
 from gazebo_msgs.msg import ModelState, ContactsState
 
 from reflex_interface.srv import PosIncrement, GraspPrimitive
@@ -252,7 +261,12 @@ class GazeboInterface:
         while int(time.time() - begin) < time_out:
             res = rosnode.get_node_names()
             print(res)
-            if "/finger_controller_node" in res and "/reflex_interface_node" in res and "/sensor_listener_node" in res and "/wrist_controller_node" in res:
+            if (
+                "/finger_controller_node" in res
+                and "/reflex_interface_node" in res
+                and "/sensor_listener_node" in res
+                and "/wrist_controller_node" in res
+            ):
                 rospy.loginfo("All nodes are up!")
                 return
             else:
@@ -265,7 +279,9 @@ class GazeboInterface:
                 rospy.logerr(
                     f"resetting_attempts {self.resetting_attempts}, knocked_obj_over {self.knocked_obj_over}. Generating a new wrist pose on this object."
                 )
-                test_case.wrist_error = gen_valid_wrist_error_from_l2(test_case.object, test_case.trans_l2_error, test_case.rot_l2_error, self.hparams)
+                test_case.wrist_error = gen_valid_wrist_error_from_l2(
+                    test_case.object, test_case.trans_l2_error, test_case.rot_l2_error, self.hparams
+                )
                 # reset vars for this new wrist error
                 self.knocked_obj_over = False
                 self.resetting_attempts = 0
