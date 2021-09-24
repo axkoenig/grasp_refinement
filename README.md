@@ -1,115 +1,69 @@
-# Grasp Refinement
+# Tactile Grasp Refinement using Deep Reinforcement Learning and Analytic Grasp Stability Metrics
 
 [![Build Status](https://travis-ci.com/axkoenig/grasp_refinement.svg?token=KeJradpJgXCJqZfQ8pwB&branch=main)](https://travis-ci.com/axkoenig/grasp_refinement)
 
-# TODO: some of below info is outdated! Check reflex_stack for an up-to-date readme.
+<img src="docs/grasp_refinement.png"/>
 
-## Run Software with Singularity
+This is the offical code repository for the publication "[Tactile Grasp Refinement using Deep Reinforcement Learning and Analytic Grasp Stability Metrics](https://arxiv.org/abs/2109.11234)" which is currently under review.
 
-Install singularity on your local machine (remote machine should have singularity installed) and follow these steps.
-
-On your local machine. 
+# Citation
 
 ```bash
-# 1. Build the singularity recipe to get a clean image with all required dependencies (e.g., Gazebo 11, ROS Noetic, RL packages)
-sudo singularity build gazebo_ros.img singularity.recipe 
+@misc{koenig2021tactile,
+      title={Tactile Grasp Refinement using Deep Reinforcement Learning and Analytic Grasp Stability Metrics}, 
+      author={Alexander Koenig and Zixi Liu and Lucas Janson and Robert Howe},
+      year={2021},
+      eprint={2109.11234},
+      archivePrefix={arXiv},
+      primaryClass={cs.RO}
+}
+```
 
-# 2. Create an overlay directory and build an overlay image
-mkdir -p overlay/upper overlay/work
-dd if=/dev/zero of=overlay.img bs=1M count=500 && mkfs.ext3 -d overlay overlay.img
+## Installation
 
-# 3. Upload both images to your research cluster
-sudo sftp akoenig@login.rc.fas.harvard.edu
-put -r /home/parallels/catkin_ws/src/grasp_refinement/gazebo_ros.img
-put -r /home/parallels/catkin_ws/src/grasp_refinement/overlay.img
-
-``` 
-
-On your remote machine do these steps. 
-
-```bash
-# create the same overlay directories as on local machine
-mkdir -p overlay/upper overlay/work
-
-# fire up your simulation container with the writable overlay to build the software
-singularity shell --overlay overlay.img gazebo_ros.img
-
-# create catkin workspace inside the overlay container and init a catkin workspace
-mkdir ~/overlay/work/catkin_ws/src -p
-cd ~/overlay/work/catkin_ws/src
-. /opt/ros/noetic/setup.sh
-catkin_init_workspace
-
-# Clone your favourite branch of this repository
-cd ~/overlay/work/catkin_ws/src
-git clone -b feature/multiple_objects --recursive git@github.com:axkoenig/grasp_refinement.git 
-cd ~/overlay/work/catkin_ws
-catkin_make
-
-# To test if everything works
-. ~/overlay/work/catkin_ws/devel/setup.sh
-roslaunch description reflex.launch gui:=false
-
-``` 
-
-To train on the cluster.
-
-```bash
-.cluster/experiments.sh -n 1   # start experiments
-squeue -u akoenig              # viel all jobs
-scancel -u akoenig             # cancel all jobs
-screen -r       # reattach to screen
-``` 
-
-Download data from cluster
-```bash
-cd ~/cluster_logs 
-sudo sftp akoenig@login.rc.fas.harvard.edu
-cd /n/holyscratch01/howe_lab_seas/Users/akoenig/output/agents/logs/refinement/
-get -r 11*
-``` 
-
-
-## Install Software 
-1. Install Gazebo 11 with the DART 6 physics engine (DART has proven to work better at simulating grasping than the default physics engine (ODE)). You will need to build Gazebo from source to work with DART. Follow the [official instructions](http://gazebosim.org/tutorials?tut=install_from_source&cat=install) for doing so.
-
-2. Install ROS noetic by following the [official instructions](https://wiki.ros.org/noetic/Installation/Ubuntu). The ```ros-noetic-desktop``` is recommended. The ```ros-noetic-desktop-full``` would also install Gazebo and this might conflict with the installation from step 1. 
-
-3. Install ROS controllers for robot control and the Gazebo ROS integration.
-```bash
-sudo apt-get install ros-noetic-ros-control ros-noetic-ros-controllers
-sudo apt-get install ros-noetic-gazebo-ros-pkgs ros-noetic-gazebo-ros-control
-``` 
-
-4. Setup new catkin workspace.
-
-```bash
+0. Disclaimer: the below steps assume you have a fresh installation of Ubuntu 20.04.
+1. Install ROS Noetic by following [these](http://wiki.ros.org/noetic/Installation/Ubuntu) steps.
+2. Clone this repository into a new catkin workspace.
+```bash 
+# Init new catkin workspace
 mkdir ~/catkin_ws/src -p
 cd ~/catkin_ws/src
 catkin_init_workspace
-```
-
-5. Clone repository with its submodules into ```src``` folder.
-
-```bash
+# Clone this repository with its submodules
 git clone --recursive https://github.com/axkoenig/grasp_refinement.git
 ```
-
-6. Build workspace.
-
-```bash
+3. This paper heavily uses the [Reflex Stack](https://github.com/axkoenig/reflex_stack), a software module that simulates the robotic hand and comes with various useful tools for real-time grasp analysis. The simulator runs Gazebo 11 and DART 6. To run Gazebo with the DART physics engine, you must build Gazebo from source. Running the shell script does this for you. 
+```bash 
+cd ~/catkin_ws/src/grasp_refinement/reflex_stack/shell
+sudo ./install_gazebo_dart.sh
+```
+4. Now that you have all the required dependencies you can install the software. 
+```bash 
+# Build software
 cd ~/catkin_ws
 catkin_make
-```
-
-7. Source this workspace and, if you like, add it to your ```.bashrc```.
-
-```bash
+# Source workspace and add to your bashrc
 source ~/catkin_ws/devel/setup.bash
 echo "source ~/catkin_ws/devel/setup.bash" >> ~/.bashrc
 ```
+5. Check if everything works by firing up the [Reflex Stack](https://github.com/axkoenig/reflex_stack) simulator in a new terminal.
+```bash 
+roslaunch description reflex.launch run_keyboard_teleop_nodes:=true
+```
 
-## Acknowledgements
+## Train an Agent
 
-- The robot description package was originally based on the ```ll4ma_robots_description``` package by the [Utah Learning Lab for Manipulation Autonomy](https://bitbucket.org/robot-learning/ll4ma_robots_description/src/main/). The parts that were unnecessary for this project were removed. The Reflex robotic hand was also modified to allow for basic actuation of the distal flexure.
-- Developer of [teleop_twist_keyboard.cpp](https://github.com/methylDragon/teleop_twist_keyboard_cpp/blob/master/src/teleop_twist_keyboard.cpp) for making code of non-blocking keyboard input public. Used in my keyboard teleoperation node. 
+You can train an agent with a one-liner. 
+
+```bash
+cd ~/catkin_ws/src/grasp_refinement/agent/src
+python main.py --gui=1 --reward_framework=1 --force_framework=1 --log_name=i_love_robots
+```
+
+## Enjoy a pre-trained Agent
+
+Enjoy one of the pre-trained agents, or one of the agents you trained yourself. The 
+
+```bash
+python main.py --train=0 test_model_path=~/catkin_ws/src/grasp_refinement/trained_agents/epsilon+delta_full.zip --all_test_cases=0 --gui=1 --reward_framework=1 --force_framework=1 --log_name=i_love_robots
+```
