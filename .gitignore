@@ -1,3 +1,11 @@
+# ignore saved RL models
+/agent/src/models
+/agent/src/plots/output
+/agent/src/plots/*.pkl
+
+# ignore singularity images 
+*.img
+
 devel/
 logs/
 build/

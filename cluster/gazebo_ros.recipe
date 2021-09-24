@@ -1,0 +1,51 @@
+Bootstrap: docker
+
+From: osrf/ros:noetic-desktop-focal
+
+%environment
+  OUTPUT=/output
+  export ROS_LOG_DIR=$OUTPUT
+  export ROS_HOME=$OUTPUT
+
+%labels
+  MAINTAINER = Alexander Koenig 
+  EMAIL = awckoenig@gmail.com 
+
+%post
+  apt-get -y update && apt-get -y upgrade
+  apt -y update && apt -y upgrade
+  
+  echo "\n\n\n====INSTALLING RL PACKAGES====\n\n\n"
+  apt -y install python3-pip
+  pip3 install gym stable_baselines3 tensorboard
+  apt-get -y install python3-tk
+
+  echo "\n\n\n====INSTALLING GAZEBO DEPENDENCIES====\n\n\n"
+  apt-get -y install wget gnupg2 lsb-release
+  apt-get -y remove ".*gazebo.*" ".*sdformat.*" ".*ignition-math.*" ".*ignition-msgs.*" ".*ignition-transport.*"
+  sh -c "echo 'deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main' > /etc/apt/sources.list.d/gazebo-stable.list"
+  wget https://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
+  apt-get -y update
+  wget https://raw.githubusercontent.com/ignition-tooling/release-tools/master/jenkins-scripts/lib/dependencies_archive.sh -O /tmp/dependencies.sh
+  bash -c 'GAZEBO_MAJOR_VERSION=11 ROS_DISTRO=noetic . /tmp/dependencies.sh && echo $BASE_DEPENDENCIES $GAZEBO_BASE_DEPENDENCIES | tr -d "\\" | xargs apt-get -y install'
+
+  echo "\n\n\n====INSTALLING DART 6====\n\n\n"
+  apt-get -y install software-properties-common
+  apt-add-repository ppa:dartsim
+  apt-get -y update
+  apt-get -y install libdart6-dev
+  apt-get -y install libdart6-utils-urdf-dev
+
+  echo "\n\n\n====INSTALLING GAZEBO 11====\n\n\n"
+  apt -y install git
+  git clone https://github.com/osrf/gazebo /tmp/gazebo
+  cd /tmp/gazebo
+  mkdir build && cd build
+  cmake ../
+  make -j4
+  make install
+  rm -r /tmp/gazebo
+
+  echo "\n\n\n====INSTALLING PROJECT DEPENDENCIES====\n\n\n"
+  apt-get -y install ros-noetic-ros-control ros-noetic-ros-controllers
+  apt-get -y install ros-noetic-gazebo-ros-pkgs ros-noetic-gazebo-ros-control

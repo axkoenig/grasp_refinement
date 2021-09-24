@@ -1,0 +1,24 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "catkin_make",
+            "type": "shell",
+            "command": "catkin_make",
+            "args": [
+                "-j$(nproc)",
+                "-DCMAKE_BUILD_TYPE=Release",
+                "-DCMAKE_EXPORT_COMPILE_COMMANDS=1",
+                "-DCMAKE_CXX_STANDARD=14"
+            ],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/../.."
+            }
+        }
+    ]
+}
