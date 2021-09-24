@@ -43,5 +43,5 @@ class Actions:
         d = rospy.Time.now() - self.state.last_time_stamp
         while rospy.Time.now() - self.state.last_time_stamp < rospy.Duration(step_size):
             rospy.loginfo_throttle(step_size, "Your last %s step only took %f seconds. Waiting to keep min step size of %f", self.state.stage.name, d.to_sec(), step_size)
-            rospy.sleep(0.01)
+            rospy.sleep(0.001)
         self.state.last_time_stamp = rospy.Time.now()
