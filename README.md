@@ -1,7 +1,5 @@
 # Tactile Grasp Refinement using Deep Reinforcement Learning and Analytic Grasp Stability Metrics
 
-[![Build Status](https://travis-ci.com/axkoenig/grasp_refinement.svg?token=KeJradpJgXCJqZfQ8pwB&branch=main)](https://travis-ci.com/axkoenig/grasp_refinement)
-
 <img src="docs/grasp_refinement.png"/>
 
 This is the offical code repository for the publication "[Tactile Grasp Refinement using Deep Reinforcement Learning and Analytic Grasp Stability Metrics](https://arxiv.org/abs/2109.11234)" which is currently under review.
@@ -32,7 +30,7 @@ catkin_init_workspace
 # Clone this repository with its submodules
 git clone --recursive https://github.com/axkoenig/grasp_refinement.git
 ```
-3. This paper heavily uses the [Reflex Stack](https://github.com/axkoenig/reflex_stack), a software module that simulates the robotic hand and comes with various useful tools for real-time grasp analysis. The simulator runs Gazebo 11 and DART 6. To run Gazebo with the DART physics engine, you must build Gazebo from source. Running the shell script does this for you. 
+3. This paper uses the [Reflex Stack](https://github.com/axkoenig/reflex_stack), a software module that simulates the robotic hand and comes with various useful tools for real-time grasp analysis. The simulator runs Gazebo 11 and DART 6. To run Gazebo with the DART physics engine, you must build Gazebo from source. Running the shell script does this for you. 
 ```bash 
 cd ~/catkin_ws/src/grasp_refinement/reflex_stack/shell
 sudo ./install_gazebo_dart.sh
