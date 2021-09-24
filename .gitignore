@@ -1,10 +1,7 @@
-# ignore experimental outcomes
-brain/experiments/data/*
-brain/experiments/figures/*
-
 # ignore saved RL models
 /agent/src/models
 /agent/src/plots/output
+/agent/src/plots/*.pkl
 
 # ignore singularity images 
 *.img
