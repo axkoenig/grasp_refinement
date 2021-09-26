@@ -1,0 +1,27 @@
+version: '2'
+services:
+  grasp_refinement:
+    image: axkoenig/grasp_refinement:latest
+    build: .
+    container_name: agent
+    command: /bin/bash -c "source /home/catkin_ws/devel/setup.bash; python3 /home/catkin_ws/src/agent/src/main.py --output_dir=/home/.ros/log --log_name=i_love_robots"
+    environment:
+      - DISPLAY=novnc:0.0
+    depends_on:
+      - novnc
+    networks:
+      - x11
+    volumes:
+      - ./output:/home/.ros/log
+  novnc:
+    image: theasp/novnc:latest
+    environment:
+      - DISPLAY_WIDTH=1200
+      - DISPLAY_HEIGHT=700
+      - RUN_XTERM=no
+    ports:
+      - "8080:8080"
+    networks:
+      - x11
+networks:
+  x11:
