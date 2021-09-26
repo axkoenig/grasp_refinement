@@ -20,6 +20,7 @@ This is the official code repository for the publication "[Tactile Grasp Refinem
 ## Installation and Usage
 
 
+___
 <details>
 <summary>Option 1 - Using plain Ubuntu</summary>
 
@@ -74,6 +75,7 @@ python main.py --train=0 test_model_path=~/catkin_ws/src/grasp_refinement/traine
 
 </details>
 
+___
 <details>
 <summary>Option 2 - Using Docker</summary>
 
@@ -120,3 +122,5 @@ You should now see the algorithm refining grasps in your browser.
 <img src="docs/browser.png"/>
 
 </details>
+
+___
