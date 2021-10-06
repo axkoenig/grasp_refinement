@@ -148,11 +148,7 @@ def get_all_data(args, valid_tb_logs):
 
 
 def plot(args, df, title):
-    hue_order = (
-        ["Full", "Normal", "Binary", "None"]
-        if args.compare == "force_framework"
-        else [r"$\epsilon$ and $\delta$", r"$\delta$", r"$\epsilon$", r"$\beta$"]
-    )
+    hue_order = ["Full", "Normal", "Binary", "None"] if args.compare == "force_framework" else [r"$\epsilon$ and $\delta$", r"$\delta$", r"$\epsilon$", r"$\beta$"]
     num_frameworks = 4
 
     num_plots = len(args.scalar_names)

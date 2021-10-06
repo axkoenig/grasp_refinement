@@ -12,13 +12,13 @@ df = pandas.DataFrame(
     }
 )
 
-# create figure 
+# create figure
 sns.set(rc={"figure.figsize": (5, 3)})
 sns.set(style="darkgrid", font_scale=1.1)
 fig = sns.lineplot(data=df, x="Year", y="Number of Papers")
 plt.tight_layout(rect=[0, 0, 1, 1], pad=0.5)
 plt.xticks(np.arange(2000, 2021, step=5))
 
-# save figure 
+# save figure
 Path("./output").mkdir(parents=True, exist_ok=True)
 plt.savefig("output/keywords.pdf")

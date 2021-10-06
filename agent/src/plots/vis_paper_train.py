@@ -8,7 +8,7 @@ import numpy as np
 import pickle
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
-from vis_tests import get_framework_name
+from vis_paper_test import get_framework_name
 
 
 seven_tab10_colors = [
@@ -148,11 +148,7 @@ def get_all_data(args, valid_tb_logs):
 
 
 def plot(args, df, title):
-    hue_order = (
-        ["Full", "Normal", "Binary", "None"]
-        if args.compare == "force_framework"
-        else [r"$\epsilon$ and $\delta$", r"$\delta$", r"$\epsilon$", r"$\beta$"]
-    )
+    hue_order = ["Full", "Normal", "Binary", "None"] if args.compare == "force_framework" else [r"$\epsilon$ and $\delta$", r"$\delta$", r"$\epsilon$", r"$\beta$"]
     num_frameworks = 4
 
     # all data should start at 15.5 episodes

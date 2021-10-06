@@ -34,7 +34,7 @@ if plots == 2:
     first_col = [seven_tab10_colors[0]]
     seven_tab10_colors = first_col + seven_tab10_colors[-3:]
     palette = sns.color_palette(seven_tab10_colors)
-sns.set(style="darkgrid", font_scale=1.1)
+sns.set(style="darkgrid", font_scale=1)
 OUTPUT_DIR = "./output"
 
 
@@ -73,19 +73,6 @@ def get_csv_data(args, prefixes, num_seeds, verbose=True):
         dirs = [os.path.join(args.log_path, dir) for dir in os.listdir(args.log_path) if dir.startswith(prefix) and dir.endswith("_wdelta0.5.csv")]
 
         for dir in dirs:
-            ### NEW ADDIITON
-            # not_converged = [
-            #     "28Aug_SmallTau25kMore02Sep_f1_s1_id303_algosac_lr0.0001_tau0.0001_wdelta0.5",
-            #     "28Aug_SmallTau25kMore02Sep_f1_s1_id303_algosac_lr0.0001_tau0.0001_wdelta0.5",
-            # ]
-            # for n in not_converged:
-            #     skip = False
-            #     if n in dir:
-            #         skip = True
-            # if skip:
-            #     print("skipping this data, it didnt converge")
-            #     continue
-            ### NEW ADDIITON
 
             data = pd.read_csv(dir)
 
@@ -130,6 +117,7 @@ def get_csv_data(args, prefixes, num_seeds, verbose=True):
             data["reward_framework"] = reward_framework
             data["tb_log"] = dir
             data["object_type"] = data["object_type"].str.capitalize()
+            data.loc[(data.object_type == "Box"), "object_type"] = "Cuboid"
             wrist_error_names = ["A", "B", "C", "D", "E", "F", "G", "H"]
             for i in range(len(wrist_error_names)):
                 data.loc[data["trans_l2_error"] == i / 100, "trans_l2_error"] = wrist_error_names[i]
@@ -141,20 +129,68 @@ def get_csv_data(args, prefixes, num_seeds, verbose=True):
     return df
 
 
-def plot(args, df, title, object_types=["Box", "Cylinder", "Sphere"]):
-    hue_order = (
-        ["Full", "Normal", "Binary", "None"]
-        if args.compare == "force_framework"
-        else [r"$\epsilon$ and $\delta$", r"$\delta$", r"$\epsilon$", r"$\beta$"]
-    )
-    fig = plt.figure(figsize=(10, 6))
-    num_frameworks = len(df[args.compare].unique())
-    num_tries_per_exp = len(np.unique(df["tb_log"].values)) / num_frameworks
-    fig.suptitle(f"Test Results. {df.shape[0]} grasps in total.")
+def plot(args, df, title, object_types=["Cuboid", "Cylinder", "Sphere"]):
+    hue_order = ["Full", "Normal", "Binary", "None"] if args.compare == "force_framework" else [r"$\epsilon$ and $\delta$", r"$\delta$", r"$\epsilon$", r"$\beta$"]
+    fig = plt.figure(figsize=(9, 6))
+
+    ax = fig.add_subplot(3, 3, 1)
+    s = sns.barplot(data=df, palette=palette, x="object_type", order=object_types, hue=args.compare, hue_order=hue_order, y="sustained_holding", ax=ax)
+    for p in s.patches:
+
+        height = p.get_height() - 0.34
+        if height < 0.15:
+            height = p.get_height() + 0.08
+        text = s.annotate(
+            format(p.get_height(), ".3f"),
+            (p.get_x() + p.get_width() / 2.0 + p.get_width() * 0.075, height),
+            ha="center",
+            va="center",
+            xytext=(0, 9),
+            textcoords="offset points",
+            fontsize=9,
+        )
+        text.set_rotation(90)
+
+    ax.set_xlabel("Object")
+    ax.set_ylabel("Hold Success")
+    ax.set_title("Plot (1) - All Wrist Errors")
+    ax.yaxis.set_ticks(np.arange(0, 1.1, 0.5))
+    ax.set_ylim((0, 1))
+    ax.get_legend().remove()
+
+    ax = fig.add_subplot(3, 3, 2)
+    s = sns.barplot(data=df, palette=palette, x=args.compare, order=hue_order, y="sustained_holding", ax=ax)
+
+    for p in s.patches:
+        s.annotate(
+            format(p.get_height(), ".3f"),
+            (p.get_x() + p.get_width() / 2.0, p.get_height() - 0.265),
+            ha="center",
+            va="center",
+            xytext=(0, 9),
+            fontsize=11,
+            textcoords="offset points",
+        )
+
+    ax.set_xlabel(get_framework_title(args.compare))
+    ax.set_ylabel("")
+    ax.yaxis.set_ticks(np.arange(0, 1.1, 0.5))
+    ax.set_title("Plot (2) - All Obj. and W. Errors")
+    ax.set_ylim((0, 1))
+
+    ax = fig.add_subplot(3, 3, 3)
+    sns.barplot(data=df, palette=palette, x="trans_l2_error", y="sustained_holding", hue=args.compare, hue_order=hue_order, ax=ax)
+    ax.set_xlabel("Wrist Error Case")
+    ax.set_ylabel("")
+    ax.set_title("Plot (3) - All Objects")
+    ax.set_ylim((0, 1))
+    ax.yaxis.set_ticks(np.arange(0, 1.1, 0.5))
+    lines, labels = ax.get_legend_handles_labels()
+    ax.get_legend().remove()
 
     # one plot for each object, success over wrist error
     for i in range(len(object_types)):
-        ax = fig.add_subplot(2, 3, i + 1)
+        ax = fig.add_subplot(3, 3, i + 4)
         sns.barplot(
             data=df.loc[df["object_type"] == object_types[i]],
             palette=palette,
@@ -165,69 +201,46 @@ def plot(args, df, title, object_types=["Box", "Cylinder", "Sphere"]):
             ax=ax,
         )
         ax.set_xlabel("Wrist Error Case")
-        ax.set_ylabel("Holding Success")
-        ax.set_title(object_types[i])
+        ax.set_ylabel("Hold Success")
+        if i != 0:
+            ax.set_ylabel("")
+
+        if object_types[i] == "Cuboid":
+            ax.set_title("Plot (" + str(i + 4) + ") - Cuboids")
+        if object_types[i] == "Cylinder":
+            ax.set_title("Plot (" + str(i + 4) + ") - Cylinders")
+        if object_types[i] == "Sphere":
+            ax.set_title("Plot (" + str(i + 4) + ") - Spheres")
         ax.set_ylim((0, 1))
         ax.get_legend().remove()
+        ax.yaxis.set_ticks(np.arange(0, 1.1, 0.5))
 
-    ax = fig.add_subplot(2, 3, 4)
-    sns.barplot(data=df, palette=palette, x="trans_l2_error", y="sustained_holding", hue=args.compare, hue_order=hue_order, ax=ax)
-    ax.set_xlabel("Wrist Error Case")
-    ax.set_ylabel("Holding Success")
-    ax.set_title("All Objects")
-    ax.set_ylim((0, 1))
-    lines, labels = ax.get_legend_handles_labels()
-    ax.get_legend().remove()
+    # one plot for each object, success over wrist error
+    for i in range(len(object_types)):
+        ax = fig.add_subplot(3, 3, i + 7)
+        for hue in hue_order:
+            data = df.loc[df["object_type"] == object_types[i]]
+            sns.regplot(data=data.loc[data[args.compare] == hue], x="mass", y="sustained_holding", ax=ax, marker="")
+        ax.set_xlabel("Object Mass")
+        ax.set_ylabel("Hold Success")
+        if i != 0:
+            ax.set_ylabel("")
 
-    ax = fig.add_subplot(2, 3, 5)
-    s = sns.barplot(
-        data=df, palette=palette, x="object_type", order=object_types, hue=args.compare, hue_order=hue_order, y="sustained_holding", ax=ax
-    )
-    for p in s.patches:
+        if object_types[i] == "Cuboid":
+            ax.set_title("Plot (" + str(i + 7) + ") - Cuboids")
+        if object_types[i] == "Cylinder":
+            ax.set_title("Plot (" + str(i + 7) + ") - Cylinders")
+        if object_types[i] == "Sphere":
+            ax.set_title("Plot (" + str(i + 7) + ") - Spheres")
+        ax.set_ylim((0, 1))
+        ax.yaxis.set_ticks(np.arange(0, 1.1, 0.5))
+        ax.xaxis.set_ticks(np.arange(0.1, 0.45, 0.1))
 
-        height = p.get_height() - 0.21
-        if height < 0.2:
-            height = p.get_height() + 0.07
-        text = s.annotate(
-            format(p.get_height(), ".3f"),
-            (p.get_x() + p.get_width() / 2.0 + p.get_width() * 0.07, height),
-            ha="center",
-            va="center",
-            xytext=(0, 9),
-            textcoords="offset points",
-            fontsize=9,
-        )
-        text.set_rotation(90)
-
-    ax.set_xlabel("Object")
-    ax.set_ylabel("Holding Success")
-    ax.set_title("All Wrist Errors")
-    ax.set_ylim((0, 1))
-    ax.get_legend().remove()
-
-    ax = fig.add_subplot(2, 3, 6)
-    s = sns.barplot(data=df, palette=palette, x=args.compare, order=hue_order, y="sustained_holding", ax=ax)
-
-    for p in s.patches:
-        s.annotate(
-            format(p.get_height(), ".3f"),
-            (p.get_x() + p.get_width() / 2.0, p.get_height()),
-            ha="center",
-            va="center",
-            xytext=(0, 9),
-            textcoords="offset points",
-        )
-
-    ax.set_xlabel(get_framework_title(args.compare))
-    ax.set_ylabel("Holding Success")
-    ax.set_title("All Objects and Wrist Errors")
-    ax.set_ylim((0, 1))
-
-    fig.tight_layout(rect=[0, 0.06, 1, 0.95], pad=0.5)
-    fig.legend(lines, labels, loc="lower center", ncol=4)
+    fig.tight_layout(rect=[0, 0, 1, 0.9], pad=0.05, h_pad=1, w_pad=1)
+    fig.legend(lines, labels, loc="upper center", ncol=4)
     fig.show()
-    fig.savefig(f"{OUTPUT_DIR}/paper_new_test_{args.prefix}_{args.compare}.png")
-    fig.savefig(f"{OUTPUT_DIR}/paper_new_test_{args.prefix}_{args.compare}.pdf")
+    fig.savefig(f"{OUTPUT_DIR}/thesis_test_{args.prefix}_{args.compare}.png")
+    fig.savefig(f"{OUTPUT_DIR}/thesis_test_{args.prefix}_{args.compare}.pdf")
 
 
 if __name__ == "__main__":
@@ -235,7 +248,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--log_path",
         type=str,
-        default="/home/parallels/cluster_logs_sd6",
+        default="/Users/koenig/Documents/master/semester_5/thesis/data/cluster_logs_sd6_14sep",
         help="Path to tensorboard log.",
     )
     parser.add_argument(
@@ -287,10 +300,14 @@ if __name__ == "__main__":
         "test_28Aug_SmallTau25kMore03Sep_f",
         "test_28Aug_SmallTau25kMore04SepFestival_f",
         "test_28Aug_SmallTau25kMore06SepBerlin_f",
+        "test_28Aug_SmallTau25kMore08SepBluecherNeu_f",
+        "test_28Aug_SmallTau25kMore09SepBluecherThursday_f",
+        "test_28Aug_SmallTau25kMore10SepBluecherFriday_f",
+        "test_28Aug_SmallTau25kMore10SepBluecherSaturday_f",
     ]
 
     # select num_seeds first experiments
-    num_seeds = 21
+    num_seeds = 41
 
     df = get_csv_data(args, prefixes, num_seeds)
 
@@ -327,14 +344,18 @@ if __name__ == "__main__":
 
     from scipy.stats import ttest_rel
 
-    compare_1 = 0
-    compares_2 = [1, 2, 3]
+    if plots == 1:
+        compare_1 = 0
+        compares_2 = [1, 2, 3]
+    else:
+        compare_1 = 1
+        compares_2 = [0, 2, 3]
     for compare_2 in compares_2:
         cat1 = df[df[args.compare] == frameworks[compare_1]]
         cat2 = df[df[args.compare] == frameworks[compare_2]]
 
         print(f"comparing category {frameworks[compare_1]} with {frameworks[compare_2]}")
         res = ttest_rel(cat1["sustained_holding"], cat2["sustained_holding"], alternative="greater")
-        print("statistic", round(res[0], 6))
+        print("statistic", round(res[0], 4))
         print("unrounded pval ", res[1])
-        print("pvalue", round(res[1], 6))
+        print("pvalue", round(res[1], 4))
