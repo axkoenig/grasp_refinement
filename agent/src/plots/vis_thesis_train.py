@@ -244,7 +244,7 @@ if __name__ == "__main__":
         ("episode/cum_num_contacts", "Num. Contacts"),
         ("episode/cum_a_delta_cur", r"$\delta_{cur}$"),
         ("episode/cum_a_delta_task", r"$\delta_{task}$"),
-        ("episode/cum_sum_contact_forces", "Sum C. Forces"),
+        ("episode/cum_sum_contact_forces", "Sum Forces in N"),
         ("episode/cum_a_epsilon_force_box", r"$\epsilon_{f}$"),
         ("episode/cum_a_epsilon_force_cylinder", r"$\epsilon_{f}$"),
         ("episode/cum_a_epsilon_force_sphere", r"$\epsilon_{f}$"),
