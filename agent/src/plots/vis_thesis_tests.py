@@ -27,7 +27,7 @@ seven_tab10_colors = [
 # import pdb
 
 # pdb.set_trace()
-plots = 2
+plots = 1
 palette = sns.color_palette(seven_tab10_colors[:4])
 
 if plots == 2:
@@ -134,6 +134,27 @@ def plot(args, df, title, object_types=["Cuboid", "Cylinder", "Sphere"]):
     fig = plt.figure(figsize=(9, 6))
 
     ax = fig.add_subplot(3, 3, 1)
+    
+    s = sns.barplot(data=df, palette=palette, x=args.compare, order=hue_order, y="sustained_holding", ax=ax)
+
+    for p in s.patches:
+        s.annotate(
+            format(p.get_height(), ".3f"),
+            (p.get_x() + p.get_width() / 2.0, p.get_height() - 0.265),
+            ha="center",
+            va="center",
+            xytext=(0, 9),
+            fontsize=11,
+            textcoords="offset points",
+        )
+
+    ax.set_xlabel(get_framework_title(args.compare))
+    ax.set_ylabel("Hold Success")
+    ax.yaxis.set_ticks(np.arange(0, 1.1, 0.5))
+    ax.set_title("Plot (1) - All Obj. and W. Errors")
+    ax.set_ylim((0, 1))
+
+    ax = fig.add_subplot(3, 3, 2)
     s = sns.barplot(data=df, palette=palette, x="object_type", order=object_types, hue=args.compare, hue_order=hue_order, y="sustained_holding", ax=ax)
     for p in s.patches:
 
@@ -152,31 +173,11 @@ def plot(args, df, title, object_types=["Cuboid", "Cylinder", "Sphere"]):
         text.set_rotation(90)
 
     ax.set_xlabel("Object")
-    ax.set_ylabel("Hold Success")
-    ax.set_title("Plot (1) - All Wrist Errors")
+    ax.set_ylabel("")
+    ax.set_title("Plot (2) - All Wrist Errors")
     ax.yaxis.set_ticks(np.arange(0, 1.1, 0.5))
     ax.set_ylim((0, 1))
     ax.get_legend().remove()
-
-    ax = fig.add_subplot(3, 3, 2)
-    s = sns.barplot(data=df, palette=palette, x=args.compare, order=hue_order, y="sustained_holding", ax=ax)
-
-    for p in s.patches:
-        s.annotate(
-            format(p.get_height(), ".3f"),
-            (p.get_x() + p.get_width() / 2.0, p.get_height() - 0.265),
-            ha="center",
-            va="center",
-            xytext=(0, 9),
-            fontsize=11,
-            textcoords="offset points",
-        )
-
-    ax.set_xlabel(get_framework_title(args.compare))
-    ax.set_ylabel("")
-    ax.yaxis.set_ticks(np.arange(0, 1.1, 0.5))
-    ax.set_title("Plot (2) - All Obj. and W. Errors")
-    ax.set_ylim((0, 1))
 
     ax = fig.add_subplot(3, 3, 3)
     sns.barplot(data=df, palette=palette, x="trans_l2_error", y="sustained_holding", hue=args.compare, hue_order=hue_order, ax=ax)
