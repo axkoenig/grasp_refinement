@@ -1,6 +1,6 @@
 FROM axkoenig/reflex_stack
 
-# init catkin workspace, copy Reflex Stack over and build it
+# init catkin workspace, copy agent directory and build
 ENV CATKIN_WS=/home/catkin_ws
 COPY agent ${CATKIN_WS}/src/agent
 COPY trained_agents ${CATKIN_WS}/src/trained_agents
@@ -9,7 +9,6 @@ WORKDIR ${CATKIN_WS}
 RUN /bin/bash -c '. /opt/ros/noetic/setup.bash; catkin_make'
 
 # install pip3 package
-RUN apt -y update && apt -y upgrade 
 RUN apt install -y python3-pip 
 
 # install pip requirements
