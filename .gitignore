@@ -2,6 +2,7 @@
 /agent/src/models
 /agent/src/plots/output
 /agent/src/plots/*.pkl
+.vscode
 
 # ignore singularity images 
 *.img
