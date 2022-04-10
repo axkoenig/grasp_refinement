@@ -1,14 +1,14 @@
-# Tactile Grasp Refinement using Deep Reinforcement Learning and Analytic Grasp Stability Metrics
+# The Role of Tactile Sensing in Learning and Deploying Grasp Refinement Algorithms
 
 <img src="docs/grasp_refinement.png"/>
 
-This is the official code repository for the publication "[Tactile Grasp Refinement using Deep Reinforcement Learning and Analytic Grasp Stability Metrics](https://arxiv.org/abs/2109.11234)" which is currently under review.
+This is the official code repository for the publication "[The Role of Tactile Sensing in Learning and Deploying Grasp Refinement Algorithms](https://arxiv.org/abs/2109.11234)" which is currently under review.
 
 ## Citation
 
 ```bash
 @misc{koenig2021tactile,
-      title={Tactile Grasp Refinement using Deep Reinforcement Learning and Analytic Grasp Stability Metrics}, 
+      title={The Role of Tactile Sensing in Learning and Deploying Grasp Refinement Algorithms}, 
       author={Alexander Koenig and Zixi Liu and Lucas Janson and Robert Howe},
       year={2021},
       eprint={2109.11234},
