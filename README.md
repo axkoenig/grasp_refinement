@@ -2,7 +2,7 @@
 
 <img src="docs/grasp_refinement.png"/>
 
-This is the official code repository for the publication "[The Role of Tactile Sensing in Learning and Deploying Grasp Refinement Algorithms](https://arxiv.org/abs/2109.11234)" which is currently under review.
+This is the official code repository for the publication "[The Role of Tactile Sensing in Learning and Deploying Grasp Refinement Algorithms](https://arxiv.org/abs/2109.11234)".
 
 ## Citation
 
