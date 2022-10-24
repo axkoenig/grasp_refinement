@@ -6,7 +6,7 @@ This is the official code repository for the publication "[The Role of Tactile S
 
 ## Citation
 
-```bash
+```
 @inproceedings{koenig2022tactile,
       title={The Role of Tactile Sensing in Learning and Deploying Grasp Refinement Algorithms}, 
       author={Alexander Koenig and Zixi Liu and Lucas Janson and Robert Howe},
