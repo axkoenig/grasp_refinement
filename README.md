@@ -7,13 +7,11 @@ This is the official code repository for the publication "[The Role of Tactile S
 ## Citation
 
 ```bash
-@misc{koenig2021tactile,
+@inproceedings{koenig2022tactile,
       title={The Role of Tactile Sensing in Learning and Deploying Grasp Refinement Algorithms}, 
       author={Alexander Koenig and Zixi Liu and Lucas Janson and Robert Howe},
-      year={2021},
-      eprint={2109.11234},
-      archivePrefix={arXiv},
-      primaryClass={cs.RO}
+      booktitle={IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), 2022}, 
+      year={2022}
 }
 ```
 
