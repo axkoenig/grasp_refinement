@@ -295,6 +295,7 @@ def test(model, env, log_path, log_name, deterministic=False, all_test_cases=Tru
     metrics = ["sustained_lifting", "sustained_holding"]
 
     # create output csv file
+    os.makedirs(log_path, exist_ok=True)
     path = os.path.join(log_path, log_name + ".csv")
     with open(path, "w") as file:
         fieldnames = t.test_cases[0].get_csv_header()
